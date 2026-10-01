@@ -432,7 +432,32 @@ export async function iniciarBotWhatsApp(): Promise<void> {
           }
 
           await enviarMensajeBot(sock, selfPnJid, {
-            text: `${BOT_SIGNATURE}\n🟢 *Bot sincronizado en tiempo real.* Escuchando tickets de *CRISTHIAN VALDIVIA MARTINEZ* (\`+52 1 477 590 7888\`) y recuperando mensajes recientes...`,
+            text: `${BOT_SIGNATURE}
+🟢 *¡KlientIA Facturación Conectado y Actualizado!*
+
+📖 *Listado Completo de Comandos:*
+
+⚡ *Diagnóstico del Bot:*
+• \`/status\` o \`/ping\` — Verifica conexión, memoria y conectores activos.
+
+📊 *Control de Clientes, Planes y Folios:*
+• \`/clientes\` o \`/reporte\` — Lista de clientes, folios usados y vigencia.
+• \`/saldo <RFC o Teléfono>\` — Consulta los tickets y vigencia de un cliente (ej. \`/saldo VAMC9112056Q2\`).
+• \`/ajustar-tickets <RFC> <cantidad>\` — Fija manualmente los tickets usados de un cliente.
+• \`/activar-plan <RFC> <20|40|80|100>\` — Activa un plan por 30 días manualmente.
+• \`/autorizar <10 dígitos>\` — Registra el celular de un nuevo cliente.
+
+💳 *Paquetes y Pagos SPEI Banxico:*
+• \`/planes\` o \`/paquetes\` — Muestra los paquetes (20, 40, 80, 100 tickets) y tu CLABE de Mercado Pago W.
+• *Enviar captura de transferencia* — Valida el CEP en Banxico y activa el plan o recarga en automático.
+
+🏢 *Datos Fiscales:*
+• \`/perfil\` — Muestra los datos fiscales registrados.
+• *Enviar Constancia SAT (PDF o foto)* — Da de alta al cliente y le envía los paquetes a elegir.
+
+✨ *Marca y Ayuda:*
+• \`/logo\` — Envía el logotipo oficial de KlientIA.
+• \`/comandos\` — Vuelve a mostrar esta guía cuando la necesites.`,
           });
         }, 2500);
       }
@@ -733,29 +758,30 @@ async function manejarMensajeEntrante(sock: any, msg: WAMessage): Promise<void> 
     textoLimpio.toLowerCase() === "/menu" ||
     textoLimpio.toLowerCase() === "menu"
   ) {
-    const { perfil } = obtenerPerfilFiscal(perfilKey);
     await enviarMensajeBot(sock, replyJid, {
       text: `${BOT_SIGNATURE}
-📖 *Guía de Comandos Oficiales:*
+📖 *Listado Completo de Comandos:*
 
-🟢 *Diagnóstico y Conexión:*
-• \`/status\` o \`/ping\` — Revisa en tiempo real si el bot está conectado y activo.
+⚡ *Diagnóstico del Bot:*
+• \`/status\` o \`/ping\` — Verifica conexión, memoria y conectores activos.
 
-📊 *Administración y Consumo:*
-• \`/clientes\` o \`/reporte\` — Lista completa de clientes y tickets usados este mes.
-• \`/saldo <RFC o Teléfono>\` — Consulta el consumo y saldo de un cliente específico.
-• \`/saldo\` o \`/plan\` — Consulta tu consumo personal de tickets del mes.
-• \`/autorizar <número>\` — Da de alta un nuevo celular de cliente.
+📊 *Control de Clientes, Planes y Folios:*
+• \`/clientes\` o \`/reporte\` — Lista de clientes, folios usados y vigencia.
+• \`/saldo <RFC o Teléfono>\` — Consulta los tickets y vigencia de un cliente (ej. \`/saldo VAMC9112056Q2\`).
+• \`/ajustar-tickets <RFC> <cantidad>\` — Fija manualmente los tickets usados de un cliente.
+• \`/activar-plan <RFC> <20|40|80|100>\` — Activa un plan por 30 días manualmente.
+• \`/autorizar <10 dígitos>\` — Registra el celular de un nuevo cliente.
 
-📋 *Datos Fiscales:*
-• \`/perfil\` — Muestra tus datos de facturación actuales.
-• *Enviar Constancia SAT (PDF o foto)* — Da de alta o actualiza tus datos fiscales con IA.
+💳 *Paquetes y Pagos SPEI Banxico:*
+• \`/planes\` o \`/paquetes\` — Muestra los paquetes (20, 40, 80, 100 tickets) y tu CLABE de Mercado Pago W.
+• *Enviar captura de transferencia* — Valida el CEP en Banxico y activa el plan o recarga en automático.
 
-✨ *Identidad y Marca:*
-• \`/logo\` o \`/foto\` — Recibe la imagen oficial del logotipo de KlientIA.
+🏢 *Datos Fiscales:*
+• \`/perfil\` — Muestra los datos fiscales registrados.
+• *Enviar Constancia SAT (PDF o foto)* — Da de alta al cliente y le envía los paquetes a elegir.
 
-📸 *Facturación Automática:*
-• *Enviar foto de ticket(s)* — Detecta y factura de inmediato (OXXO, Farmacias Gdl, Costco, Sam's Club, OXXO Gas, G500, Walmart, Casetas).
+✨ *Marca y Ayuda:*
+• \`/logo\` — Envía el logotipo oficial de KlientIA.
 • \`/ayuda\` — Guía para tomar fotos de tickets exitosamente.`,
     });
     return;
