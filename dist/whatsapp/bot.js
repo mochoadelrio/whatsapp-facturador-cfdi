@@ -253,8 +253,9 @@ export async function iniciarBotWhatsApp() {
         catch { }
         currentSock = null;
     }
-    unificarSesionesPnLidEnDisco("auth_whatsapp");
-    const { state, saveCreds } = await useMultiFileAuthState("auth_whatsapp");
+    const authFolder = process.env.AUTH_FOLDER || "auth_whatsapp";
+    unificarSesionesPnLidEnDisco(authFolder);
+    const { state, saveCreds } = await useMultiFileAuthState(authFolder);
     // Envolver state.keys para que LID y PN usen siempre la misma clave de sesión Signal
     if (!state.keys.__wrappedSignal) {
         state.keys.__wrappedSignal = true;

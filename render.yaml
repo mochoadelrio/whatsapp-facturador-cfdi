@@ -1,0 +1,27 @@
+services:
+  - type: worker
+    name: facturador-cfdi-bot
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    disk:
+      name: facturador-disk
+      mountPath: /app/data
+      sizeGB: 5
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PLAYWRIGHT_HEADLESS
+        value: "true"
+      - key: AUTH_FOLDER
+        value: data/auth_whatsapp
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
