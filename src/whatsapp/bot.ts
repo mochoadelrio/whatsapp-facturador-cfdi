@@ -747,8 +747,49 @@ async function manejarMensajeEntrante(sock: any, msg: WAMessage): Promise<void> 
 ${formatearResumenPlan(perfil)}
 
 ⚙️ *Comandos disponibles:*
-• \`/plan\` o \`/saldo\` — Ver tus tickets consumidos y disponibles del mes.
+• \`/status\` o \`/ping\` — Verificar que el bot esté conectado y activo.
+• \`/clientes\` o \`/reporte\` — Ver el consumo de tickets de todos los clientes.
+• \`/saldo\` o \`/plan\` — Ver tus tickets consumidos y disponibles del mes.
 • \`/perfil\` — Ver tus datos fiscales actuales.`,
+    });
+    return;
+  }
+
+  // 1.2 Comando /status, /ping o /estado (Healthcheck del bot en la nube)
+  if (
+    textoLimpio.toLowerCase() === "/status" ||
+    textoLimpio.toLowerCase() === "/ping" ||
+    textoLimpio.toLowerCase() === "/estado" ||
+    textoLimpio.toLowerCase() === "ping"
+  ) {
+    const uptimeSec = Math.floor(process.uptime());
+    const horas = Math.floor(uptimeSec / 3600);
+    const mins = Math.floor((uptimeSec % 3600) / 60);
+    const segs = uptimeSec % 60;
+    const tiempoActivo = `${horas}h ${mins}m ${segs}s`;
+
+    const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+    const ahora = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}
+🟢 *¡Bot 100% Operativo y Conectado!*
+
+⚡ *Diagnóstico del Sistema:*
+• *Estado:* En línea y escuchando mensajes
+• *Servidor:* AWS Lightsail Cloud (Ubuntu / Docker)
+• *Tiempo activo:* ${tiempoActivo}
+• *Memoria RAM en uso:* ${memMb} MB
+• *Hora servidor (CDMX):* ${ahora}
+• *Motor de IA:* Google Gemini Flash (Multimodal)
+
+🔌 *Conectores Oficiales Activos:*
+• 🛣️ *Casetas:* RCO (Vía Corta), IDEAL (Gdl-Tepic), Las Varas, Jala-Compostela
+• 🏪 *Tiendas:* OXXO, Farmacias Guadalajara, Walmart, Sam's Club, Costco, Bodega Aurrera
+• ⛽ *Gasolineras:* OXXO GAS, G500 Network
+• 📧 *Correo:* Facturación automática por email
+
+Envía cualquier ticket en foto o escribe \`/clientes\` para ver tus reportes.`,
     });
     return;
   }
