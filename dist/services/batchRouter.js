@@ -3,6 +3,8 @@ import { facturarLoteIdeal } from "../connectors/idealConnector.js";
 import { facturarLoteLasVaras } from "../connectors/lasVarasConnector.js";
 import { facturarLoteJalaCompostela } from "../connectors/jalaConnector.js";
 import { facturarTicketWalmart } from "../connectors/walmartConnector.js";
+import { facturarTicketOxxo } from "../connectors/oxxoConnector.js";
+import { facturarTicketFarmaciasGuadalajara } from "../connectors/farmaciasGdlConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
@@ -70,6 +72,22 @@ export function clasificarProveedorTicket(item) {
         raw.includes("facturacion.walmartmexico") ||
         raw.includes("facturacion-clientes.walmart")) {
         return { provider: "WALMART" };
+    }
+    // 6. Cadena Comercial OXXO
+    if (url.includes("oxxo.com") ||
+        est.includes("OXXO") ||
+        raw.includes("cadena comercial oxxo") ||
+        raw.includes("tiendas oxxo") ||
+        raw.includes("oxxo, s.a.")) {
+        return { provider: "OXXO" };
+    }
+    // 7. Farmacias Guadalajara (Corporativo Fragua)
+    if (url.includes("farmaciasguadalajara") ||
+        (est.includes("FARMACIA") && est.includes("GUADALAJARA")) ||
+        est.includes("FRAGUA") ||
+        raw.includes("farmacias guadalajara") ||
+        raw.includes("corporativo fragua")) {
+        return { provider: "FARMACIAS_GDL" };
     }
     // 6. Solicitudes por Correo Electrónico
     if (email ||
@@ -157,12 +175,35 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                     });
                     break;
                 case "WALMART":
-                    res = await facturarTicketWalmart({
-                        tickets: grupo.items,
-                        perfil,
-                        onProgress,
-                    });
-                    break;
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketWalmart({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "OXXO":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketOxxo({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "FARMACIAS_GDL":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketFarmaciasGuadalajara({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
                 case "EMAIL_DIRECTO":
                     res = await solicitarFacturaPorCorreo({
                         tickets: grupo.items,
