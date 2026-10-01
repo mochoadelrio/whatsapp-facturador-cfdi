@@ -167,18 +167,181 @@ export function ajustarConsumoTicket(busqueda, cantidad) {
     fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
     return perfilActualizado;
 }
+export const PAQUETES = {
+    20: { nombre: "Plan Básico (20 tickets)", tickets: 20, precio: 179 },
+    40: { nombre: "Plan Pro (40 tickets)", tickets: 40, precio: 299 },
+    80: { nombre: "Plan Negocio (80 tickets)", tickets: 80, precio: 499 },
+    100: { nombre: "Plan Empresa (100 tickets)", tickets: 100, precio: 599 },
+};
+export function sumarDias(fechaStr, dias) {
+    const d = new Date(fechaStr + "T12:00:00Z");
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().slice(0, 10);
+}
+export function activarPlanCliente(busqueda, tickets, claveCep, diasVigencia = 30) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const query = busqueda.trim().toUpperCase();
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    const finStr = sumarDias(hoyStr, diasVigencia);
+    const infoPaquete = PAQUETES[tickets] || {
+        nombre: `Plan Personalizado (${tickets} tickets)`,
+        precio: tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5,
+    };
+    let matchRfc = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase().includes(query) ||
+            p.razonSocial?.toUpperCase().includes(query) ||
+            (p.telefono && p.telefono.includes(query)) ||
+            key.includes(query)) {
+            matchRfc = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!matchRfc)
+        return null;
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+            perfiles[key] = {
+                ...perfiles[key],
+                ticketsIncluidos: tickets,
+                ticketsUsadosMes: 0,
+                precioMensual: infoPaquete.precio,
+                paqueteNombre: infoPaquete.nombre,
+                fechaInicioPlan: hoyStr,
+                fechaFinPlan: finStr,
+                estadoPlan: "ACTIVO",
+                ultimoCepValidado: claveCep || perfiles[key].ultimoCepValidado,
+            };
+            perfilActualizado = perfiles[key];
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return perfilActualizado;
+}
+export function recargarTicketsExtra(busqueda, monto) {
+    const ticketsAgregados = Math.floor(monto / 5);
+    if (ticketsAgregados <= 0)
+        return null;
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const query = busqueda.trim().toUpperCase();
+    let matchRfc = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase().includes(query) ||
+            p.razonSocial?.toUpperCase().includes(query) ||
+            (p.telefono && p.telefono.includes(query)) ||
+            key.includes(query)) {
+            matchRfc = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!matchRfc)
+        return null;
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+            const prev = perfiles[key];
+            const nuevosIncluidos = (prev.ticketsIncluidos || 40) + ticketsAgregados;
+            perfiles[key] = {
+                ...prev,
+                ticketsIncluidos: nuevosIncluidos,
+                estadoPlan: "ACTIVO",
+            };
+            perfilActualizado = perfiles[key];
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return perfilActualizado ? { perfil: perfilActualizado, ticketsAgregados } : null;
+}
+export function verificarEstadoPlan(perfil) {
+    const p = normalizarPerfilConPlan(perfil);
+    const usados = p.ticketsUsadosMes ?? 0;
+    const incluidos = p.ticketsIncluidos ?? 40;
+    const restantes = Math.max(0, incluidos - usados);
+    if (p.estadoPlan === "PENDIENTE_PAGO") {
+        return {
+            puedeFacturar: false,
+            motivo: "PENDIENTE_PAGO",
+            mensaje: "Tu cuenta aún no tiene un plan activo. Por favor selecciona y transfiere tu paquete para comenzar.",
+            ticketsRestantes: 0,
+        };
+    }
+    if (p.fechaFinPlan) {
+        const hoy = new Date().toISOString().slice(0, 10);
+        const msHoy = new Date(hoy).getTime();
+        const msFin = new Date(p.fechaFinPlan).getTime();
+        const dias = Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24));
+        if (dias < 0) {
+            return {
+                puedeFacturar: false,
+                motivo: "VENCIDO",
+                mensaje: `Tu plan venció el día ${p.fechaFinPlan}. Para renovar tu vigencia por 30 días adicionales, envía tu transferencia a Mercado Pago W.`,
+                diasRestantes: 0,
+                ticketsRestantes: restantes,
+            };
+        }
+        if (restantes <= 0) {
+            return {
+                puedeFacturar: false,
+                motivo: "AGOTADO",
+                mensaje: `Has agotado tus ${incluidos} tickets incluidos en este periodo (vigente hasta el ${p.fechaFinPlan}). Cada ticket adicional cuesta \$5.00 MXN; realiza una transferencia de recarga para continuar.`,
+                diasRestantes: dias,
+                ticketsRestantes: 0,
+            };
+        }
+        return {
+            puedeFacturar: true,
+            diasRestantes: dias,
+            ticketsRestantes: restantes,
+        };
+    }
+    if (restantes <= 0) {
+        return {
+            puedeFacturar: false,
+            motivo: "AGOTADO",
+            mensaje: `Has alcanzado el límite de ${incluidos} tickets de tu paquete.`,
+            ticketsRestantes: 0,
+        };
+    }
+    return { puedeFacturar: true, ticketsRestantes: restantes };
+}
 export function formatearResumenPlan(perfil) {
     const p = normalizarPerfilConPlan(perfil);
     const usados = p.ticketsUsadosMes ?? 0;
     const incluidos = p.ticketsIncluidos ?? 40;
     const precioBase = p.precioMensual ?? 299;
     const costoExtra = p.costoTicketExtra ?? 5;
+    const nombrePaquete = p.paqueteNombre || `Plan (${incluidos} tickets)`;
     const restantes = Math.max(0, incluidos - usados);
-    const extras = Math.max(0, usados - incluidos);
-    const cargoExtra = extras * costoExtra;
-    const totalMes = precioBase + cargoExtra;
-    if (extras > 0) {
-        return `📊 *Tu Plan Mensual ($${precioBase} MXN / ${incluidos} tickets):*\n• *Tickets facturados este mes:* ${usados} / ${incluidos}\n• *Tickets adicionales:* ${extras} (+$${cargoExtra} MXN a $${costoExtra} c/u)\n• *Total acumulado del mes:* $${totalMes} MXN`;
+    const hoy = new Date().toISOString().slice(0, 10);
+    let textoVigencia = "";
+    if (p.fechaFinPlan) {
+        const msHoy = new Date(hoy).getTime();
+        const msFin = new Date(p.fechaFinPlan).getTime();
+        const dias = Math.max(0, Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24)));
+        textoVigencia = `\n• *Vigencia de 30 días:* Hasta el ${p.fechaFinPlan} (${dias} día(s) restante(s))`;
     }
-    return `📊 *Tu Plan Mensual ($${precioBase} MXN / ${incluidos} tickets):*\n• *Tickets facturados este mes:* ${usados} de ${incluidos} (${restantes} disponibles)\n• *Ticket adicional (después de ${incluidos}):* $${costoExtra}.00 MXN c/u`;
+    if (p.estadoPlan === "PENDIENTE_PAGO") {
+        return `📦 *Estado de Cuenta:* ⚠️ *Pendiente de Activación / Pago*\n• *Paquete seleccionado:* ${nombrePaquete} (\$${precioBase} MXN)\n• *Para activar:* Realiza tu transferencia SPEI a Mercado Pago W y envía aquí la captura.`;
+    }
+    if (restantes === 0) {
+        return `📊 *${nombrePaquete} (\$${precioBase} MXN):*\n• *Tickets facturados:* ${usados} de ${incluidos} (0 disponibles) ⚠️ *FOLIOS AGOTADOS*${textoVigencia}\n• *Recarga de folios:* Cada ticket adicional cuesta \$${costoExtra}.00 MXN. Realiza tu transferencia de recarga para continuar.`;
+    }
+    return `📊 *${nombrePaquete} (\$${precioBase} MXN):*\n• *Tickets facturados:* ${usados} de ${incluidos} (*${restantes} disponibles*)${textoVigencia}\n• *Tickets adicionales:* \$${costoExtra}.00 MXN c/u (con recarga prepagada).`;
 }

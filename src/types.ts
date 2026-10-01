@@ -6,11 +6,29 @@ export interface DatosFiscales {
   usoCfdi: string; // Clave SAT ej. "G03" (Gastos en general)
   email: string;
   telefono?: string;
-  precioMensual?: number; // $299 MXN
-  ticketsIncluidos?: number; // 40 tickets/mes
+  precioMensual?: number; // $179, $299, $499, $599 MXN
+  ticketsIncluidos?: number; // 20, 40, 80, 100 tickets/mes
   costoTicketExtra?: number; // $5 MXN por ticket adicional
   ticketsUsadosMes?: number; // Contador del mes actual
-  periodoMes?: string; // Ej. "2026-09"
+  periodoMes?: string; // Ej. "2026-10"
+  estadoPlan?: "ACTIVO" | "PENDIENTE_PAGO" | "VENCIDO" | "AGOTADO";
+  fechaInicioPlan?: string; // YYYY-MM-DD
+  fechaFinPlan?: string; // YYYY-MM-DD
+  paqueteNombre?: string; // "Básico (20)", "Pro (40)", "Negocio (80)", "Empresa (100)"
+  ultimoCepValidado?: string; // Clave de rastreo Banxico
+}
+
+export interface DatosComprobantePago {
+  esComprobanteValido: boolean;
+  monto: number;
+  claveRastreo?: string;
+  numeroReferencia?: string;
+  fecha?: string;
+  bancoEmisor?: string;
+  bancoReceptor?: string;
+  cuentaBeneficiaria?: string;
+  beneficiario?: string;
+  concepto?: string;
 }
 
 export interface ConceptoTicket {

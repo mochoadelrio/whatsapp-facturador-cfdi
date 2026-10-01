@@ -13,13 +13,20 @@ import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
 import {
+  activarPlanCliente,
   ajustarConsumoTicket,
   formatearResumenPlan,
   guardarPerfilFiscal,
   obtenerPerfilFiscal,
   obtenerTodosLosPerfiles,
+  recargarTicketsExtra,
   registrarConsumoTicket,
+  verificarEstadoPlan,
 } from "../storage/profiles.js";
+import {
+  validarCepBanxico,
+  DATOS_BANCARIOS_OFICIALES,
+} from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 
 const require = createRequire(import.meta.url);
@@ -1017,6 +1024,75 @@ ${formatearResumenPlan(actualizado)}`,
     return;
   }
 
+  // 2.3 Comando /planes o /paquetes (Ver paquetes y CLABE)
+  if (
+    textoLimpio.toLowerCase() === "/planes" ||
+    textoLimpio.toLowerCase() === "/paquetes" ||
+    textoLimpio.toLowerCase() === "planes" ||
+    textoLimpio.toLowerCase() === "paquetes"
+  ) {
+    const { perfil } = obtenerPerfilFiscal(perfilKey);
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}
+📦 *Paquetes Mensuales (Vigencia de 30 días):*
+
+1️⃣ *Plan Básico (20 tickets):* \$179 MXN
+2️⃣ *Plan Pro (40 tickets):* \$299 MXN ⭐ *(Más popular)*
+3️⃣ *Plan Negocio (80 tickets):* \$499 MXN
+4️⃣ *Plan Empresa (100 tickets):* \$599 MXN
+
+➕ *Tickets adicionales:* \$5.00 MXN c/u (recarga prepagada en caso de agotar tu paquete).
+
+🏦 *Datos para Transferencia SPEI:*
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Concepto:* \`Factura ${perfil.rfc}\`
+
+📲 *Activación Automática:* En cuanto realices tu transferencia, envía aquí la captura o PDF de tu comprobante. Validaremos el CEP en Banxico y tus 30 días iniciarán de inmediato.`,
+    });
+    return;
+  }
+
+  // 2.4 Comando /activar-plan <RFC o Teléfono> <20|40|80|100>
+  if (textoLimpio.toLowerCase().startsWith("/activar-plan")) {
+    const partes = textoLimpio.trim().split(/\s+/);
+    let query = perfilKey;
+    let numTickets = 40;
+
+    if (partes.length === 2 && !isNaN(Number(partes[1]))) {
+      numTickets = parseInt(partes[1], 10);
+    } else if (partes.length >= 3 && !isNaN(Number(partes[2]))) {
+      query = partes[1];
+      numTickets = parseInt(partes[2], 10);
+    } else {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ *Uso correcto:* \`/activar-plan <RFC o Teléfono> <20|40|80|100>\`\nEjemplo: \`/activar-plan VAMC9112056Q2 40\``,
+      });
+      return;
+    }
+
+    const activado = activarPlanCliente(query, numTickets, "ACTIVACION-ADMIN", 30);
+    if (activado) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+🎉 *¡Plan Activado Exitosamente por 30 Días!*
+• *Cliente:* ${activado.razonSocial} (\`${activado.rfc}\`)
+• *Paquete:* *${activado.paqueteNombre}*
+• *Folios habilitados:* *${activado.ticketsIncluidos} tickets*
+• *Fecha de inicio:* ${activado.fechaInicioPlan}
+• *Fecha de vencimiento:* ${activado.fechaFinPlan}
+
+🚀 *El cliente ya puede enviar sus tickets para facturación autónoma.*`,
+      });
+    } else {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente *"${query}"*. Revisa \`/clientes\`.`,
+      });
+    }
+    return;
+  }
+
   // 2.5 Comando /demo o /prueba o /facturar
   if (
     textoLimpio.toLowerCase() === "/demo" ||
@@ -1225,17 +1301,129 @@ ${formatearResumenPlan(actualizado)}`,
       }
 
       if (analisis.tipo === "constancia") {
-        const nuevoPerfil = analisis.perfil;
+        const { perfil: perfilPrevio, esDefault } = obtenerPerfilFiscal(perfilKey);
+        const nuevoPerfil = {
+          ...analisis.perfil,
+          estadoPlan:
+            !esDefault && perfilPrevio.estadoPlan === "ACTIVO"
+              ? ("ACTIVO" as const)
+              : ("PENDIENTE_PAGO" as const),
+        };
         guardarPerfilFiscal(perfilKey, nuevoPerfil);
         guardarPerfilFiscal(remoteJid, nuevoPerfil);
         console.log("💾 Perfil fiscal guardado para", perfilKey, nuevoPerfil);
 
-        const { perfil: perfilConPlan } = obtenerPerfilFiscal(perfilKey);
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+🎉 *¡Bienvenido a KlientIA Facturación!*
+Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
+
+• *RFC:* \`${nuevoPerfil.rfc}\`
+• *Nombre / Razón Social:* ${nuevoPerfil.razonSocial}
+• *Código Postal:* ${nuevoPerfil.codigoPostal}
+• *Régimen Fiscal SAT:* ${nuevoPerfil.regimenFiscal}
+• *Uso de CFDI:* ${nuevoPerfil.usoCfdi}
+
+📦 *Elige el paquete mensual que deseas activar (Vigencia de 30 días):*
+1️⃣ *Plan Básico (20 tickets):* \$179 MXN
+2️⃣ *Plan Pro (40 tickets):* \$299 MXN ⭐ *(Recomendado)*
+3️⃣ *Plan Negocio (80 tickets):* \$499 MXN
+4️⃣ *Plan Empresa (100 tickets):* \$599 MXN
+
+➕ _Nota: Si superas los tickets de tu paquete durante el mes, cada ticket adicional tiene un costo de \$5.00 MXN (mediante recarga previa)._
+
+🏦 *Datos para Transferencia SPEI:*
+• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
+• *Concepto:* \`Factura ${nuevoPerfil.rfc}\`
+
+📲 *Para activar tu cuenta hoy mismo:* Realiza la transferencia del paquete elegido y envíame por aquí la captura o PDF de tu comprobante bancario. Validaremos el CEP en Banxico y se habilitarán tus folios por 30 días automáticamente.`,
+        });
+        return;
+      }
+
+      if (analisis.tipo === "comprobante_pago") {
+        const comp = analisis.comprobante;
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
 
         await enviarMensajeBot(sock, replyJid, {
-          text: `${BOT_SIGNATURE}\n🎉 *¡Constancia de Situación Fiscal (CSF) detectada y guardada!*\n\nTus datos fiscales para facturar tus tickets ahora son:\n• *RFC:* \`${nuevoPerfil.rfc}\`\n• *Nombre / Razón Social:* ${nuevoPerfil.razonSocial}\n• *Código Postal:* ${nuevoPerfil.codigoPostal}\n• *Régimen Fiscal SAT:* ${nuevoPerfil.regimenFiscal}\n• *Uso de CFDI:* ${nuevoPerfil.usoCfdi}\n\n${formatearResumenPlan(
-            perfilConPlan
-          )}\n\n📸 *¡Listo!* Ahora envíame la foto de cualquier ticket de compra (en efectivo o tarjeta) y tramitaremos tu factura CFDI 4.0 con estos datos.`,
+          text: `${BOT_SIGNATURE}\n🔍 *Comprobante bancario detectado (\$${Number(comp.monto).toFixed(2)} MXN).* Validando transferencia SPEI y CEP ante el Banco de México (Banxico)... ⏳`,
+        });
+
+        const validacion = await validarCepBanxico(comp);
+
+        if (!validacion.valido) {
+          await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+⚠️ *No pudimos confirmar aún la liquidación en Banxico:*
+• *Detalle:* ${validacion.mensaje}
+• *Monto detectado:* \$${Number(comp.monto).toFixed(2)} MXN
+• *Clave de rastreo:* \`${comp.claveRastreo || "No visible"}\`
+
+💡 _Asegúrate de que en la captura se vea claramente la Clave de Rastreo y que la transferencia haya sido enviada a la CLABE \`${DATOS_BANCARIOS_OFICIALES.clabe}\` (${DATOS_BANCARIOS_OFICIALES.institucion})._`,
+          });
+          return;
+        }
+
+        const monto = Number(comp.monto) || 0;
+
+        // Si es una recarga de tickets adicionales (menor a $150 MXN, múltiplos de $5)
+        if (monto >= 5 && monto < 150) {
+          const recarga = recargarTicketsExtra(perfilKey, monto);
+          if (recarga) {
+            await enviarMensajeBot(sock, replyJid, {
+              text: `${BOT_SIGNATURE}
+✅ *¡Recarga de Tickets Verificada Exitosamente!*
+• *Monto validado:* \$${monto.toFixed(2)} MXN
+• *Folios adicionales abonados:* *+${recarga.ticketsAgregados} tickets* (\$5.00 c/u)
+• *Clave Rastreo / CEP:* \`${validacion.claveRastreo}\`
+
+${formatearResumenPlan(recarga.perfil)}
+
+📸 *¡Listo! Ya puedes continuar enviando las fotos de tus tickets.*`,
+            });
+            return;
+          }
+        }
+
+        // Determinar paquete según el monto transferido
+        let ticketsActivar = 40;
+        if (monto >= 550) ticketsActivar = 100;
+        else if (monto >= 450) ticketsActivar = 80;
+        else if (monto >= 250) ticketsActivar = 40;
+        else if (monto >= 150) ticketsActivar = 20;
+
+        const perfilActivado = activarPlanCliente(
+          perfil.rfc || perfilKey,
+          ticketsActivar,
+          validacion.claveRastreo,
+          30
+        );
+
+        if (validacion.cepPdfBuffer) {
+          await enviarMensajeBot(sock, replyJid, {
+            document: validacion.cepPdfBuffer,
+            mimetype: "application/pdf",
+            fileName: `CEP_Banxico_${validacion.claveRastreo}.pdf`,
+            caption: `${BOT_SIGNATURE}\n🏦 *Comprobante Electrónico de Pago (CEP) Oficial - Banxico*`,
+          });
+        }
+
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+🎉 *¡Pago Verificado y Plan Activado por 30 Días!*
+
+• *Estado SPEI Banxico:* ✅ ${validacion.estado}
+• *Monto acreditado:* \$${monto.toFixed(2)} MXN
+• *Clave de Rastreo:* \`${validacion.claveRastreo}\`
+• *Cliente:* ${perfilActivado?.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Paquete Activo:* *${perfilActivado?.paqueteNombre || `Plan (${ticketsActivar} tickets)`}*
+• *Folios disponibles:* *${ticketsActivar} tickets*
+• *Inicio de vigencia:* ${perfilActivado?.fechaInicioPlan}
+• *Vencimiento (30 días):* ${perfilActivado?.fechaFinPlan}
+
+🚀 *¡Tu facturación autónoma está habilitada!* Envía ahora mismo la foto de tus tickets de compra o casetas.`,
         });
         return;
       }
@@ -1243,6 +1431,32 @@ ${formatearResumenPlan(actualizado)}`,
       if (analisis.tipo === "ticket") {
         const datosTicket = analisis.ticket;
         const { perfil } = obtenerPerfilFiscal(perfilKey);
+
+        // Verificar que su plan esté activo, dentro de los 30 días de vigencia y con folios disponibles
+        const estadoPlan = verificarEstadoPlan(perfil);
+        if (!estadoPlan.puedeFacturar) {
+          await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+⚠️ *No es posible procesar este ticket en este momento:*
+
+${estadoPlan.mensaje}
+
+🏦 *Datos para activar o recargar tus folios:*
+• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
+• *Concepto:* \`Factura ${perfil.rfc}\`
+
+📦 *Paquetes (30 días):*
+• 20 tickets: \$179 MXN | 40 tickets: \$299 MXN
+• 80 tickets: \$499 MXN | 100 tickets: \$599 MXN
+• Ticket adicional (recarga): \$5.00 MXN c/u
+
+📲 _Envía por aquí la captura de tu transferencia SPEI y tu cuenta se habilitará automáticamente._`,
+          });
+          return;
+        }
+
         const perfilActualizado = registrarConsumoTicket(perfilKey, perfil.rfc);
         const formaPagoTexto = formatearFormaPagoSat(
           datosTicket.formaPago,

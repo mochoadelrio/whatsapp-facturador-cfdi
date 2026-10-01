@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { DatosFiscales, DatosTicket } from "../types.js";
+import { DatosComprobantePago, DatosFiscales, DatosTicket } from "../types.js";
 
 function obtenerApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -233,6 +233,7 @@ export async function analizarArchivoRecibido(
   comentarioUsuario: string = ""
 ): Promise<
   | { tipo: "constancia"; perfil: DatosFiscales }
+  | { tipo: "comprobante_pago"; comprobante: DatosComprobantePago }
   | { tipo: "ticket"; ticket: DatosTicket }
   | { tipo: "desconocido"; motivo: string }
 > {
@@ -258,26 +259,37 @@ export async function analizarArchivoRecibido(
       ? `\nNota/mensaje escrito por el cliente junto con el archivo: "${comentarioUsuario}" (Si el cliente indica aquí si pagó en efectivo, tarjeta de débito, tarjeta de crédito o los últimos 4 dígitos, respeta su indicación).\n`
       : ""
   }
-Clasifícalo en uno de estos 3 tipos (campo "tipoDocumento"):
+Clasifícalo en uno de estos 4 tipos (campo "tipoDocumento"):
 1. "constancia": Si es una Constancia de Situación Fiscal del SAT, Cédula de Identificación Fiscal o documento con RFC, Denominación/Razón Social y Código Postal del contribuyente.
    - En este caso llena: rfcConstancia, razonSocialConstancia (SIN régimen societario como SA DE CV o SAS DE CV, tal como exige CFDI 4.0), codigoPostalConstancia (5 dígitos) y regimenFiscalConstancia (clave SAT de 3 dígitos, ej. "601" o "626" para Personas Morales, "612" o "626" para Personas Físicas).
-2. "ticket": Si es un ticket de compra, nota de venta, voucher bancario o recibo de pago de cualquier establecimiento.
-   - En este caso llena: establecimiento, rfcEmisor, sucursal, fechaCompra (YYYY-MM-DD), horaCompra (HH:MM), folioTicket, codigoFacturacion, subtotal, iva, montoTotal, moneda (ej. MXN), formaPago ("01" Efectivo, "04" Tarjeta de crédito, "28" Tarjeta de débito, "03" Transferencia), ultimosDigitosTarjeta (últimos 4 dígitos si se pagó con tarjeta y aparecen en el ticket o mensaje), urlPortalFacturacion y la lista de conceptos.
-   - Pon mucha atención en el método de pago impreso en el ticket: si dice EFECTIVO / CAMBIO pon "01"; si dice TARJETA DEBITO / TDD / DEBITO pon "28"; si dice TARJETA CREDITO / TDC / CREDITO / VISA / MASTERCARD / AMEX / VENTA TARJETA pon "04" (o "28" si indica débito).
-3. "desconocido": Si no es ni una Constancia Fiscal ni un Ticket de Compra.`;
+2. "comprobante_pago": Si es una captura de pantalla de transferencia SPEI, comprobante de pago bancario (BBVA, Nu, Banorte, Santander, Mercado Pago, etc.) o recibo de transferencia electrónica.
+   - En este caso llena: montoPago, claveRastreo (alfanumérica larga), numeroReferencia, fechaPago (DD-MM-YYYY), bancoEmisor, bancoReceptor, cuentaBeneficiaria, beneficiario y concepto.
+3. "ticket": Si es un ticket de compra, nota de venta, voucher de compra en tienda o recibo de consumo en cualquier establecimiento.
+   - En este caso llena: establecimiento, rfcEmisor, sucursal, fechaCompra (YYYY-MM-DD), horaCompra (HH:MM), folioTicket, codigoFacturacion, subtotal, iva, montoTotal, moneda (ej. MXN), formaPago ("01" Efectivo, "04" Tarjeta de crédito, "28" Tarjeta de débito, "03" Transferencia), ultimosDigitosTarjeta, urlPortalFacturacion y la lista de conceptos.
+4. "desconocido": Si no pertenece a ninguna de las categorías anteriores.`;
 
   const schema = {
     type: "object",
     properties: {
       tipoDocumento: {
         type: "string",
-        enum: ["constancia", "ticket", "desconocido"],
+        enum: ["constancia", "comprobante_pago", "ticket", "desconocido"],
       },
       // Campos si es Constancia Fiscal (CSF)
       rfcConstancia: { type: "string", nullable: true },
       razonSocialConstancia: { type: "string", nullable: true },
       codigoPostalConstancia: { type: "string", nullable: true },
       regimenFiscalConstancia: { type: "string", nullable: true },
+      // Campos si es Comprobante de Transferencia / Pago
+      montoPago: { type: "number", nullable: true },
+      claveRastreo: { type: "string", nullable: true },
+      numeroReferencia: { type: "string", nullable: true },
+      fechaPago: { type: "string", nullable: true },
+      bancoEmisor: { type: "string", nullable: true },
+      bancoReceptor: { type: "string", nullable: true },
+      cuentaBeneficiaria: { type: "string", nullable: true },
+      beneficiario: { type: "string", nullable: true },
+      concepto: { type: "string", nullable: true },
       // Campos si es Ticket de Compra
       establecimiento: { type: "string", nullable: true },
       rfcEmisor: { type: "string", nullable: true },
@@ -317,6 +329,24 @@ Clasifícalo en uno de estos 3 tipos (campo "tipoDocumento"):
     schema,
     media: { buffer: fileBuffer, mimeType },
   });
+
+  if (res?.tipoDocumento === "comprobante_pago" && (res?.montoPago || res?.montoTotal)) {
+    return {
+      tipo: "comprobante_pago",
+      comprobante: {
+        esComprobanteValido: true,
+        monto: Number(res.montoPago) || Number(res.montoTotal) || 0,
+        claveRastreo: res.claveRastreo || undefined,
+        numeroReferencia: res.numeroReferencia || undefined,
+        fecha: res.fechaPago || undefined,
+        bancoEmisor: res.bancoEmisor || undefined,
+        bancoReceptor: res.bancoReceptor || undefined,
+        cuentaBeneficiaria: res.cuentaBeneficiaria || undefined,
+        beneficiario: res.beneficiario || undefined,
+        concepto: res.concepto || undefined,
+      },
+    };
+  }
 
   if (res?.tipoDocumento === "constancia" && res?.rfcConstancia) {
     return {
