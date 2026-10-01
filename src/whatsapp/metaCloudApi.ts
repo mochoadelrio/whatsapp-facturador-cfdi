@@ -11,7 +11,7 @@ import {
 } from "../storage/profiles.js";
 import { formatearFormaPagoSat } from "./bot.js";
 
-const BOT_SIGNATURE = "🤖 *Facturador CFDI IA*";
+const BOT_SIGNATURE = "✨ *KlientIA Facturación*";
 
 function getMetaConfig() {
   return {

@@ -4,7 +4,7 @@ import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 import { guardarPerfilFiscal, obtenerPerfilFiscal, } from "../storage/profiles.js";
 import { formatearFormaPagoSat } from "./bot.js";
-const BOT_SIGNATURE = "🤖 *Facturador CFDI IA*";
+const BOT_SIGNATURE = "✨ *KlientIA Facturación*";
 function getMetaConfig() {
     return {
         token: process.env.META_ACCESS_TOKEN || "",

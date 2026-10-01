@@ -241,7 +241,7 @@ function guardarQrSvg(qrString) {
     catch { }
     return svg;
 }
-const BOT_SIGNATURE = "🤖 *Facturador CFDI IA*";
+const BOT_SIGNATURE = "✨ *KlientIA Facturación*";
 let currentSock = null;
 let reconnectingTimeout = null;
 export async function iniciarBotWhatsApp() {
@@ -693,6 +693,36 @@ ${formatearResumenPlan(perfil)}
 Envía cualquier ticket en foto o escribe \`/clientes\` para ver tus reportes.`,
         });
         return;
+    }
+    // 1.3 Comando /logo o /foto (Ver o aplicar el logo oficial de KlientIA Facturación)
+    if (textoLimpio.toLowerCase() === "/logo" ||
+        textoLimpio.toLowerCase() === "/foto" ||
+        textoLimpio.toLowerCase() === "/branding") {
+        const logoPath = path.resolve(process.cwd(), "assets", "logo_klientia.jpg");
+        if (fs.existsSync(logoPath)) {
+            const logoBuffer = fs.readFileSync(logoPath);
+            let fotoActualizada = false;
+            try {
+                if (sock.user?.id) {
+                    await sock.updateProfilePicture(sock.user.id, logoBuffer);
+                    fotoActualizada = true;
+                }
+            }
+            catch (err) {
+                console.log("Aviso Baileys profile pic:", err?.message);
+            }
+            try {
+                await sock.updateProfileStatus("KlientIA Facturación - CFDI 4.0 con IA");
+            }
+            catch { }
+            await enviarMensajeBot(sock, replyJid, {
+                image: logoBuffer,
+                caption: `${BOT_SIGNATURE}\n✨ *Logo Oficial de KlientIA Facturación*\n\n${fotoActualizada
+                    ? "✅ *¡Foto de perfil y estado de WhatsApp actualizados automáticamente!*"
+                    : "📱 *Descarga esta imagen y úsala como foto de perfil:* Ve a *Configuración de WhatsApp ➡️ Tu Perfil ➡️ Editar Foto.*"}`,
+            });
+            return;
+        }
     }
     // 1.5 Comando /clientes, /reporte o /consumos (Listado de todos los clientes y tickets usados)
     if (textoLimpio.toLowerCase() === "/clientes" ||
