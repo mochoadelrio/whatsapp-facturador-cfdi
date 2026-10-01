@@ -17,11 +17,15 @@ const PERFIL_DEFAULT: DatosFiscales = {
   usoCfdi: "G03",
   email: "cristhian.valdivia@ejemplo.com",
   telefono: "+5214775907888",
+  paqueteNombre: "Plan Pro (40 tickets)",
   precioMensual: 299,
   ticketsIncluidos: 40,
   costoTicketExtra: 5,
-  ticketsUsadosMes: 1,
-  periodoMes: obtenerMesActual(),
+  ticketsUsadosMes: 16,
+  fechaInicioPlan: "2026-09-30",
+  fechaFinPlan: "2026-10-30",
+  estadoPlan: "ACTIVO",
+  periodoMes: "2026-09",
 };
 
 function asegurarDirectorio(): void {
@@ -34,18 +38,23 @@ function asegurarDirectorio(): void {
 }
 
 export function normalizarPerfilConPlan(perfil: DatosFiscales): DatosFiscales {
-  const mesActual = obtenerMesActual();
-  const periodoMes = perfil.periodoMes || mesActual;
+  const esCristhian = perfil.rfc?.toUpperCase() === "VAMC9112056Q2";
+  const usadosRaw = Number(perfil.ticketsUsadosMes ?? (esCristhian ? 16 : 0));
+  // Si era el valor viejo por defecto (1) de Cristhian sin fechaInicioPlan, sincronizar a 16
   const ticketsUsadosMes =
-    periodoMes === mesActual ? Number(perfil.ticketsUsadosMes ?? 0) : 0;
+    esCristhian && !perfil.fechaInicioPlan && usadosRaw <= 1 ? 16 : usadosRaw;
 
   return {
     ...perfil,
+    paqueteNombre:
+      perfil.paqueteNombre || `Plan Pro (${perfil.ticketsIncluidos ?? 40} tickets)`,
     precioMensual: perfil.precioMensual ?? 299,
     ticketsIncluidos: perfil.ticketsIncluidos ?? 40,
     costoTicketExtra: perfil.costoTicketExtra ?? 5,
     ticketsUsadosMes,
-    periodoMes: mesActual,
+    fechaInicioPlan: perfil.fechaInicioPlan || (esCristhian ? "2026-09-30" : undefined),
+    fechaFinPlan: perfil.fechaFinPlan || (esCristhian ? "2026-10-30" : undefined),
+    estadoPlan: perfil.estadoPlan || "ACTIVO",
   };
 }
 
@@ -58,8 +67,14 @@ export function obtenerPerfilFiscal(jid: string): {
     const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
     const perfiles: Record<string, DatosFiscales> = JSON.parse(raw);
     if (perfiles[jid]) {
+      const norm = normalizarPerfilConPlan(perfiles[jid]);
+      // Persistir la migración si aún no tenía fechaInicioPlan
+      if (!perfiles[jid].fechaInicioPlan && norm.fechaInicioPlan) {
+        perfiles[jid] = norm;
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+      }
       return {
-        perfil: normalizarPerfilConPlan(perfiles[jid]),
+        perfil: norm,
         esDefault: false,
       };
     }

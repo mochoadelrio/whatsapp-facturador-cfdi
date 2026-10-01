@@ -7,10 +7,14 @@
     "usoCfdi": "G03",
     "email": "cristhian.valdivia@ejemplo.com",
     "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 1,
+    "ticketsUsadosMes": 16,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
     "periodoMes": "2026-09"
   },
   "16922322174194@lid": {
@@ -21,10 +25,14 @@
     "usoCfdi": "G03",
     "email": "cristhian.valdivia@ejemplo.com",
     "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 1,
+    "ticketsUsadosMes": 16,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
     "periodoMes": "2026-09"
   },
   "5214775907888@s.whatsapp.net": {
@@ -35,10 +43,14 @@
     "usoCfdi": "G03",
     "email": "cristhian.valdivia@ejemplo.com",
     "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 1,
+    "ticketsUsadosMes": 16,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
     "periodoMes": "2026-09"
   },
   "524775907888@s.whatsapp.net": {
@@ -49,10 +61,14 @@
     "usoCfdi": "G03",
     "email": "cristhian.valdivia@ejemplo.com",
     "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 1,
+    "ticketsUsadosMes": 16,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
     "periodoMes": "2026-09"
   },
   "140974432981152@lid": {
@@ -63,10 +79,14 @@
     "usoCfdi": "G03",
     "email": "cristhian.valdivia@ejemplo.com",
     "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 1,
+    "ticketsUsadosMes": 16,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
     "periodoMes": "2026-09"
   }
 }
