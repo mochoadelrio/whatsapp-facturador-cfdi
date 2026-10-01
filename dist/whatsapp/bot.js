@@ -626,6 +626,38 @@ async function manejarMensajeEntrante(sock, msg) {
             return;
         }
     }
+    // 0.9 Comando /comandos o /menu
+    if (textoLimpio.toLowerCase() === "/comandos" ||
+        textoLimpio.toLowerCase() === "comandos" ||
+        textoLimpio.toLowerCase() === "/menu" ||
+        textoLimpio.toLowerCase() === "menu") {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+📖 *Guía de Comandos Oficiales:*
+
+🟢 *Diagnóstico y Conexión:*
+• \`/status\` o \`/ping\` — Revisa en tiempo real si el bot está conectado y activo.
+
+📊 *Administración y Consumo:*
+• \`/clientes\` o \`/reporte\` — Lista completa de clientes y tickets usados este mes.
+• \`/saldo <RFC o Teléfono>\` — Consulta el consumo y saldo de un cliente específico.
+• \`/saldo\` o \`/plan\` — Consulta tu consumo personal de tickets del mes.
+• \`/autorizar <número>\` — Da de alta un nuevo celular de cliente.
+
+📋 *Datos Fiscales:*
+• \`/perfil\` — Muestra tus datos de facturación actuales.
+• *Enviar Constancia SAT (PDF o foto)* — Da de alta o actualiza tus datos fiscales con IA.
+
+✨ *Identidad y Marca:*
+• \`/logo\` o \`/foto\` — Recibe la imagen oficial del logotipo de KlientIA.
+
+📸 *Facturación Automática:*
+• *Enviar foto de ticket(s)* — Detecta y factura de inmediato (OXXO, Farmacias Gdl, Costco, Sam's Club, OXXO Gas, G500, Walmart, Casetas).
+• \`/ayuda\` — Guía para tomar fotos de tickets exitosamente.`,
+        });
+        return;
+    }
     // 1. Comando /ayuda, /pasos o hola
     if (textoLimpio.toLowerCase() === "/ayuda" ||
         textoLimpio.toLowerCase() === "/pasos" ||
