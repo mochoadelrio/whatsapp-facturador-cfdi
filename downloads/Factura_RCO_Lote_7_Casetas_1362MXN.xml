@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Serie="BB" Folio="3753563" Fecha="2026-09-30T21:32:48" FormaPago="01" NoCertificado="00001000000702691838" SubTotal="1174.12" Moneda="MXN" Total="1362.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="45430" Sello="U7YG6kpG6slBbld0M4HgDOhdNACXYOdOReChkaqFt+IJJRh8hg8dCyDCrxyU/FfbHuGkWdOylJreeqb4RxFK+cvKQgiRhz062v8ZZp/u83z0uT71Fgu0b8N0yyFQ6qqNxbaKaQM45+NQnjSxFZc7Hz4q6nXZsw3HTwX1KEvyOXMEvIVJ+/2G1RWmG7MlArX0XIp968G3g0TM5EfaZtwq0vbZp08aSZzVKaQCkss44qQnHwSEm7CjeLDpp531wpxf8XheHMtqR4JdQmSFcvrbPbrwSLIJp9X5cJ0vBa1BwHJSgJC3rre40T0yvDzePINXuQMt8InEum5MNCnd9eUkuQ==" Certificado="MIIGPjCCBCagAwIBAgIUMDAwMDEwMDAwMDA3MDI2OTE4MzgwDQYJKoZIhvcNAQELBQAwggGVMTUwMwYDVQQDDCxBQyBERUwgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEuMCwGA1UECgwlU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEaMBgGA1UECwwRU0FULUlFUyBBdXRob3JpdHkxMjAwBgkqhkiG9w0BCQEWI3NlcnZpY2lvc2FsY29udHJpYnV5ZW50ZUBzYXQuZ29iLm14MSYwJAYDVQQJDB1Bdi4gSGlkYWxnbyA3NywgQ29sLiBHdWVycmVybzEOMAwGA1UEEQwFMDYzMDAxCzAJBgNVBAYTAk1YMQ0wCwYDVQQIDARDRE1YMRMwEQYDVQQHDApDVUFVSFRFTU9DMRUwEwYDVQQtEwxTQVQ5NzA3MDFOTjMxXDBaBgkqhkiG9w0BCQITTXJlc3BvbnNhYmxlOiBBRE1JTklTVFJBQ0lPTiBDRU5UUkFMIERFIFNFUlZJQ0lPUyBUUklCVVRBUklPUyBBTCBDT05UUklCVVlFTlRFMB4XDTIzMTAwNDIyNTI1MFoXDTI3MTAwNDIyNTI1MFowgfsxNTAzBgNVBAMTLFJFRCBERSBDQVJSRVRFUkFTIERFIE9DQ0lERU5URSBTIEEgUCBJIERFIENWMTUwMwYDVQQpEyxSRUQgREUgQ0FSUkVURVJBUyBERSBPQ0NJREVOVEUgUyBBIFAgSSBERSBDVjE1MDMGA1UEChMsUkVEIERFIENBUlJFVEVSQVMgREUgT0NDSURFTlRFIFMgQSBQIEkgREUgQ1YxJTAjBgNVBC0THFJDTzA3MDgxMzZGNyAvIExPR0o3ODEwMjhUWDMxHjAcBgNVBAUTFSAvIExPR0o3ODEwMjhIUExaUk4wNTENMAsGA1UECxMEMjAyMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALByK2qqY2ex8+iHX6zy0gkL18FYJ0KVFyIkBi9B5o9QDQ1WGBd9k4ye44yb3nQWUhVY4ca1QUdSupHt5bT29wrN9qjTn/08K3bFlB+Y85m6rzuZbhWJOVyStgC6JqdBx65MlnTmem4YGpeCN3/utsPKQwwK9WH3HEAkN89R8xzpiivJcF0ONVgirspNSrJkBv8Fbk4PqacVcF8LodZnw1J21H4sB6ylduQnFMdvfUi3rgYX3T/0uyIdyZqD/Oq+V4hpVT06KknuiWsRTZJe06fwzSp63XaLzJFwqzcmoJZlib5B8YW2EbnNsxgbZlPixxGl0szjgKXNpt29tcAEX10CAwEAAaMdMBswDAYDVR0TAQH/BAIwADALBgNVHQ8EBAMCBsAwDQYJKoZIhvcNAQELBQADggIBAGFcPx9X66CcsLOBxGFcBGHohvPTkTyw1/ERsX40H4qKMmswnrkrmRRw5PRAO7YTMNrSSntgTfDj4FZM/xAOlU3SgM/yYJbz9LqJZMFzVcwAsZD7dERH6HNNxA05civFNBlD2niHVMaSMo7L9r0ot6ZjKNIOWEAUR/mtOd5wFExK+SX1mjUOEQoHl2sTMf362svz1znXWgLbv2HRi/bFN+4exeMbb40JHb2MsGG3l65uXycjRMgVDztSgxaxpJN7o9nkMFVEVyjhg9u+reyWsjcBfYye9GWCWz0az6ZVpLZ7/jTeohEcEQy3EwMMfln7G9HdBCfSJP2Uh37yeD1DV4mxvNczPws6hR1+xwE8HQV/wNjTXmwqvSM2cLZpQbKaRRr08KZ1xWMvoZ5HaOQorMJ0NLsJIYJNZ8fIgoaClhly+YJovwRAEvfnsT35LR1KeQBN+Cy3otQ4RqowQKf2kTGyoArsi0ekEJwcJmQfc8v1h8idXuAeZkWdTrlCJ0LUvjwmpFug8m0PWXAbejDenePMzyBJlyj4o2y2xghSN7Ig9lLZ7gASIcnGDaMy3rxofxYieOMAVwwUEM2rnpr6USJQ8PwEX1dT+3zUVrDq4vPEPWRrcQJEV/oNTjxF2QwXQIt78z3t4Wk+Xr/gXECKyd2dX0Xy+2J2hHskj/9WAA5i">
+  <cfdi:Emisor Rfc="RCO0708136F7" Nombre="RED DE CARRETERAS DE OCCIDENTE" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="VAMC9112056Q2" Nombre="CRISTHIAN VALDIVIA MARTINEZ" DomicilioFiscalReceptor="37545" RegimenFiscalReceptor="626" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 82340917420116843012 FECHA: 2026-09-21T02:05:37Z CASETA TEPATITLAN A" ValorUnitario="220.690000" Importe="220.690000" NoIdentificacion="82340917420116843012_144572600" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="220.69" TipoFactor="Tasa" Impuesto="002" Importe="35.31" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 02960793063116843014 FECHA: 2026-09-25T16:36:32Z CASETA TEPATITLAN A" ValorUnitario="220.690000" Importe="220.690000" NoIdentificacion="02960793063116843014_145131604" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="220.69" TipoFactor="Tasa" Impuesto="002" Importe="35.31" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 95190559281216909062 FECHA: 2026-09-21T00:27:06Z CASETA LEON A" ValorUnitario="159.480000" Importe="159.480000" NoIdentificacion="95190559281216909062_144569073" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="159.48" TipoFactor="Tasa" Impuesto="002" Importe="25.52" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 10320765918016908805 FECHA: 2026-09-25T17:27:19Z CASETA JALOSTOTITLAN A" ValorUnitario="181.030000" Importe="181.030000" NoIdentificacion="10320765918016908805_145129164" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="181.03" TipoFactor="Tasa" Impuesto="002" Importe="28.97" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 45210486519416909064 FECHA: 2026-09-26T22:33:19Z CASETA LEON A" ValorUnitario="51.720000" Importe="51.720000" NoIdentificacion="45210486519416909064_145304322" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="51.72" TipoFactor="Tasa" Impuesto="002" Importe="8.28" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 81780563125416909057 FECHA: 2026-09-25T18:31:30Z CASETA LEON A" ValorUnitario="159.480000" Importe="159.480000" NoIdentificacion="81780563125416909057_145140739" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="159.48" TipoFactor="Tasa" Impuesto="002" Importe="25.52" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="95111603" Cantidad="1.000000" ClaveUnidad="C62" Descripcion="PEAJE CORRESPONDIENTE AL CRUCE NRU: 13710642483816908803 FECHA: 2026-09-21T01:33:34Z CASETA JALOSTOTITLAN A" ValorUnitario="181.030000" Importe="181.030000" NoIdentificacion="13710642483816908803_144570759" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="181.03" TipoFactor="Tasa" Impuesto="002" Importe="28.97" TasaOCuota="0.160000"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="187.88">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="1174.12" TipoFactor="Tasa" Impuesto="002" Importe="187.88" TasaOCuota="0.160000"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+<cfdi:Complemento>
+        <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" xsi:schemaLocation="http://www.sat.gob.mx/TimbreFiscalDigital http://www.sat.gob.mx/sitio_internet/cfd/TimbreFiscalDigital/TimbreFiscalDigitalv11.xsd" Version="1.1" UUID="06286e6f-b805-4e6b-8c27-5e718be2c844" RfcProvCertif="SNF171020F3A" FechaTimbrado="2026-09-30T21:32:49" SelloCFD="U7YG6kpG6slBbld0M4HgDOhdNACXYOdOReChkaqFt+IJJRh8hg8dCyDCrxyU/FfbHuGkWdOylJreeqb4RxFK+cvKQgiRhz062v8ZZp/u83z0uT71Fgu0b8N0yyFQ6qqNxbaKaQM45+NQnjSxFZc7Hz4q6nXZsw3HTwX1KEvyOXMEvIVJ+/2G1RWmG7MlArX0XIp968G3g0TM5EfaZtwq0vbZp08aSZzVKaQCkss44qQnHwSEm7CjeLDpp531wpxf8XheHMtqR4JdQmSFcvrbPbrwSLIJp9X5cJ0vBa1BwHJSgJC3rre40T0yvDzePINXuQMt8InEum5MNCnd9eUkuQ==" NoCertificadoSAT="00001000000518812364" SelloSAT="XM+Qhn4GG1dahYNF2PBlo42FH66ATMasiuXclhNRBZgaGh+CaZ3s+o/nqynaD8DIBoE3Erh8xxAcZcJEiCXs1NGWn3OGYAyZWUl/fhX7F248k6PDELuS87eiigw4ImmUj0+r3OxMdn+zByXOYt1XDCHnOKHMtbc0LStjsjFJn3t+yN2i2+gMBMO0d2MAyjVix5HJARiF3mZMY9vTeYj/n3P+VxtmMidzjK2nWin9geQW2NIkoUWwSywQ7mCCcFB67b5xO8QKHxL0UCJQIhrT4/M+nXnFhkZ6JHPMH0soeMryMKnGMXG/dDS/ltxGtSbFvmbzELM7lQLtDWuNKo2Vag=="/>
+    </cfdi:Complemento></cfdi:Comprobante>

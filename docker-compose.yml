@@ -1,0 +1,16 @@
+services:
+  facturador-bot:
+    build: .
+    container_name: facturador-cfdi-bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Volúmenes persistentes para que no se pierda la sesión de WhatsApp ni las facturas
+      - ./auth_whatsapp:/app/auth_whatsapp
+      - ./data:/app/data
+      - ./downloads:/app/downloads
+      - ./scratch:/app/scratch
+    environment:
+      - NODE_ENV=production
+      - PLAYWRIGHT_HEADLESS=true

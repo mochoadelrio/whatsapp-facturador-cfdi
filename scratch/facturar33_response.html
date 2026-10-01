@@ -1,0 +1,100 @@
+	<script>document.location.href='facturacion/ObtenerPDF40.php?uuid=d9f2daf5-0ef4-4a3a-9ecf-e12e41073921&archivo=JC787247+VAMC9112056Q2&correo=cristhian.valdivia@ejemplo.com&rfc=VAMC9112056Q2&folio_ticket=4267017&total=428&direccion='</script>
+
+<link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>	
+<link href="barra/css/style.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="grid5/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="barra/js/index.js"></script>
+    <script>
+function nobackbutton(){
+   window.location.hash="no-back-button";
+   window.location.hash="Again-No-back-button" //chrome
+   window.onhashchange=function(){window.location.hash="no-back-button";}
+}
+</script>
+<script type="text/javascript">
+/*FUNCION QUE EVITA LA ACTUALIZACION DE LA PAGINA*/
+function disableF5(e) { if ((e.which || e.keyCode) == 116 || (e.which || e.keyCode) == 82 || (e.which || e.keyCode) == 154 ) e.preventDefault(); };
+
+$(document).ready(function(){
+     $(document).on("keydown", disableF5);
+	// window.onbeforeunload = function () {return false;}
+});
+/* FUNCION QUE EVITA REGRESAR A LA PAGINA ANTERIOR*/
+function nobackbutton(){
+	//f5();
+   window.location.hash="no-back-button";
+   window.location.hash="Again-No-back-button" //chrome
+   window.onhashchange=function(){window.location.hash="no-back-button";}
+}
+</script>
+
+
+<script>
+/*SE ENVIAN LOS DATOS NECESARIOS PARA LA CREACION DEL PDF*/
+/*function crear_pdf() {
+	var data = '[{"idf":"12861746","Foliot":"2392552"},{"idf":"12844326","Foliot":"4267017"}]';
+	//alert(data);
+	var datos = JSON.parse(data);
+	var idcruces = JSON.stringify(datos);
+			//alert(idcruces);
+	var idcliente='137936';
+	var idticket='12844326';
+    var response='';
+	var folio='4267017';
+	var nombre='VAMC9112056Q2';
+	var rfc='VAMC9112056Q2';
+	var folioFactura='787247';
+	var correo='cristhian.valdivia@ejemplo.com';
+	var archivo='787247 VAMC9112056Q2';
+	var idfolios=idcruces;
+	
+	$.ajax({
+	    type: 'post',
+        url: "facturacion/ObtenerPDF.php",/*<---Este archivo genera el pdf*/
+		//dataType: "json",
+    /*    data: {response: response, folio: folio, nombre: nombre, folioF: folioFactura, idcliente: idcliente, correo: correo, idticket: idticket, archivo: archivo, rfc: rfc, idfolios: idfolios},
+        success: function(dataa) 
+                  {
+					//alert(rfc+archivo);
+					 enviar_factura(correo,nombre,archivo,folioFactura);
+					 $("#simple-msg").html(dataa);
+				  }
+});
+	}
+	
+//---ESTA PARTE ENVIA LA FACTURA POR CORREO ELECTRONICO---//
+function enviar_factura	(mail,cliente,arch,ff){
+	//alert(mail);
+	$.ajax({
+	    type: 'post',
+        url: "enviar.php",
+		//dataType: "json",
+        data: {correo: mail, cliente: cliente, archivo: arch, ff: ff},
+        success: function(dataa) 
+                  {
+					// alert("Correo enviado");
+					// enviar_factura(correo);
+					
+$("#simple-msg2").html("<center><div>Su factura fue generada y enviada al correo: "+ mail +"<br/><br/><br/><button id='terminar' onClick='terminar();' style='text-align:center;background:#a4c441;padding: 10px 10px 10px 10px'>Generar otra factura</button></div></center>");
+					//window.open("barra/index.html");
+				  }
+});
+}
+function terminar(){
+	//window.location.href="seguridad/salir.php";
+	window.location.replace("seguridad/salir2.php");
+
+return false;
+}
+</script>
+
+<body onLoad="nobackbutton();">	
+ <div id="simple-msg"></div> <br>
+ 
+  <div id="simple-msg2"></div>   
+ 
+ 
+ 
+ 
+ 	
+ </body>   

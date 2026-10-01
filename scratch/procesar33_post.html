@@ -1,0 +1,1038 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Procesar</title>
+<link rel="stylesheet" type="text/css" href="grid5/jquery-ui.structure.min.css"/>
+<link rel="stylesheet" type="text/css" href="grid5/jquery-ui.theme.min.css"/>
+<link rel="stylesheet" type="text/css" href="grid5/jquery.appendGrid-1.5.2.css"/>
+<link rel="stylesheet" href="css/estilo.css">
+
+<script type="text/javascript" src="grid5/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="grid5/jquery-ui-1.11.1.min.js"></script>
+<script type="text/javascript" src="grid5/jquery.appendGrid-1.5.2.js"></script>
+<script src="grid4/timepicker/src/jquery-ui-timepicker-addon.js"></script>
+<link rel="stylesheet" href="grid4/timepicker/src/jquery-ui-timepicker-addon.css">
+
+<link rel="stylesheet" href="grid3/jqwidgets/styles/jqx.base.css" />
+    <script type="text/javascript" src="grid3/scripts/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxbuttons.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxscrollbar.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxmenu.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxgrid.js"></script>
+    <script type="text/javascript" src="grid3/jqwidgets/jqxgrid.selection.js"></script> 
+    <script type="text/javascript" src="grid3/jqwidgets/jqxgrid.columnsresize.js"></script> 
+    <script type="text/javascript" src="grid3/jqwidgets/jqxdata.js"></script> 
+    <script type="text/javascript" src="grid3/scripts/demos.js"></script>
+    <script type="text/javascript" src="jQuery-Form-Validator-master/form-validator/jquery.form-validator.min.js"></script>
+    <script type="text/javascript" src="jQuery-Form-Validator-master/form-validator/jquery.form-validator.js"></script>
+    
+    <script>
+function nobackbutton(){
+	//f5();
+   window.location.hash="no-back-button";
+   window.location.hash="Again-No-back-button" //chrome
+   window.onhashchange=function(){window.location.hash="no-back-button";}
+}
+</script>
+<script type="text/javascript">
+/*function disableF5(e) { if ((e.which || e.keyCode) == 116 || (e.which || e.keyCode) == 82) e.preventDefault(); };
+
+$(document).ready(function(){
+     $(document).on("keydown", disableF5);
+	// window.onbeforeunload = function () {return false;}
+});*/
+</script>
+    
+       <script type="text/javascript">
+        $(document).ready(function () {
+            var data = '[{"id":"12861746","Folio":"2392552","Fecha":"25\/09\/2026","Total":"184.48","Estatus":"No Existe","Descripcion":"Por los cruces vehiculares efectuados en la Autopista Jala-Compostela y Ramal a Compostela: Folio: 2392552 Fecha: 25\/09\/2026 Hora: 12:16:45 Carril:2302 Clase: T01A","Cantidad":1,"TotalBD":"214.00","Hora":"12","Minuto":"16","Segundo":"45"},{"id":"12844326","Folio":"4267017","Fecha":"21\/09\/2026","Total":"184.48","Estatus":"No Existe","Descripcion":"Folio: 4267017 Fecha: 21\/09\/2026 Hora: 04:13:09 Carril:2104 Clase: T01A","Cantidad":1,"TotalBD":"214.00","Hora":"04","Minuto":"13","Segundo":"09"}]';
+			var datos = JSON.parse(data);
+			console.log(data);
+			//alert(data);
+			var T=0;
+			var subtotal='368.96';
+			var iva='59.04';
+			var total='428';
+			
+			var num = parseFloat(total);
+			var tot = num.toFixed(2);
+			
+			var cruces = JSON.stringify(datos);
+			//alert(cruces);	
+			$("#cruces").val(cruces);
+			//alert (cruces);
+			for(var j=0;j<datos.length;j++){
+			//console.log(datos[j]['Total']);
+			T=parseFloat(datos[j]['Total']);
+			//subtotal += T;
+			}
+			
+			//iva = Math.round((subtotal*0.16)*100)/100;
+			//total= Math.round(subtotal+iva);
+			//$("#subtotal").val(Math.round(subtotal));
+			$("#subtotal").val(subtotal);
+			$("#total").val(tot);
+			$("#iva_dif").val(iva);
+			$("#iva").val(iva);
+            // prepare the data
+            var source =
+            {
+                datatype: "json",
+                datafields: [
+                    { name: 'id', type: 'int' },
+                    { name: 'Descripcion', type: 'string' },
+                    { name: 'Cantidad', type: 'int' },
+                    { name: 'Total', type: 'float' }
+                ],
+                localdata: data
+            };
+            var dataAdapter = new $.jqx.dataAdapter(source);
+
+            $("#jqxgrid").jqxGrid(
+            {
+                width: 1000,
+                source: dataAdapter,
+                columnsresize: true,
+                columns: [
+                   // { text: 'ID', datafield: 'id', width: 50 },
+                    { text: 'Descripcion', datafield: 'Descripcion', width: 850 },
+                    { text: 'Cant', datafield: 'Cantidad', width: 50 },
+                    { text: 'Valor unitario', datafield: 'Total', width: 100 }
+                ]
+            });
+			
+			// Al entrar por primera vez se ocultan campos de correo, datos de tickets y botón para generar documento	2018-03-02
+			$("#jqxWidget").hide();	
+			$("#datos_facturar").hide();
+			$("#correos").hide();
+			$("#text_correos").hide();
+			$(".edicion").hide();
+			
+			// Inicio Agregado 2022-04-20
+			$("#etiqueta_regimen_fiscal").hide();
+			$("#regimen_fiscal_moral").hide();
+			$("#regimen_fiscal_fisica").hide();
+			//$("#regimen_fiscal_todos").hide();
+			
+			$("#regimen_fiscal_moral").prop( "disabled", true );
+			$("#regimen_fiscal_fisica").prop( "disabled", true );
+			//$("#regimen_fiscal_todos").prop( "disabled", true );
+			// Fin Agregado 2022-04-20
+			
+        });
+    </script>
+     <!-- DISPONIBILIDAD DE USUARIO -->
+        <script type="text/javascript">
+$(document).ready(function() {  
+
+
+	function rfcValido2(rfc, aceptarGenerico = true) {
+		
+		
+		rfc = rfc.replace(' ','');
+		
+		var rfc_longitud =    rfc.length;	// se saca la longitud del RFC
+		
+		if(parseInt(rfc_longitud) < 12 || parseInt(rfc_longitud) > 13){
+			//alert('El RFC debe contener 12 o 13 caracteres');
+			return false;
+		}else{
+			//alert('Longitud correcta del RFC');	
+			return true;
+		}
+		
+		
+		
+		
+		
+	}
+	
+	 
+	function validarInput2(input) {
+		/*var rfc         = input.value.trim().toUpperCase(),*/
+		var rfc         = input.trim().toUpperCase(),
+			/*resultado   = document.getElementById("resultado"),*/
+			valido;
+		
+			
+		var rfcCorrecto = rfcValido2(rfc);   // ⬅️ Acá se comprueba
+	  
+		if (rfcCorrecto) {
+			valido = "Válido";
+		  /*resultado.classList.add("ok");*/
+		} else {
+			valido = "No válido"
+			/*resultado.classList.remove("ok");*/
+		}
+		
+		//alert("RFC: " + rfc + "\nResultado: " + rfcCorrecto	+ "\nFormato: " + valido);
+		return valido;
+			
+		/*resultado.innerText = "RFC: " + rfc 
+							+ "\nResultado: " + rfcCorrecto
+							+ "\nFormato: " + valido;*/
+	}
+	
+	
+	$('#uso_cfdi').change(function(){
+		
+		var uso_cfdi_valor = $('#uso_cfdi').val();
+		$('#uso_cfdi_oculto').val(uso_cfdi_valor);
+		//alert(uso_cfdi_valor);
+		
+	});
+	
+	// Inicio Agregada 2023-07-18
+	$('#regimen_fiscal_moral').change(function(){
+		
+		var regimen_fiscal_valor = $('#regimen_fiscal_moral').val();
+		$('#regimen_fiscal_oculto').val(regimen_fiscal_valor);
+		//alert(regimen_fiscal_valor);
+		
+	});
+
+	$('#regimen_fiscal_fisica').change(function(){
+		
+		var regimen_fiscal_valor_f = $('#regimen_fiscal_fisica').val();
+		$('#regimen_fiscal_oculto').val(regimen_fiscal_valor_f);
+		//alert(regimen_fiscal_valor_f);
+		
+	});
+
+	$('#nombre').blur(function(){
+		
+		var nombre_valor = $('#nombre').val();
+		$('#nombre_oculto').val(nombre_valor);
+		//alert(nombre_valor);
+		
+	});
+	// Fin Agregada 2023-07-18
+
+  
+    $('#buscar_rfc').click(function(){
+		
+		// Inicio Agregado 2022-04-20
+		$("#etiqueta_regimen_fiscal").hide();
+		$("#regimen_fiscal_moral").hide();
+		$("#regimen_fiscal_fisica").hide();
+		//$("#regimen_fiscal_todos").hide();
+		
+		$("#regimen_fiscal_moral").prop( "disabled", true );
+		$("#regimen_fiscal_fisica").prop( "disabled", true );
+		//$("#regimen_fiscal_todos").prop( "disabled", true );
+		// Fin Agregado 2022-04-20
+		
+    /*$('#rfc').blur(function(){*/
+		
+		// $('#Info').html('<img src="../images/load.gif" alt="" />').fadeOut(1000);
+        //var rfc = $(this).val();
+		//var rfc_valido = 0;
+		
+			var rfc = $("#rfc").val();
+			var rfc_valido = 0;
+			var uso_cfdi = $("#uso_cfdi").val();
+			
+			// Inicio Agregado 2021-09-08
+			
+			if(rfc.length < 12 || rfc.length > 13){
+				
+				alert('El RFC debe ser de 12 o 13 caracteres \nEl RFC que tecleó tiene '+rfc.length+' caracteres');
+				return false;
+				
+			}	// Fin if
+			
+			// Fin Agregado 2021-09-08
+			
+			
+			if(ValidaRfc($('#rfc').val()) == false){
+						rfc_valido = 0;
+						return false;
+			}else{
+						rfc_valido = 1;		
+			}
+		
+		
+		//var lista_blanca_rfc = ["MPV1806054D2","DSC071101513","PACP291210I59","BBO961025FA5","CME021125H98","DAI081002T44"];
+		
+		//var busca_en_lista_blanca = jQuery.inArray( rfc, lista_blanca_rfc );
+		// -1 	No está en lista_blanca_rfc
+		// 0	Está en lista_blanca_rfc
+		
+		//alert(busca_en_lista_blanca);
+		//console.log(busca_en_lista_blanca);
+		
+		
+		//if(busca_en_lista_blanca == '0'){
+		/*if(parseInt(busca_en_lista_blanca) >= '0'){
+			
+			//alert('ESTÁ en lista blanca');
+			// se permite que se búsque el RFC en la BD
+			rfc_valido = 1;
+			
+		}else{*/
+			//alert('NO ESTÁ en lista blanca por lo que se va a validar');
+		
+			// Se valida el RFC
+			//var validacion_rfc = validarInput2(rfc);
+		
+			//alert("RFC: " + rfc + "\nFormato: " + validacion_rfc);
+			
+			/*if(validacion_rfc == 'Válido'){
+				// se permite que se búsque el RFC en la BD 
+				rfc_valido = 1;
+			}
+			
+			if(validacion_rfc == 'No válido'){
+				// Se ocultan correos, grid y botón Generar documento
+				rfc_valido = 0;
+				
+			}*/
+			
+		//}
+		
+		
+		
+		
+		
+		
+
+		if(rfc_valido == '1'){		
+		
+
+               
+					var dataString = 'rfc='+encodeURIComponent(rfc)+'&uso_cfdi='+uso_cfdi;
+					//alert(encodeURIComponent(rfc));
+					$.ajax({
+						type: "POST",
+						url: "existencia.php",
+						data: dataString,
+						success: function(data) {
+							
+							// Se muestran etiquetas y los inputs para los datos del cliente
+								// 2018-01-12
+								$("#nombre").show();
+								
+								
+								$("#etiqueta_nombre").show();
+							
+							
+							console.log("Informacion de registro existente "+data);
+								try {var registros = JSON.parse(data);
+								
+								var datos_cliente = JSON.stringify(registros);	
+								$("#datos_cliente").val(datos_cliente);
+								 $("#simple-msg").html('<div class="edicion" style="text-align:center"><pre><code class="prettyprint"><button style="padding:10px 10px; background: #5785ad;color:#FFF;font-size:18px;" type="button" onClick="editar();">Actualizar datos fiscales</button></code></pre></div>');
+									 
+								 // Inicio Agregado 2022-04-20
+								 $("#etiqueta_regimen_fiscal").show();
+
+										
+								 // Fin Agregado 2022-04-20	 
+									 
+								for(var k=0;k<registros.length;k++){
+										//console.log(datos[j]['Total']);
+										$("#idcliente").val(registros[k]['idcliente']);
+										$("#rfc").val(registros[k]['rfc']);
+										$("#nombre").val(registros[k]['nombre']);
+										$("#calle").val(registros[k]['calle']);	
+										$("#localidad").val(registros[k]['localidad']);
+										$("#colonia").val(registros[k]['colonia']);
+										$("#ne").val(registros[k]['ne']);
+										$("#ni").val(registros[k]['ni']);
+										$("#municipio").val(registros[k]['municipio']);
+										$("#cp").val(registros[k]['cp']);
+										$("#estado").val(registros[k]['estado']);
+										$("#uso_cfdi").val(registros[k]['uso_cfdi']); //A 2023-07-15
+										$("#uso_cfdi_oculto").val(registros[k]['uso_cfdi']); //A 2023-07-15
+										$("#regimen_fiscal_oculto").val(registros[k]['regimen_fiscal']); //A 2023-07-18
+										$("#nombre_oculto").val(registros[k]['nombre']); //A 2023-07-18
+									
+										// Inicio Agregado 2022-04-20
+										// Personas Morales 12 caracteres
+										if(rfc.length == 12){
+											$("#regimen_fiscal_moral").prop( "disabled", false );
+											$("#regimen_fiscal_moral").show();
+											$("#regimen_fiscal_moral").val(registros[k]['regimen_fiscal']);
+										}
+
+										// Personas Fisicas 13 caracteres
+										if(rfc.length == 13){
+											$("#regimen_fiscal_fisica").prop( "disabled", false );
+											$("#regimen_fiscal_fisica").show();
+											$("#regimen_fiscal_fisica").val(registros[k]['regimen_fiscal']);
+										}
+
+
+										// Fin Agregado 2022-04-20
+								}
+									$("#jqxWidget").show();	
+										$("#datos_facturar").show();
+										$("#correos").show();
+										$("#text_correos").show();
+										$(".edicion").show();
+										$('#Info').hide();
+								
+								 }
+								 catch(err){
+									 alert("RFC no encontrado, favor de registrar sus datos fiscales");
+										 $('#Info').fadeIn(1000).html(data);
+										//LIMPIAR CAMPOS
+										//$('#rfc').val()=="";
+										$('#nombre').val("");
+										$('#calle').val("");
+										$('#colonia').val("");
+										$("#cp").val("");
+										$("#estado").val("");
+										$("#localidad").val("");
+										$("#municipio").val("");
+										$("#ne").val("");
+										$("#uso_cfdi").val('G03');	//A 2023-07-15
+										$("#uso_cfdi_oculto").val('G03');	//A 2023-07-15
+										$('#nombre_oculto').val("");	//Agregado 2023-07-18
+								
+										//LIMPIAR CAMPOS FIN
+										$("#jqxWidget").hide();	
+										$("#datos_facturar").hide();
+										$("#correos").hide();
+										$("#text_correos").hide();
+										$(".edicion").hide();
+									 
+									 	// Inicio Agregado 2022-04-20
+									 	$("#etiqueta_regimen_fiscal").show();
+										// Personas Morales 12 caracteres
+										if(rfc.length == 12){
+											$("#regimen_fiscal_moral").prop( "disabled", false );
+											$("#regimen_fiscal_moral").show();
+											$("#regimen_fiscal_moral").prop('selectedIndex',0);
+											$("#regimen_fiscal_oculto").val('601');	//Agregada 2023-07-18
+										}
+
+										// Personas Fisicas 13 caracteres
+										if(rfc.length == 13){
+											$("#regimen_fiscal_fisica").prop( "disabled", false );
+											$("#regimen_fiscal_fisica").show();
+											$("#regimen_fiscal_fisica").prop('selectedIndex',0);
+											$("#regimen_fiscal_oculto").val('612');	//Agregada 2023-07-18
+										}
+
+
+										// Fin Agregado 2022-04-20 
+								 }
+						}
+					});	// fin ajax
+					
+		} // fin if rfc_valido
+		
+		if(rfc_valido == '0'){
+			// ocultar campos
+				
+				//alert('Favor de teclear un RFC válido para poder continuar');
+				//alert('El RFC debe contener 12 o 13 caracteres');
+				
+				//LIMPIAR CAMPOS
+				//$('#rfc').val()=="";
+				$('#nombre').val("");
+				$('#calle').val("");
+				$('#colonia').val("");
+				$("#cp").val("");
+				$("#estado").val("");
+				$("#localidad").val("");
+				$("#municipio").val("");
+				$("#ne").val("");
+				$("#ni").val("");
+				
+				
+				$("#jqxWidget").hide();	
+				$("#datos_facturar").hide();
+				$("#correos").hide();
+				$("#text_correos").hide();
+				$(".edicion").hide();
+				$("#noregistrado").hide();
+			
+		}
+					
+					
+    });              
+});    
+
+function editar(){	//alert('CLICK BOTON ACTUALIZAR');
+				var postData = new FormData($("#cliente_form")[0]);
+				//alert('EDITARR');
+				
+				var formURL = "editar.php";
+	
+				// Inicio Agregado 2022-04-20
+				var rfccc = $("#rfc").val();
+				// Fin Agregado 2022-04-20
+				
+				$.ajax({
+								  url : formURL,
+								  type: "POST",
+								  data : postData,
+								  async: false,
+								  cache: false,
+								  contentType: false,
+								  processData: false,
+								  processData: false,
+								  success:function(data2, textStatus, jqXHR) 
+								  {
+									
+									 // var registro = JSON.parse(data);
+									console.log("Registro editado "+data2);
+									alert("Cliente Editado");
+									//$("#noregistrado").hide();
+									//$("#simple-msg").hide();
+									var registros2 = JSON.parse(data2);
+									
+									var datos_cliente2 = JSON.stringify(registros2);	
+									$("#datos_cliente").val(datos_cliente2);
+									
+									for(var k=0;k<registros2.length;k++){
+										//console.log(datos[j]['Total']);
+										$("#idcliente").val(registros2[k]['idcliente']);
+										$("#rfc").val(registros2[k]['rfc']);
+										$("#nombre").val(registros2[k]['nombre']);
+										$("#calle").val(registros2[k]['calle']);	
+										$("#localidad").val(registros2[k]['localidad']);
+										$("#colonia").val(registros2[k]['colonia']);
+										$("#ne").val(registros2[k]['ne']);
+										$("#ni").val(registros2[k]['ni']);
+										$("#municipio").val(registros2[k]['municipio']);
+										$("#cp").val(registros2[k]['cp']);
+										$("#estado").val(registros2[k]['estado']);
+										$("#uso_cfdi").val(registros2[k]['uso_cfdi']); //A 2023-07-15
+										$("#uso_cfdi_oculto").val(registros2[k]['uso_cfdi']); //A 2023-07-15
+										$("#regimen_fiscal_oculto").val(registros2[k]['regimen_fiscal']); //Agregado 2023-07-18
+										$("#nombre_oculto").val(registros2[k]['nombre']); //Agregado 2023-07-18
+										
+										// Inicio Agregado 2022-04-20
+										// Personas Morales 12 caracteres
+										if(rfccc.length == 12){
+											//$("#regimen_fiscal_moral").show();
+											$("#regimen_fiscal_moral").val(registros2[k]['regimen_fiscal']);
+										}
+
+										// Personas Fisicas 13 caracteres
+										if(rfccc.length == 13){
+											//$("#regimen_fiscal_fisica").show();
+											$("#regimen_fiscal_fisica").val(registros2[k]['regimen_fiscal']);
+										}
+
+
+										// Fin Agregado 2022-04-20
+									}
+								  },
+								  error: function(jqXHR, textStatus, errorThrown) 
+								  {
+									  $("#simple-msg").html('<pre><code class="prettyprint">AJAX Request Failed<br/> textStatus='+textStatus+', errorThrown='+errorThrown+'</code></pre>');
+								  }
+              			});	// fin ajax
+				
+				
+			  	
+         //$("#cliente_form").submit(); //SUBMIT FORM
+				  }
+	
+</script>
+
+	  <script>
+      function registrar2(){	
+		  // var postData = $(this).serializeArray();
+			 
+			 // Comentada 2018-02-27
+			 /*if($('#rfc').val()=="" || $('#nombre').val()=="" || $('#calle').val()=="" || $('#colonia').val()==""
+		 		|| $("#cp").val()=="" || $("#estado").val()=="" || $("#localidad").val()=="" || $("#municipio").val()==""
+				|| $("#ne").val()==""){*/
+				
+			// Inicio Agregado 2021-09-08
+			var rfcc = $("#rfc").val();
+		  
+			if(rfcc.length < 12 || rfcc.length > 13){
+				
+				alert('El RFC debe ser de 12 o 13 caracteres \nEl RFC que tecleó tiene '+rfcc.length+' caracteres');
+				return false;
+				
+			}	// Fin if
+			
+			// Fin Agregado 2021-09-08	
+				
+			if($('#rfc').val()=="" || $('#nombre').val()==""){
+					alert("Debe completar todos los campos del Receptor del mensaje");
+					$( "#rfc" ).focus();
+					
+					return false;
+				}	// fin if
+				
+				if(ValidaRfc($('#rfc').val())==false){
+					return false;
+				}
+				
+				/*if($('#cp').val()!=""){
+					var zip = $('#cp').val();
+	    			var zipRegex = /^\d{5}$/;
+		
+					if (!zipRegex.test(zip)){
+						alert("El código postal debe contener 5 dígitos");
+						return false;
+    				}	
+				}*/
+				//alert('CLICK BOTON REGISTRARR');
+				
+				$("#simple-msg").html("<labe>Enviando</label>");
+				
+				var postData = new FormData($("#cliente_form")[0]);
+				
+				var formURL = "registrar.php";
+				
+				$.ajax({
+							  url : formURL,
+							  type: "POST",
+							  data : postData,
+							  async: false,
+							  cache: false,
+							  contentType: false,
+							  processData: false,
+							  success:function(data, textStatus, jqXHR){
+									 //$("#simple-msg").html('<pre><code class="prettyprint">'+data+'</code></pre>');
+									 // var registro = JSON.parse(data);
+									console.log("Informacion de registro "+data);
+									alert("Cliente registrado");
+									$("#noregistrado").hide();
+									$("#simple-msg").hide();
+									var registros = JSON.parse(data);
+					
+									var datos_cliente = JSON.stringify(registros);	
+									$("#datos_cliente").val(datos_cliente);
+								  
+								  	// Inicio Agregado 2022-04-20
+									$("#etiqueta_regimen_fiscal").show();
+
+										
+									// Fin Agregado 2022-04-20
+					
+									for(var k=0;k<registros.length;k++){
+										//console.log(datos[j]['Total']);
+										$("#idcliente").val(registros[k]['idcliente']);
+										$("#rfc").val(registros[k]['rfc']);
+										$("#nombre").val(registros[k]['nombre']);
+										$("#calle").val(registros[k]['calle']);	
+										$("#localidad").val(registros[k]['localidad']);
+										$("#colonia").val(registros[k]['colonia']);
+										$("#ne").val(registros[k]['ne']);
+										$("#ni").val(registros[k]['ni']);
+										$("#municipio").val(registros[k]['municipio']);
+										$("#cp").val(registros[k]['cp']);
+										$("#estado").val(registros[k]['estado']);
+										$("#regimen_fiscal_oculto").val(registros[k]['regimen_fiscal']); //A 2023-07-18
+										$("#nombre_oculto").val(registros[k]['nombre']); //A 2023-07-18
+										
+										// Inicio Agregado 2022-04-20
+										// Personas Morales 12 caracteres
+										if(rfcc.length == 12){
+											$("#regimen_fiscal_moral").prop( "disabled", false );
+											$("#regimen_fiscal_moral").show();
+											$("#regimen_fiscal_moral").val(registros[k]['regimen_fiscal']);
+										}
+
+										// Personas Fisicas 13 caracteres
+										if(rfcc.length == 13){
+											$("#regimen_fiscal_fisica").prop( "disabled", false );
+											$("#regimen_fiscal_fisica").show();
+											$("#regimen_fiscal_fisica").val(registros[k]['regimen_fiscal']);
+										}
+
+
+										// Fin Agregado 2022-04-20
+									}
+									
+									$("#jqxWidget").show();	
+									$("#datos_facturar").show();
+									$("#simple-msg").html('<div class="edicion" style="text-align:center"><pre><code class="prettyprint"><button style="padding:10px 10px; background: #5785ad;color:#FFF;font-size:18px;" type="button" onClick="editar();">Actualizar datos fiscales</button></code></pre></div>');	// Agregada 2018-02-08
+									$("#simple-msg").show();	// Agregada 2018-02-08
+									$(".edicion").show();	// Agregada 2018-02-08
+									$("#correos").show();
+                      				//$("#simple-msg").fadeOut("3000");
+					  },
+					  error: function(jqXHR, textStatus, errorThrown) 
+					  {
+						  $("#simple-msg").html('<pre><code class="prettyprint">AJAX Request Failed<br/> textStatus='+textStatus+', errorThrown='+errorThrown+'</code></pre>');
+					  }
+				  });	// fin ajax
+				
+					
+				
+          		
+      } // fin registrar2()
+	  function ValidaRfc(rfcStr) {
+                var strCorrecta, valid;
+                strCorrecta = rfcStr;	
+                if (rfcStr.length == 12)
+                {
+                    valid = '^(([A-Z]|[a-z]|[&amp;]|[Ñ]|[ñ]){3})([0-9]{6})((([A-Z]|[a-z]|[0-9]){3}))';
+                }
+                else
+                {
+                    //valid = '^(([A-Z]|[a-z]|[&amp;]|[Ñ]|[ñ]|\s){1})(([A-Z]|[a-z]){3})([0-9]{6})((([A-Z]|[a-z]|[0-9]){3}))';
+					valid = '^(([A-Z]|[a-z]|[&amp;]|[Ñ]|[ñ]|\s){1})(([A-Z]|[a-z]|[&amp;]|[Ñ]|[ñ]){3})([0-9]{6})((([A-Z]|[a-z]|[0-9]){3}))';
+                }
+                var validRfc = new RegExp(valid);
+                var matchArray = strCorrecta.match(validRfc);
+                if (matchArray == null) 
+                {
+                    //alert('RFC incorrecto');
+					//2px solid red
+					document.cliente_form.rfc.style.border = "solid red";
+					document.cliente_form.rfc.value = "";
+					document.cliente_form.rfc.placeholder = "RFC INCORRECTO";
+					document.cliente_form.rfc.focus();
+                    return false;
+                }
+                else
+                {
+					document.cliente_form.rfc.style.border = "";
+                    return true;
+                }
+            }
+      </script>
+      <script>
+	  $(document).ready(function(){
+      $('#correo2').bind("cut copy paste",function(e) {
+          e.preventDefault();
+      });
+    });
+	  function validar(){
+		 
+		 // $("#cliente_form").validate();
+		 
+		 // Comentada 2018-02-27
+		 /*if($('#rfc').val()=="" || $('#nombre').val()=="" || $('#calle').val()=="" || $('#colonia').val()==""
+		 		|| $("#cp").val()=="" || $("#estado").val()=="" || $("#localidad").val()=="" || $("#municipio").val()==""
+				|| $("#ne").val()==""){*/
+		if($('#rfc').val()=="" || $('#nombre').val()==""){
+					alert("Debe completar todos los campos del Receptor del mensaje");
+					$( "#rfc" ).focus();
+		}else{
+		
+			/*if($('#cp').val()!=""){
+				var zip = $('#cp').val();
+				var zipRegex = /^\d{5}$/;
+				if (!zipRegex.test(zip)){
+					alert("El código postal debe contener 5 dígitos");
+					return false;
+				}	
+			}*/
+			
+			  // Inicio Agregado 2022-03-21
+			  if($('#nombre').val().toUpperCase()=="PUBLICO EN GENERAL" || $('#nombre').val().toUpperCase()=="PÚBLICO EN GENERAL"){
+				  alert("En CFDI 4.0 no se puede facturar a PUBLICO EN GENERAL");
+				  $( "#nombre" ).focus();
+				  return false;
+			  }
+			  // Fin Agregado 2022-03-21
+			
+			
+			  if($('#correo').val()==""){
+				  alert("Debe capturar un correo electrónico");
+				  $( "#correo" ).focus();
+				  return false;
+			  }
+		  
+			  if($('#correo2').val()==""){
+				  alert ("Debe confirmar su correo");
+				  $( "#correo2" ).focus();
+				  return false;
+			  }
+			  
+		  if($('#correo').val() == $('#correo2').val()){
+			   expr = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+				if ( !expr.test($('#correo').val()) ){
+					alert("Error: La dirección de correo " + $('#correo').val() + " es incorrecta.");
+					return false;
+				}
+		  }
+		  
+		  if($('#correo').val() == $('#correo2').val()){
+		  		alert("Correo verificado");
+		  		$('#datos_facturar').submit();
+	  		}else{
+		  		alert("Los correos no coinciden");
+		  		return false;
+	 		}
+	 		 
+		} // fin else
+	 } // fin function
+		 
+	  function isNumberKey(evt)
+		    {
+				var charCode = (evt.which) ? evt.which : event.keyCode
+			    if (charCode > 31 && (charCode < 48 || charCode > 57))
+					return false;
+	 
+ 				return true;
+		    }
+			function exit(){
+				var res = confirm("Está por salir del proceso de facturación, ¿desea continuar?");
+				if(res==true){
+				//	alert("Saliendo...");
+				document.location.href="index.php";
+				}else{
+					return false;
+				}
+			}
+			
+			function validarEmail( email ) {
+    expr = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+    if ( !expr.test(email) )
+        alert("Error: La dirección de correo " + email + " es incorrecta.");
+}
+
+function zip(){
+     var zip = $('#cp').val();
+
+    var zipRegex = /^\d{5}$/;
+
+    if (!zipRegex.test(zip))
+    {
+        alert("El código postal debe contener 5 dígitos");
+		return false;
+    }
+    else
+    {
+        // success!
+    }
+}
+
+	  </script>
+      
+      <style>
+ .boton_css{
+display: block;
+-webkit-box-sizing: content-box;
+-moz-box-sizing: content-box;
+box-sizing: content-box;
+float: left;
+z-index: auto;
+width: auto;
+height: auto;
+position: static;
+cursor: default;
+opacity: 1;
+margin: 6px;
+padding: 7px;
+overflow: visible;
+border: 1px solid rgba(24,63,99,1);
+-webkit-border-radius: 0;
+border-radius: 0;
+font: normal 15px/normal Georgia, serif;
+color: rgba(255,255,255,0.9);
+-o-text-overflow: ellipsis;
+text-overflow: ellipsis;
+letter-spacing: 1px;
+background: #3a8abc;
+-webkit-box-shadow: none;
+box-shadow: none;
+text-shadow: 1px 1px 0 rgba(0,0,0,0.25) ;
+-webkit-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1) 10ms;
+-moz-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1) 10ms;
+-o-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1) 10ms;
+transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1) 10ms;
+-webkit-transform: none;
+transform: none;
+-webkit-transform-origin: 50% 50% 0;
+transform-origin: 50% 50% 0;
+ }
+ body,td,th {
+	font-family: Arial, Helvetica, sans-serif;
+}
+      </style>
+</head>
+
+<body onLoad="nobackbutton();">
+
+
+<div class="banner">
+<div class="col4l"><center><img src="images/banobras.jpg" width="70%" height="70%"/></center></div>
+
+<div class="col5c"><center><h2>MRO JALA-COMPOSTELA S.A. DE C.V.</h2></center>
+<p>Este formulario permite obtener el comprobante fiscal digital asociado al número de ticket indicado</p>
+<p>El receptor de la factura debe indicar sus datos fiscales para generar el comprobante</p>
+<p><b>Atención: debe rellenar todos los campos</b></p></div>
+
+<div class="col4r"><img src="images/LOGO_WEB_OCACSA.png"/></div>
+
+</div>
+<div class="clear"></div>
+<hr/>
+
+<table style="width:100%; display:none;">
+<tr>
+<td>Folio</td><td><input type="text" name="folio" size="50" /></td>
+<td>Fecha del ticket</td><td><input type="text" name="fecha_ticket" size="50"/></td>
+</tr>
+</table>
+
+<form name="cliente_form" id="cliente_form" action="registrar.php" method="post" style="background:#e6eef5;" class="tabla">
+<div style="width:1200px;">
+<br><br>
+<input type="hidden" name="idcliente" id="idcliente" value=""/>
+<table style="width:100%; position:relative; margin:auto auto 50px 120px"  class="tabla">
+<thead><th colspan="6">Receptor del mensaje</th></thead>
+<tr>
+<td>RFC</td><td><input type="text" name="rfc" id="rfc" placeholder="RFC" value="" size="40" required data-validation="required"/>*&nbsp;&nbsp;&nbsp;<input name="buscar_rfc" type="button" id="buscar_rfc" value="Buscar" style="padding:4px 4px; border-style: solid; border-color: blue; background: #5785ad;color:#FFF;font-size:13px"></td>
+<td><span id="etiqueta_nombre">Nombre/Razón Social *</span></td><td colspan="3"><input type="text" name="nombre" id="nombre" placeholder="nombre" value="" size="58" required data-validation="required"/></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+  <td>Teclee el RFC y presione el botón Buscar</td>
+  <td>&nbsp;</td>
+  <td colspan="3" style="font-size:14px;color:#800000"><em>En CFDI 4.0 no se puede facturar a PUBLICO EN GENERAL</em></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+  <td style="font-size:14px; color:#800000"><em>Por disposiciones del <strong>SAT</strong> el Domicilio Fiscal ya no es obligatorio.<br>
+Una vez emitida la Factura no puede ser Cancelada ni modificada.</em> </td>
+  <td><span id="etiqueta_cfdi">Uso de CFDI *</span></td>
+  <td colspan="3"><!--Gastos en General-->
+	  <select id="uso_cfdi" name="uso_cfdi">
+    	<option value="G03" selected="selected">G03 - Gastos en General</option>
+        <option value="S01">S01 - Sin efectos fiscales</option>
+    </select></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+  <td style="font-size:14px; color:#800000"> </td>
+  <td><span id="etiqueta_regimen_fiscal">Regimen Fiscal</span></td>
+  <td colspan="3">
+		<!-- 
+			Persona Moral: 601 603 620  622 623 624 626
+			Persona Física: 606 612 621 622 625 626
+	  -->
+	  <select id="regimen_fiscal_moral" name="regimen_fiscal">
+		<option value="601" selected>601 - General de Ley Personas Morales</option>
+		<option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+		<option value="610" title="610 - Residentes en el Extranjero sin Establecimiento Permanente en México" alt="610 - Residentes en el Extranjero sin Establecimiento Permanente en México">610 - Residentes en el Extranjero sin Establecimiento Permanente en México</option>
+		<option value="620">620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos</option>
+		<option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+		<option value="623">623 - Opcional para Grupos de Sociedades</option>
+		<option value="624">624 - Coordinados</option>
+		<option value="626">626 - Régimen Simplificado de Confianza</option>
+	  </select>
+	  
+	  <select id="regimen_fiscal_fisica" name="regimen_fiscal">
+	  	<option value="606">606 - Arrendamiento</option>
+		<option value="610" title="610 - Residentes en el Extranjero sin Establecimiento Permanente en México" alt="610 - Residentes en el Extranjero sin Establecimiento Permanente en México">610 - Residentes en el Extranjero sin Establecimiento Permanente en México</option>
+		<option value="612" selected>612 - Personas Físicas con Actividades Empresariales y Profesionales</option>
+		<option value="616">616 - Sin obligaciones fiscales</option>
+		<option value="621">621 - Incorporación Fiscal</option>
+		<option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+		<option value="625" title="625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas" alt="625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas">625 - Régimen de las Actividades Empresariales con ingresos a través de...<!-- Plataformas Tecnológicas--></option>
+		<option value="626">626 - Régimen Simplificado de Confianza</option>
+		
+	  </select>
+	  
+	  <!--<select id="regimen_fiscal_todos" name="regimen_fiscal">
+		<option value="601">601 - General de Ley Personas Morales</option>
+		<option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+		<option value="620">620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos</option>
+		<option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+		<option value="623">623 - Opcional para Grupos de Sociedades</option>
+		<option value="624">624 - Coordinados</option>
+		<option value="626">626 - Régimen Simplificado de Confianza</option>
+		  
+		<option value="606">606 - Arrendamiento</option>
+		<option value="612">612 - Personas Físicas con Actividades Empresariales y Profesionales</option>
+		<option value="621">621 - Incorporación Fiscal</option>
+		<option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+		<option value="625" title="625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas" alt="625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas">625 - Régimen de las Actividades Empresariales con ingresos a través de...</option>
+		<option value="626">626 - Régimen Simplificado de Confianza</option>
+	  </select>-->	
+  </td>
+</tr>
+<!--<tr>
+<td>Calle</td><td><input type="text" name="calle" id="calle" placeholder="calle" value="" size="40" required/>*</td>
+<td>No Exterior</td><td><input type="text" name="ne" id="ne" placeholder="Número exterior" value="" required/>*</td>
+<td>No Interior</td><td><input type="text" name="ni" id="ni" placeholder="Número interior"/>*</td>
+</tr>
+<tr>
+<td>Localidad</td><td><input type="text" name="localidad" id="localidad" placeholder="localidad" value="" size="40" required/>*</td>
+<td>Municipio/Delegación</td><td colspan="3"><input type="text" name="municipio" id="municipio" placeholder="Municipio/Delegación" value="" size="58"/>*</td>
+</tr>
+<tr> 
+<td>Colonia</td><td><input type="text" name="colonia" id="colonia" placeholder="colonia" value="" size="40" required/>*</td>
+<td>Código Postal</td><td><input  type="text" maxlength="5" name="cp" id="cp" placeholder="XXXXX" value="" required onkeypress="return isNumberKey(event)"/>*</td>
+<td>Estado</td><td><input type="text" name="estado" id="estado" placeholder="estado" required/>*</td>
+</tr>-->
+</table>
+<div id="Info" style="margin-top:50px"></div>
+<div id="simple-msg"></div>
+</div>
+</form>
+<form name="datos_facturar" id="datos_facturar" action="facturar33.php" method="post" class="tabla" style="position: relative;">
+<input type="hidden" id="datos_cliente" name="datos_cliente" cols="20" rows="5"/>
+<input type="hidden" id="cruces" name="cruces" cols="20" rows="5"/>
+<input type="hidden" id="uso_cfdi_oculto" name="uso_cfdi_oculto" value="G03"/>
+<input type="hidden" id="forma_pago_oculto" name="forma_pago_oculto" value="Efectivo"/>
+<input type="hidden" id="regimen_fiscal_oculto" name="regimen_fiscal_oculto" value="0"/> <!-- Agregada 2023-07-18 -->
+<input type="hidden" id="nombre_oculto" name="nombre_oculto" value=""/> <!-- Agregada 2023-07-18 -->
+<div class="tabla" id="correos" style="width:700px;  position:relative; margin:auto 250px;">
+<span><label id="text_correos">Indicar una cuenta de correo electrónico para recibir una copia del informe </label></span>
+<br>
+<div class="clear"></div>
+<table class="tabla">
+<thead><th colspan="4">Cuenta e-mail de destino</th></thead>
+<tr><td>Email</td><td><input type="email" name="correo" id="correo" placeholder="usuario@empresa.com" required></td>
+<td>Confirmación de email</td><td><input type="email" name="correo2" id="correo2" required /></td></tr>
+</table>
+</div>
+<div class="clear"></div>
+<br><br>
+<!--<div id='jqxWidget' style="font-size: 13px; font-family: Verdana;margin-top:20px; margin-bottom:20px">-->
+        <div id="jqxgrid" style=" width:1000px;  position:relative; margin:auto 50px;"></div>
+<!--</div>-->
+
+<!-- Table -->
+<table class="" style="position:relative; margin:auto 800px;">
+  <thead>
+   <tr>
+     <th colspan="4">Totales</th>
+   </tr>
+  </thead>
+  <tbody>
+  <tr>
+     <td></td>
+     <td></td>
+     <td align="right">Subtotal</td>
+     <td><input type="text" name="subtotal" id="subtotal" placeholder="286.20" readonly/></td>
+   </tr>
+   <tr>
+     <td></td>
+     <td></td>
+     <td style="display:none"><input type="text" name="iva_dif" id="iva_dif" value="" readonly/></td>
+     <td align="right">IVA</td>
+     <td><input type="text" name="iva" id="iva" readonly value="" size="4"/>%</td>
+     
+   </tr>
+   
+   <tr>
+     <td></td>
+     <td></td>
+     <td align="right">TOTAL</td>
+     <td><input type="text" name="total" id="total" placeholder="332" readonly/></td>
+   </tr>
+  </tbody>
+ </table>
+ 
+<div id="botones" style="margin: auto auto">
+<button type="button" name="salir" class="boton_css" onClick="exit();">Salir</button>
+<button name="generar" type="button" class="boton_css" onClick="validar();">Generar documento</button>
+</div>
+<div class="clear"></div>
+</div>
+
+</div>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "whatsapp-facturacion-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp que extrae datos de tickets con Gemini 3.8 Flash y automatiza la autofacturación CFDI 4.0 con Playwright",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "test:ticket": "tsx src/cli-test.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@google/genai": "^2.3.0",
+    "@whiskeysockets/baileys": "^6.7.16",
+    "dotenv": "^16.4.7",
+    "nodemailer": "^10.0.13",
+    "pdfkit": "^0.15.2",
+    "pino": "^9.6.0",
+    "playwright": "^1.51.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pdfkit": "^0.13.5",
+    "@types/qrcode-terminal": "^0.12.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

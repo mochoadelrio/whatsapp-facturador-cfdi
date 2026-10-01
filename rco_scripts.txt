@@ -1,0 +1,897 @@
+const configuration = {}; const fragmentElement = document.querySelector('#fragment-84832929-e427-cdc6-274c-2de690e73c81'); const fragmentEntryLinkNamespace = 'yplq'; const fragmentNamespace = 'yplq'; const layoutMode = 'view';const content = fragmentElement.querySelector('#BuscarBtn');
+const closeIcon = fragmentElement.querySelector('#closeIcon');
+
+function handleToggleClick(event) {
+	let formBusca = document.getElementById("portlet_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet");
+  let form = document.getElementById("p_p_id_com_rco_facturacion_solicitudFacturacionPortlet_");
+  formBusca.style.display = "block";
+  form.style.display = "none";	
+}
+
+(function main() {
+	content.addEventListener('click', handleToggleClick);
+})();
+;
+
+--- SCRIPT ---
+
+
+    var successIcon='<div class="swal2-icon swal2-success swal2-icon-show" style="display: flex;"><div class="swal2-success-circular-line-left" style="background-color: rgb(255, 255, 255);"></div><span class="swal2-success-line-tip"></span> <span class="swal2-success-line-long"></span><div class="swal2-success-ring"></div> <div class="swal2-success-fix" style="background-color: rgb(255, 255, 255);"></div><div class="swal2-success-circular-line-right" style="background-color: rgb(255, 255, 255);"></div></div>';
+    var errorIcon='<div class="swal2-icon swal2-error swal2-icon-show" style="display: flex;"><span class="swal2-x-mark"><span class="swal2-x-mark-line-left"></span> <span class="swal2-x-mark-line-right"></span></span></div>';
+	var warningIcon='<div class="swal2-icon swal2-warning swal2-icon-show" style="display: flex;"><div class="swal2-icon-content">!</div></div>';
+
+	var message;
+	var header;
+    var modal;
+	var functionOk;
+    var icon = successIcon;
+	
+	function setModalCustomInfo(mymessage, myheader, iconType, myFn) {
+		switch (iconType) {
+			case "error":
+				icon = errorIcon;
+				break;
+			case "success":
+				icon = successIcon;
+				break;
+			case "warning":
+				icon = warningIcon;
+				break;
+		}
+
+		message = mymessage;
+		header = myheader;
+		functionOk = myFn;
+
+		if (message != "") {
+			setModal();
+		}
+	}
+
+    function setModalInfo() {
+        var iconType = '';
+
+		switch (iconType) {
+			case "error":
+				icon = errorIcon;
+				break;
+			case "success":
+				icon = successIcon;
+				break;
+			case "warning":
+				icon = warningIcon;
+				break;
+		}
+
+        message = '';
+        header = '<h3 class="modal-title"></h3>';
+		functionOk = null;
+        
+		//console.log("Message", message);
+        if (message != "") {
+            setModal();
+        }
+    }
+
+    function setModal(){
+        YUI().use(
+			  'aui-modal',
+			  function(Y) {
+			    var modal = new Y.Modal(
+			      {
+			        bodyContent: message,
+			        centered: true,
+			        destroyOnHide: false,
+			        headerContent: icon + header,
+			        modal: true,
+			        render: '#modal',
+			        draggable: false,
+			        visible: true,
+			        resizable:false,
+			        width: 450
+			      }
+			    ).render();
+
+				if (functionOk) {
+					modal.addToolbar([{
+						id:'buttonCancelModal',
+						label: 'Cancelar',
+						on: {
+							click: function() {
+								modal.hide();
+							}
+						}
+			        },
+			        {
+						id:'buttonAceptModal',	
+						label: 'Aceptar',
+						on: {
+							click: function() {
+								functionOk()
+							}
+						}
+			        }]);
+				} else {
+					 modal.addToolbar([{
+						id:'buttonAceptModal',
+						label: 'Aceptar',
+						on: {
+							click: function() {
+								let iconType = '';
+								if (iconType == 'success') {
+									window.location.href = 'https://redviacorta.mx/es/factura?p_p_id=com_rco_facturacion_solicitudFacturacionPortlet&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_com_rco_facturacion_solicitudFacturacionPortlet_mvcPath=%2Fview.jsp'
+								} else {
+									modal.hide();
+								}
+							}
+						}}]);
+				}
+			  }
+			);
+    }
+    setModalInfo();
+
+
+--- SCRIPT ---
+
+
+
+	var btnRedImg = document.getElementById('btnRedImg');
+
+function removeTicketRow(target) {
+	let row = target.closest("tr");
+	
+	row.remove();
+}
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// HELP TOOLTIPS - Un solo listener delegado para todos
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('click', function(e) {
+    var helpMap = {
+        'btn-help-t1': 'messageTod1',
+        'btn-help-t2': 'messageTod2',
+        'btn-help-t3': 'messageTod3',
+        'btn-help-t4': 'messageTod4',
+        'btn-help-refacturacion': 'messageTodRefacturacion'
+    };
+
+    var target = e.target.closest('a[id^="btn-help"]') || e.target;
+    var targetId = target ? target.id : null;
+
+    if (targetId && helpMap[targetId]) {
+        var msg = document.getElementById(helpMap[targetId]);
+        if (msg) {
+            msg.classList.remove('not-show-info');
+            setTimeout(function() {
+                msg.classList.add('not-show-info');
+            }, 5000);
+        }
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// IMAGEN ZOOM - Abrir (btnRedImg)
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('click', function(e) {
+    //if (e.target.id === 'btnRedImg' || e.target.closest('#btnRedImg')) {
+	if (e.target.closest('#btnRedImg')) {
+        var zoom = document.getElementById('imgZoom2');
+        if (zoom) zoom.classList.remove('not-show-errors');
+    }
+});
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// IMAGEN ZOOM - Cerrar (btnCloseImg)
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'btnCloseImg' || e.target.closest('#btnCloseImg')) {
+        var zoom = document.getElementById('imgZoom2');
+        if (zoom) zoom.classList.add('not-show-errors');
+    }
+}, true);
+
+document.addEventListener('click', function(e) {
+    var zoom = document.getElementById('imgZoom2');
+    if (!zoom || zoom.classList.contains('not-show-errors')) return;
+
+    // Si el clic NO fue dentro de imgZoom2 NI en el botÃ³n que lo abre
+    var isInsideZoom = e.target.closest('#imgZoom2');
+    var isOpenButton = e.target.closest('#btnRedImg');
+
+    if (!isInsideZoom && !isOpenButton) {
+        zoom.classList.add('not-show-errors');
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ZOOM MOUSEMOVE sobre la figura
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('mousemove', function(e) {
+    var figure = e.target.closest('#zoomTicketDetalle');
+    if (!figure) return;
+
+    var offsetX = e.offsetX || (e.touches && e.touches[0].pageX);
+    var offsetY = e.offsetY || (e.touches && e.touches[0].pageY);
+    var x = offsetX / figure.offsetWidth * 100;
+    var y = offsetY / figure.offsetHeight * 100;
+    figure.style.backgroundPosition = x + '% ' + y + '%';
+
+    var img = document.getElementById('imgTicket');
+    if (img) img.classList.add('not-show-image');
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ZOOM MOUSELEAVE
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('mouseleave', function(e) {
+    if (e.target.id === 'zoomTicketDetalle') {
+        var img = document.getElementById('imgTicket');
+        if (img) img.classList.remove('not-show-image');
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ENTER en Monto Total â click Agregar
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('keydown', function(e) {
+    if (e.target.id === '_com_rco_facturacion_solicitudFacturacionPortlet_tickettotal' && e.key === 'Enter') {
+        e.preventDefault();
+        //console.log("Se presiono enter");
+        var btn = document.getElementById('Agregar');
+        if (btn) btn.click();
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// CÃDIGO POSTAL - Solo dÃ­gitos, max 5
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('input', function(e) {
+    if (e.target.id === '_com_rco_facturacion_solicitudFacturacionPortlet_cp') {
+        e.target.value = e.target.value.replace(/\D/g, '');
+        if (e.target.value.length > 5)
+            e.target.value = e.target.value.slice(0, 5);
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// RFC - Max 13 caracteres
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('input', function(e) {
+    if (e.target.id === '_com_rco_facturacion_solicitudFacturacionPortlet_rfc') {
+        if (e.target.value.length > 13)
+            e.target.value = e.target.value.slice(0, 13);
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// RAZÃN SOCIAL - Max 200 caracteres
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('input', function(e) {
+    if (e.target.id === '_com_rco_facturacion_solicitudFacturacionPortlet_nombre_razon_social') {
+        if (e.target.value.length > 200)
+            e.target.value = e.target.value.slice(0, 200);
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ELIMINAR FILA DE TICKET (delegado)
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (btn && btn.classList.contains('btn-danger')) {
+        var row = btn.closest('tr');
+        if (row) row.remove();
+    }
+}, true);
+
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// UTILIDADES
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function containsOnlyNumbers(str) {
+    return /^\d+$/.test(str);
+}
+
+function showMessage() {
+    var l_divError = document.querySelector(".error-container");
+    if (!l_divError) return;
+    if (l_divError.textContent.trim().length > 5) {
+        l_divError.hidden = false;
+        l_divError.classList.remove("d-none");
+    }
+    setTimeout(function() {
+        if (l_divError) {
+            l_divError.hidden = true;
+            l_divError.classList.add("d-none");
+        }
+    }, 5000);
+}
+
+function clearTicketsForm() {
+    var clear = "false";
+    if (clear === "true") {
+        var inputTicket = document.getElementById("_com_rco_facturacion_solicitudFacturacionPortlet_ticket");
+        var inputTotal = document.getElementById("_com_rco_facturacion_solicitudFacturacionPortlet_tickettotal");
+        if (inputTicket) inputTicket.value = "";
+        if (inputTotal) inputTotal.value = "";
+    }
+}
+
+// Ejecutar al cargar
+showMessage();
+clearTicketsForm();
+
+
+
+--- SCRIPT ---
+
+
+
+    var btnRedImgBus = document.getElementById('btnRedImg2');
+    var btnCloseImgBus = document.getElementById('btnCloseImg2');
+    var imgFacturaBus = document.getElementById('imgTicket2');
+    var imgZoom2Bus = document.getElementById('imgZoom3');
+    var zoomDetalleBus = document.getElementById('zoomTicketDetalle2');
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#btnRedImg2')) {
+            var zoom = document.getElementById('imgZoom3');
+            if (zoom) zoom.classList.remove('not-show-errors');
+        }
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        var figure = e.target.closest('#zoomTicketDetalle2');
+        if (!figure) return;
+        var offsetX = e.offsetX || (e.touches && e.touches[0].pageX);
+        var offsetY = e.offsetY || (e.touches && e.touches[0].pageY);
+        var x = offsetX / figure.offsetWidth * 100;
+        var y = offsetY / figure.offsetHeight * 100;
+        figure.style.backgroundPosition = x + '% ' + y + '%';
+        var img = document.getElementById('imgTicket2');
+        if (img) img.classList.add('not-show-image');
+    }, true);
+
+    document.addEventListener('mouseleave', function(e) {
+        if (e.target.id === 'zoomTicketDetalle2') {
+            var img = document.getElementById('imgTicket2');
+            if (img) img.classList.remove('not-show-image');
+        }
+    }, true);
+
+    if (btnCloseImgBus) {
+        btnCloseImgBus.addEventListener('click', function() {
+            imgZoom2Bus.classList.add('not-show-errors');
+        });
+    }
+
+    function toggleVistas(mostrarBusqueda) {
+        var buscadores = document.querySelectorAll('[id="portlet_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet"], [id="p_p_id_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_"]');
+        var solicitudes = document.querySelectorAll('[id="portlet_com_rco_facturacion_solicitudFacturacionPortlet"], [id="p_p_id_com_rco_facturacion_solicitudFacturacionPortlet_"]');
+
+        buscadores.forEach(function(el) {
+            el.style.display = mostrarBusqueda ? 'block' : 'none';
+        });
+        solicitudes.forEach(function(el) {
+            el.style.display = mostrarBusqueda ? 'none' : 'block';
+        });
+    }
+
+    function showBuscador() {
+        toggleVistas(true);
+    }
+
+    function hideBuscador() {
+        toggleVistas(false);
+    }
+
+    var btnRegresar = document.getElementById('_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_regresar');
+    if (btnRegresar) {
+        btnRegresar.addEventListener('click', hideBuscador);
+    }
+
+    function cargarMensaje() {
+        try {
+            let message = JSON.parse(errorMessageBuscador);
+            console.log(message);
+            if (message?.message_user != null) {
+                let l_divError = document.querySelector(".error-buscador");
+                l_divError.textContent = message?.message_user;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        var zoom = document.getElementById('imgZoom3');
+        if (!zoom || zoom.classList.contains('not-show-errors')) return;
+        var isInsideZoom = e.target.closest('#imgZoom3');
+        var isOpenButton = e.target.closest('#btnRedImg2');
+        if (!isInsideZoom && !isOpenButton) {
+            zoom.classList.add('not-show-errors');
+        }
+    }, true);
+
+    function showMessage() {
+        cargarMensaje();
+        let l_divError = document.querySelector(".error-buscador");
+        if (l_divError.textContent.trim().length > 5) {
+            l_divError.hidden = false;
+            l_divError.classList.remove("d-none");
+        }
+        setTimeout(() => {
+            l_divError.hidden = true;
+            l_divError.classList.add("d-none");
+        }, 5000);
+    }
+
+    var errorMessageBuscador = ``;
+    var hasResults = false;
+    var mostrarBuscadorJS = false;
+
+    console.log("errorMessage:", errorMessageBuscador, "| hasResults:", hasResults, "| mostrarBuscador:", mostrarBuscadorJS);
+
+    if (mostrarBuscadorJS) {
+        showBuscador();
+        if (errorMessageBuscador !== "") {
+            showMessage();
+        }
+    }
+
+    const downloadButtons = document.querySelectorAll('.download-btn');
+    downloadButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            if (button.disabled) {
+                event.preventDefault();
+                return;
+            }
+            console.log("Clicked");
+            button.disabled = true;
+            setTimeout(() => {
+                button.disabled = false;
+            }, 5000);
+        });
+    });
+
+
+
+--- SCRIPT ---
+
+
+
+	function getValueByAttribute(node, attr) {
+		return (
+			node.dataset[attr] ||
+			(node.parentElement && node.parentElement.dataset[attr])
+		);
+	}
+
+	function sendDocumentDownloadedAnalyticsEvent(anchor) {
+		var fileEntryId = getValueByAttribute(
+			anchor,
+			'analyticsFileEntryId'
+		);
+		var title = getValueByAttribute(
+			anchor,
+			'analyticsFileEntryTitle'
+		);
+		var version = getValueByAttribute(
+			anchor,
+			'analyticsFileEntryVersion'
+		);
+
+		if (fileEntryId) {
+			Analytics.send('documentDownloaded', 'Document', {
+				groupId: themeDisplay.getScopeGroupId(),
+				fileEntryId,
+				preview:
+					!!window._com_liferay_document_library_analytics_isViewFileEntry,
+				title,
+				version,
+			});
+		}
+	}
+
+	function handleDownloadClick(event) {
+		if (window.Analytics) {
+			if (event.target.nodeName.toLowerCase() === 'a') {
+				sendDocumentDownloadedAnalyticsEvent(
+					event.target
+				);
+			}
+			else if (
+				event.target.parentNode &&
+				event.target.parentNode.nodeName.toLowerCase() === 'a'
+			) {
+				sendDocumentDownloadedAnalyticsEvent(
+					event.target.parentNode
+				);
+			}
+			else {
+				var target = event.target;
+				var matchTextContent =
+					target.textContent &&
+					target.textContent.toLowerCase() ===
+						'descargar';
+				var matchTitle =
+					target.title && target.title.toLowerCase() === 'download';
+				var matchAction = target.action === 'download';
+				var matchLexiconIcon = !!target.querySelector(
+					'.lexicon-icon-download'
+				);
+				var matchLexiconClassName = target.classList.contains(
+					'lexicon-icon-download'
+				);
+				var matchParentTitle =
+					target.parentNode &&
+					target.parentNode.title &&
+					target.parentNode.title.toLowerCase() === 'download';
+				var matchParentLexiconClassName =
+					target.parentNode &&
+					target.parentNode.classList.contains('lexicon-icon-download');
+
+				if (
+					matchTextContent ||
+					matchTitle ||
+					matchParentTitle ||
+					matchAction ||
+					matchLexiconIcon ||
+					matchLexiconClassName ||
+					matchParentLexiconClassName
+				) {
+					var selectedFiles = document.querySelectorAll(
+						'.form .custom-control-input:checked'
+					);
+
+					selectedFiles.forEach(({value}) => {
+						var selectedFile = document.querySelector(
+							'[data-analytics-file-entry-id="' + value + '"]'
+						);
+
+						sendDocumentDownloadedAnalyticsEvent(
+							selectedFile
+						);
+					});
+				}
+			}
+		}
+	}
+
+	Liferay.once('destroyPortlet', () => {
+		document.body.removeEventListener(
+			'click',
+			handleDownloadClick
+		);
+	});
+
+	Liferay.once('portletReady', () => {
+		document.body.addEventListener(
+			'click',
+			handleDownloadClick
+		);
+	});
+
+(function() {var $ = AUI.$;var _ = AUI._;
+	var onShare = function (data) {
+		if (window.Analytics) {
+			Analytics.send('shared', 'SocialBookmarks', {
+				className: data.className,
+				classPK: data.classPK,
+				type: data.type,
+				url: data.url,
+			});
+		}
+	};
+
+	var onDestroyPortlet = function () {
+		Liferay.detach('socialBookmarks:share', onShare);
+		Liferay.detach('destroyPortlet', onDestroyPortlet);
+	};
+
+	Liferay.on('socialBookmarks:share', onShare);
+	Liferay.on('destroyPortlet', onDestroyPortlet);
+})();
+(function() {var $ = AUI.$;var _ = AUI._;
+	var onVote = function (event) {
+		if (window.Analytics) {
+			let title = event.contentTitle;
+
+			if (!title) {
+				const dmNode = document.querySelector(
+					'[data-analytics-file-entry-id="' + event.classPK + '"]'
+				);
+
+				if (dmNode) {
+					title = dmNode.dataset.analyticsFileEntryTitle;
+				}
+			}
+
+			Analytics.send('VOTE', 'Ratings', {
+				className: event.className,
+				classPK: event.classPK,
+				ratingType: event.ratingType,
+				score: event.score,
+				title,
+			});
+		}
+	};
+
+	var onDestroyPortlet = function () {
+		Liferay.detach('ratings:vote', onVote);
+		Liferay.detach('destroyPortlet', onDestroyPortlet);
+	};
+
+	Liferay.on('ratings:vote', onVote);
+	Liferay.on('destroyPortlet', onDestroyPortlet);
+})();
+(function() {var $ = AUI.$;var _ = AUI._;
+	var onDestroyPortlet = function () {
+		Liferay.detach('messagePosted', onMessagePosted);
+		Liferay.detach('destroyPortlet', onDestroyPortlet);
+	};
+
+	Liferay.on('destroyPortlet', onDestroyPortlet);
+
+	var onMessagePosted = function (event) {
+		if (window.Analytics) {
+			const eventProperties = {
+				className: event.className,
+				classPK: event.classPK,
+				commentId: event.commentId,
+				text: event.text,
+			};
+
+			const blogNode = document.querySelector(
+				'[data-analytics-asset-id="' + event.classPK + '"]'
+			);
+
+			const dmNode = document.querySelector(
+				'[data-analytics-file-entry-id="' + event.classPK + '"]'
+			);
+
+			if (blogNode) {
+				eventProperties.title = blogNode.dataset.analyticsAssetTitle;
+			}
+			else if (dmNode) {
+				eventProperties.title = dmNode.dataset.analyticsFileEntryTitle;
+			}
+
+			Analytics.send('posted', 'Comment', eventProperties);
+		}
+	};
+
+	Liferay.on('messagePosted', onMessagePosted);
+})();
+
+	if (window.svg4everybody && Liferay.Data.ICONS_INLINE_SVG) {
+		svg4everybody(
+			{
+				polyfill: true,
+				validate: function (src, svg, use) {
+					return !src || !src.startsWith('#');
+				}
+			}
+		);
+	}
+
+(function() {var $ = AUI.$;var _ = AUI._;
+	Liferay.Util.delegate(
+		document,
+		'focusin',
+		'.portlet',
+		function(event) {
+			event.delegateTarget.closest('.portlet').classList.add('open');
+		}
+	);
+
+	Liferay.Util.delegate(
+		document,
+		'focusout',
+		'.portlet',
+		function(event) {
+			event.delegateTarget.closest('.portlet').classList.remove('open');
+		}
+	);
+})();
+
+	// <![CDATA[
+
+		
+
+		Liferay.currentURL = '\x2fes\x2ffactura';
+		Liferay.currentURLEncoded = '\x252Fes\x252Ffactura';
+
+	// ]]>
+
+(function() {var $ = AUI.$;var _ = AUI._;
+		import(Liferay.ThemeDisplay.getPathContext() + '/o/frontend-js-web/__liferay__/index.js').then(
+			({openToast}) => {
+				AUI().use(
+					'liferay-session',
+					function () {
+						Liferay.Session = new Liferay.SessionBase(
+							{
+								autoExtend: true,
+								redirectOnExpire: false,
+								redirectUrl: 'https\x3a\x2f\x2fredviacorta\x2emx\x2fweb\x2fred-v\x25C3\x25ADa-corta',
+								sessionLength: 900,
+								sessionTimeoutOffset: 70,
+								warningLength: 60
+							}
+						);
+
+						
+					}
+				);
+			}
+		)
+	})();
+
+	
+		Liferay.Portlet.register('com_rco_facturacion_solicitudFacturacionPortlet');
+	
+
+	Liferay.Portlet.onLoad(
+		{
+			canEditTitle: false,
+			columnPos: 0,
+			isStatic: 'end',
+			namespacedId: 'p_p_id_com_rco_facturacion_solicitudFacturacionPortlet_',
+			portletId: 'com_rco_facturacion_solicitudFacturacionPortlet',
+			refreshURL: '\x2fes\x2fc\x2fportal\x2frender_portlet\x3fp_l_id\x3d183\x26p_p_id\x3dcom_rco_facturacion_solicitudFacturacionPortlet\x26p_p_lifecycle\x3d0\x26p_t_lifecycle\x3d0\x26p_p_state\x3dnormal\x26p_p_mode\x3dview\x26p_p_col_id\x3dnull\x26p_p_col_pos\x3dnull\x26p_p_col_count\x3dnull\x26p_p_static\x3d1\x26p_p_isolated\x3d1\x26currentURL\x3d\x252Fes\x252Ffactura',
+			refreshURLData: {}
+		}
+	);
+
+
+	
+		Liferay.Portlet.register('com_rco_facturacion_buscarFactura_BuscarFacturaPortlet');
+	
+
+	Liferay.Portlet.onLoad(
+		{
+			canEditTitle: false,
+			columnPos: 0,
+			isStatic: 'end',
+			namespacedId: 'p_p_id_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_',
+			portletId: 'com_rco_facturacion_buscarFactura_BuscarFacturaPortlet',
+			refreshURL: '\x2fes\x2fc\x2fportal\x2frender_portlet\x3fp_l_id\x3d183\x26p_p_id\x3dcom_rco_facturacion_buscarFactura_BuscarFacturaPortlet\x26p_p_lifecycle\x3d0\x26p_t_lifecycle\x3d0\x26p_p_state\x3dnormal\x26p_p_mode\x3dview\x26p_p_col_id\x3dnull\x26p_p_col_pos\x3dnull\x26p_p_col_count\x3dnull\x26p_p_static\x3d1\x26p_p_isolated\x3d1\x26currentURL\x3d\x252Fes\x252Ffactura',
+			refreshURLData: {}
+		}
+	);
+
+
+	
+		Liferay.Portlet.register('com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavMobile');
+	
+
+	Liferay.Portlet.onLoad(
+		{
+			canEditTitle: false,
+			columnPos: 0,
+			isStatic: 'end',
+			namespacedId: 'p_p_id_com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavMobile_',
+			portletId: 'com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavMobile',
+			refreshURL: '\x2fes\x2fc\x2fportal\x2frender_portlet\x3fp_l_id\x3d183\x26p_p_id\x3dcom_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavMobile\x26p_p_lifecycle\x3d0\x26p_t_lifecycle\x3d0\x26p_p_state\x3dnormal\x26p_p_mode\x3dview\x26p_p_col_id\x3dnull\x26p_p_col_pos\x3dnull\x26p_p_col_count\x3dnull\x26p_p_static\x3d1\x26p_p_isolated\x3d1\x26currentURL\x3d\x252Fes\x252Ffactura',
+			refreshURLData: {}
+		}
+	);
+
+
+	
+		Liferay.Portlet.register('com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavDesktop');
+	
+
+	Liferay.Portlet.onLoad(
+		{
+			canEditTitle: false,
+			columnPos: 0,
+			isStatic: 'end',
+			namespacedId: 'p_p_id_com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavDesktop_',
+			portletId: 'com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavDesktop',
+			refreshURL: '\x2fes\x2fc\x2fportal\x2frender_portlet\x3fp_l_id\x3d183\x26p_p_id\x3dcom_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet_INSTANCE_hhsunavDesktop\x26p_p_lifecycle\x3d0\x26p_t_lifecycle\x3d0\x26p_p_state\x3dnormal\x26p_p_mode\x3dview\x26p_p_col_id\x3dnull\x26p_p_col_pos\x3dnull\x26p_p_col_count\x3dnull\x26p_p_static\x3d1\x26p_p_isolated\x3d1\x26currentURL\x3d\x252Fes\x252Ffactura',
+			refreshURLData: {}
+		}
+	);
+
+
+
+
+--- SCRIPT ---
+
+
+import {InfoItemActionHandler as ComponentModule} from '/o/layout-taglib/__liferay__/index.js';
+AUI().use(
+  'liferay-menu',
+  'liferay-form',
+function(A) {
+{
+Liferay.component('infoItemActionComponent', new ComponentModule({"executeInfoItemActionURL":"https:\/\/redviacorta.mx\/es\/c\/portal\/execute_info_item_action?p_l_mode=view&plid=183","namespace":"","spritemap":"https:\/\/redviacorta.mx\/o\/rco-simple-layout-theme\/images\/clay\/icons.svg"}), { destroyOnNavigate: true, portletId: ''});
+}
+(function() {
+var $ = AUI.$;var _ = AUI._;
+	new Liferay.Menu();
+
+	var liferayNotices = Liferay.Data.notices;
+
+	for (var i = 0; i < liferayNotices.length; i++) {
+		Liferay.Util.openToast(liferayNotices[i]);
+	}
+
+})();
+(function() {
+var $ = AUI.$;var _ = AUI._;
+	Liferay.Form.register(
+		{
+			id: '_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_\x3cportlet\x3anamespace\x20\x2f\x3efm'
+
+			
+				, fieldRules: [
+
+					
+
+							
+
+							{
+								body: 12,
+								custom: false,
+								errorMessage: '',
+								fieldName: '_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_rfc',
+								validatorName: 'minLength'
+							}
+
+					
+
+							,
+
+							{
+								body: '',
+								custom: false,
+								errorMessage: '\u0045\u006c\u0020\u0063\u0061\u006d\u0070\u006f\u0020\u0052\u0046\u0043\u0020\u0065\u0073\u0020\u006f\u0062\u006c\u0069\u0067\u0061\u0074\u006f\u0072\u0069\u006f\u002e',
+								fieldName: '_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_rfc',
+								validatorName: 'required'
+							}
+
+					
+
+							,
+
+							{
+								body: 13,
+								custom: false,
+								errorMessage: '',
+								fieldName: '_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_rfc',
+								validatorName: 'maxLength'
+							}
+
+					
+
+				]
+			
+
+			
+
+			, validateOnBlur: true
+		}
+	);
+
+	var onDestroyPortlet = function(event) {
+		if (event.portletId === 'com_rco_facturacion_buscarFactura_BuscarFacturaPortlet') {
+			delete Liferay.Form._INSTANCES['_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_\x3cportlet\x3anamespace\x20\x2f\x3efm'];
+		}
+	};
+
+	Liferay.on('destroyPortlet', onDestroyPortlet);
+
+	
+
+	Liferay.fire(
+		'_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_formReady',
+		{
+			formName: '_com_rco_facturacion_buscarFactura_BuscarFacturaPortlet_\x3cportlet\x3anamespace\x20\x2f\x3efm'
+		}
+	);
+})();
+});
+
