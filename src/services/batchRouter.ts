@@ -6,6 +6,7 @@ import { facturarLoteJalaCompostela } from "../connectors/jalaConnector.js";
 import { facturarTicketWalmart } from "../connectors/walmartConnector.js";
 import { facturarTicketOxxo } from "../connectors/oxxoConnector.js";
 import { facturarTicketFarmaciasGuadalajara } from "../connectors/farmaciasGdlConnector.js";
+import { facturarTicketCostco } from "../connectors/costcoConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 import { DatosFiscales } from "../types.js";
 
@@ -17,6 +18,7 @@ export type ProviderType =
   | "WALMART"
   | "OXXO"
   | "FARMACIAS_GDL"
+  | "COSTCO"
   | "EMAIL_DIRECTO"
   | "GENERICO";
 
@@ -99,12 +101,15 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
     return { provider: "JALA_COMPOSTELA" };
   }
 
-  // 5. Walmart México (Walmart, Bodega Aurrera, Sam's Club, Express)
+  // 5. Walmart México y Sam's Club (Nueva Walmart de México: Bodega Aurrera, Sam's Club, Walmart Express)
   if (
     url.includes("walmart") ||
+    url.includes("sams") ||
     est.includes("WALMART") ||
     est.includes("BODEGA AURRERA") ||
     est.includes("SAMS") ||
+    raw.includes("sam's") ||
+    raw.includes("sams club") ||
     raw.includes("nueva walmart de mexico") ||
     raw.includes("facturacion.walmartmexico") ||
     raw.includes("facturacion-clientes.walmart")
@@ -132,6 +137,17 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
     raw.includes("corporativo fragua")
   ) {
     return { provider: "FARMACIAS_GDL" };
+  }
+
+  // 8. Costco Wholesale México
+  if (
+    url.includes("costco") ||
+    est.includes("COSTCO") ||
+    raw.includes("costco wholesale") ||
+    raw.includes("costco mexico") ||
+    raw.includes("costco méxico")
+  ) {
+    return { provider: "COSTCO" };
   }
 
   // 6. Solicitudes por Correo Electrónico
@@ -269,6 +285,17 @@ export async function procesarLoteCompletoAutonomo(
         case "FARMACIAS_GDL":
           for (const itm of grupo.items) {
             const r = await facturarTicketFarmaciasGuadalajara({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "COSTCO":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketCostco({
               tickets: [itm],
               perfil,
               onProgress,
