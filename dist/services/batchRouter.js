@@ -6,6 +6,8 @@ import { facturarTicketWalmart } from "../connectors/walmartConnector.js";
 import { facturarTicketOxxo } from "../connectors/oxxoConnector.js";
 import { facturarTicketFarmaciasGuadalajara } from "../connectors/farmaciasGdlConnector.js";
 import { facturarTicketCostco } from "../connectors/costcoConnector.js";
+import { facturarTicketOxxoGas } from "../connectors/oxxoGasConnector.js";
+import { facturarTicketG500 } from "../connectors/g500Connector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
@@ -77,7 +79,15 @@ export function clasificarProveedorTicket(item) {
         raw.includes("facturacion-clientes.walmart")) {
         return { provider: "WALMART" };
     }
-    // 6. Cadena Comercial OXXO
+    // 6. OXXO GAS (Servicios Gasolineros de México)
+    if (url.includes("oxxogas") ||
+        est.includes("OXXO GAS") ||
+        raw.includes("oxxo gas") ||
+        raw.includes("servicios gasolineros de mexico") ||
+        raw.includes("servicios gasolineros de méxico")) {
+        return { provider: "OXXO_GAS" };
+    }
+    // 7. Cadena Comercial OXXO (Tiendas)
     if (url.includes("oxxo.com") ||
         est.includes("OXXO") ||
         raw.includes("cadena comercial oxxo") ||
@@ -85,7 +95,7 @@ export function clasificarProveedorTicket(item) {
         raw.includes("oxxo, s.a.")) {
         return { provider: "OXXO" };
     }
-    // 7. Farmacias Guadalajara (Corporativo Fragua)
+    // 8. Farmacias Guadalajara (Corporativo Fragua)
     if (url.includes("farmaciasguadalajara") ||
         (est.includes("FARMACIA") && est.includes("GUADALAJARA")) ||
         est.includes("FRAGUA") ||
@@ -93,13 +103,20 @@ export function clasificarProveedorTicket(item) {
         raw.includes("corporativo fragua")) {
         return { provider: "FARMACIAS_GDL" };
     }
-    // 8. Costco Wholesale México
+    // 9. Costco Wholesale México
     if (url.includes("costco") ||
         est.includes("COSTCO") ||
         raw.includes("costco wholesale") ||
         raw.includes("costco mexico") ||
         raw.includes("costco méxico")) {
         return { provider: "COSTCO" };
+    }
+    // 10. G500 Network
+    if (url.includes("g500") ||
+        est.includes("G500") ||
+        raw.includes("g500") ||
+        raw.includes("g-500")) {
+        return { provider: "G500" };
     }
     // 6. Solicitudes por Correo Electrónico
     if (email ||
@@ -196,6 +213,16 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                         resultados.push(r);
                     }
                     continue;
+                case "OXXO_GAS":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketOxxoGas({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
                 case "OXXO":
                     for (const itm of grupo.items) {
                         const r = await facturarTicketOxxo({
@@ -219,6 +246,16 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                 case "COSTCO":
                     for (const itm of grupo.items) {
                         const r = await facturarTicketCostco({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "G500":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketG500({
                             tickets: [itm],
                             perfil,
                             onProgress,
