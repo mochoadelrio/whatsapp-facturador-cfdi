@@ -854,9 +854,10 @@ ${formatearResumenPlan(perfil)}
 
 🔌 *Conectores Oficiales Activos:*
 • 🛣️ *Casetas:* RCO (Vía Corta), IDEAL (Gdl-Tepic), Las Varas, Jala-Compostela
-• 🏪 *Tiendas:* OXXO, Farmacias Guadalajara, Walmart, Sam's Club, Costco, Bodega Aurrera
-• ⛽ *Gasolineras:* OXXO GAS, G500 Network
-• 📧 *Correo:* Facturación automática por email
+• 🛒 *Súper y Clubes (León Gto):* H-E-B, Chedraui, Soriana, City Club, Walmart, Sam's Club, Costco, Bodega Aurrera
+• 🏪 *Tiendas y Farmacias:* OXXO, Farmacias Guadalajara
+• 🚗 *Refacciones y Gas:* AutoZone México, Grupo CIOSA, OXXO GAS, G500, Gas Noel
+• 🍽️ *Insumos Restaurante:* El Amigo del Chef + Facturación automática por correo
 
 Envía cualquier ticket en foto o escribe \`/clientes\` para ver tus reportes.`,
     });

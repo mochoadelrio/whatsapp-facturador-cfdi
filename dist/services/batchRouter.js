@@ -8,6 +8,10 @@ import { facturarTicketFarmaciasGuadalajara } from "../connectors/farmaciasGdlCo
 import { facturarTicketCostco } from "../connectors/costcoConnector.js";
 import { facturarTicketOxxoGas } from "../connectors/oxxoGasConnector.js";
 import { facturarTicketG500 } from "../connectors/g500Connector.js";
+import { facturarTicketAutoZone } from "../connectors/autozoneConnector.js";
+import { facturarTicketHeb } from "../connectors/hebConnector.js";
+import { facturarTicketChedraui } from "../connectors/chedrauiConnector.js";
+import { facturarTicketSoriana } from "../connectors/sorianaConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
@@ -118,7 +122,44 @@ export function clasificarProveedorTicket(item) {
         raw.includes("g-500")) {
         return { provider: "G500" };
     }
-    // 6. Solicitudes por Correo Electrónico
+    // 11. AutoZone de México
+    if (url.includes("autozone") ||
+        est.includes("AUTOZONE") ||
+        est.includes("AUTO ZONE") ||
+        raw.includes("autozone") ||
+        raw.includes("auto zone") ||
+        raw.includes("facturaelectronica@autozone.com")) {
+        return { provider: "AUTOZONE" };
+    }
+    // 12. Supermercados H-E-B México (Muy fuerte en León, Gto.)
+    if (url.includes("heb.com.mx") ||
+        est.includes("H-E-B") ||
+        est.includes("HEB ") ||
+        est === "HEB" ||
+        est.includes("SUPERMERCADOS INTERNACIONALES HEB") ||
+        raw.includes("facturacion.heb.com.mx") ||
+        raw.includes("supermercados internacionales heb")) {
+        return { provider: "HEB" };
+    }
+    // 13. Tiendas Chedraui / Selecto Chedraui (León, Gto.)
+    if (url.includes("chedraui") ||
+        url.includes("masfacturaweb.com.mx/chedraui") ||
+        est.includes("CHEDRAUI") ||
+        raw.includes("tiendas chedraui") ||
+        raw.includes("chedraui")) {
+        return { provider: "CHEDRAUI" };
+    }
+    // 14. Organización Soriana y City Club (León, Gto.)
+    if (url.includes("soriana") ||
+        url.includes("cityclub") ||
+        est.includes("SORIANA") ||
+        est.includes("CITY CLUB") ||
+        raw.includes("tiendas soriana") ||
+        raw.includes("organizacion soriana") ||
+        raw.includes("city club")) {
+        return { provider: "SORIANA" };
+    }
+    // 15. Solicitudes por Correo Electrónico (El Amigo del Chef León, Gas Noel León, Grupo CIOSA, etc.)
     if (email ||
         raw.includes("facturacion@amigodelchef.com") ||
         raw.includes("facturac1on@amigodelchef.com") ||
@@ -135,6 +176,14 @@ export function clasificarProveedorTicket(item) {
         return {
             provider: "EMAIL_DIRECTO",
             emailDestino: "servicioaclientes@ciosa.com",
+        };
+    }
+    if (est.includes("GAS NOEL") ||
+        raw.includes("gas noel") ||
+        raw.includes("gasnoel.com")) {
+        return {
+            provider: "EMAIL_DIRECTO",
+            emailDestino: "atencionaclientes@gasnoel.com.mx",
         };
     }
     return { provider: "GENERICO" };
@@ -256,6 +305,46 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                 case "G500":
                     for (const itm of grupo.items) {
                         const r = await facturarTicketG500({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "AUTOZONE":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketAutoZone({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "HEB":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketHeb({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "CHEDRAUI":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketChedraui({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "SORIANA":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketSoriana({
                             tickets: [itm],
                             perfil,
                             onProgress,
