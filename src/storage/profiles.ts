@@ -69,6 +69,21 @@ export function obtenerPerfilFiscal(jid: string): {
   return { perfil: normalizarPerfilConPlan(PERFIL_DEFAULT), esDefault: true };
 }
 
+export function obtenerTodosLosPerfiles(): Record<string, DatosFiscales> {
+  asegurarDirectorio();
+  try {
+    const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+    const perfiles: Record<string, DatosFiscales> = JSON.parse(raw);
+    const resultado: Record<string, DatosFiscales> = {};
+    for (const [k, v] of Object.entries(perfiles)) {
+      resultado[k] = normalizarPerfilConPlan(v);
+    }
+    return resultado;
+  } catch {
+    return {};
+  }
+}
+
 export function guardarPerfilFiscal(jid: string, perfil: DatosFiscales): void {
   asegurarDirectorio();
   let perfiles: Record<string, DatosFiscales> = {};

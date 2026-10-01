@@ -57,6 +57,21 @@ export function obtenerPerfilFiscal(jid) {
     }
     return { perfil: normalizarPerfilConPlan(PERFIL_DEFAULT), esDefault: true };
 }
+export function obtenerTodosLosPerfiles() {
+    asegurarDirectorio();
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        const perfiles = JSON.parse(raw);
+        const resultado = {};
+        for (const [k, v] of Object.entries(perfiles)) {
+            resultado[k] = normalizarPerfilConPlan(v);
+        }
+        return resultado;
+    }
+    catch {
+        return {};
+    }
+}
 export function guardarPerfilFiscal(jid, perfil) {
     asegurarDirectorio();
     let perfiles = {};

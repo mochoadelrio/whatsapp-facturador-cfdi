@@ -16,6 +16,7 @@ import {
   formatearResumenPlan,
   guardarPerfilFiscal,
   obtenerPerfilFiscal,
+  obtenerTodosLosPerfiles,
   registrarConsumoTicket,
 } from "../storage/profiles.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
@@ -752,24 +753,112 @@ ${formatearResumenPlan(perfil)}
     return;
   }
 
-  // 2. Comando /perfil o /plan o /saldo
+  // 1.5 Comando /clientes, /reporte o /consumos (Listado de todos los clientes y tickets usados)
   if (
-    textoLimpio.toLowerCase() === "/perfil" ||
-    textoLimpio.toLowerCase() === "/plan" ||
-    textoLimpio.toLowerCase() === "/saldo"
+    textoLimpio.toLowerCase() === "/clientes" ||
+    textoLimpio.toLowerCase() === "/reporte" ||
+    textoLimpio.toLowerCase() === "/consumos"
   ) {
-    const { perfil } = obtenerPerfilFiscal(perfilKey);
+    const todos = obtenerTodosLosPerfiles();
+    const rfcVistos = new Set<string>();
+    const listaClientes: Array<{
+      nombre: string;
+      rfc: string;
+      tel: string;
+      usados: number;
+      incluidos: number;
+      extras: number;
+      costoTotal: number;
+    }> = [];
+
+    for (const [key, p] of Object.entries(todos)) {
+      const rfc = (p.rfc || "").toUpperCase();
+      if (!rfc || rfcVistos.has(rfc)) continue;
+      rfcVistos.add(rfc);
+
+      const usados = p.ticketsUsadosMes ?? 0;
+      const incluidos = p.ticketsIncluidos ?? 40;
+      const precioBase = p.precioMensual ?? 299;
+      const costoExtra = p.costoTicketExtra ?? 5;
+      const extras = Math.max(0, usados - incluidos);
+      const costoTotal = precioBase + extras * costoExtra;
+
+      listaClientes.push({
+        nombre: p.razonSocial,
+        rfc,
+        tel: p.telefono || key.split("@")[0],
+        usados,
+        incluidos,
+        extras,
+        costoTotal,
+      });
+    }
+
+    if (listaClientes.length === 0) {
+      const { perfil } = obtenerPerfilFiscal(perfilKey);
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n👥 *Reporte de Clientes del Mes:*\n\n1. *${perfil.razonSocial}* (\`${perfil.rfc}\`)\n   • Consumo: *${perfil.ticketsUsadosMes ?? 0}* / ${perfil.ticketsIncluidos ?? 40} tickets\n   • Teléfono: ${perfil.telefono || "Registrado"}`,
+      });
+      return;
+    }
+
+    const reporteTexto = listaClientes
+      .map(
+        (c, idx) =>
+          `${idx + 1}. *${c.nombre}*\n   • *RFC:* \`${c.rfc}\` | *Tel:* ${c.tel}\n   • *Tickets facturados este mes:* *${c.usados}* de ${c.incluidos}${
+            c.extras > 0 ? ` (+${c.extras} extras)` : ""
+          }\n   • *Total plan mes:* \$${c.costoTotal} MXN`
+      )
+      .join("\n\n");
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n📊 *Reporte General de Clientes y Tickets Usados:*\n\n${reporteTexto}\n\n💡 _Para ver el detalle de un cliente específico, envía:_ \`/saldo <RFC o Teléfono>\``,
+    });
+    return;
+  }
+
+  // 2. Comando /perfil o /plan o /saldo (con o sin parámetro de búsqueda)
+  if (
+    textoLimpio.toLowerCase().startsWith("/saldo") ||
+    textoLimpio.toLowerCase().startsWith("/plan") ||
+    textoLimpio.toLowerCase() === "/perfil"
+  ) {
+    const partes = textoLimpio.split(" ");
+    const terminoBusqueda = partes.slice(1).join(" ").trim().toUpperCase();
+
+    let perfilAMostrar = obtenerPerfilFiscal(perfilKey).perfil;
+
+    // Si especificó un RFC, nombre o teléfono a consultar
+    if (terminoBusqueda) {
+      const todos = obtenerTodosLosPerfiles();
+      const match = Object.values(todos).find(
+        (p) =>
+          p.rfc.toUpperCase().includes(terminoBusqueda) ||
+          p.razonSocial.toUpperCase().includes(terminoBusqueda) ||
+          (p.telefono && p.telefono.includes(terminoBusqueda))
+      );
+
+      if (match) {
+        perfilAMostrar = match;
+      } else {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}\n⚠️ No se encontró ningún cliente con el término *"${terminoBusqueda}"*.\nUsa \`/clientes\` para ver la lista completa.`,
+        });
+        return;
+      }
+    }
+
     await enviarMensajeBot(sock, replyJid, {
       text: `${BOT_SIGNATURE}
-📋 *Tus Datos Fiscales (CFDI 4.0):*
-• *RFC:* \`${perfil.rfc}\`
-• *Nombre / Razón Social:* ${perfil.razonSocial}
-• *Código Postal:* ${perfil.codigoPostal}
-• *Régimen Fiscal SAT:* ${perfil.regimenFiscal}
-• *Uso de CFDI:* ${perfil.usoCfdi}
-• *Celular registrado:* ${perfil.telefono || "+52 1 477 590 7888"}
+📋 *Datos Fiscales y Consumo de Tickets (CFDI 4.0):*
+• *Cliente:* ${perfilAMostrar.razonSocial}
+• *RFC:* \`${perfilAMostrar.rfc}\`
+• *Código Postal:* ${perfilAMostrar.codigoPostal}
+• *Régimen Fiscal SAT:* ${perfilAMostrar.regimenFiscal}
+• *Uso de CFDI:* ${perfilAMostrar.usoCfdi}
+• *Celular registrado:* ${perfilAMostrar.telefono || "+52 1 477 590 7888"}
 
-${formatearResumenPlan(perfil)}`,
+${formatearResumenPlan(perfilAMostrar)}`,
     });
     return;
   }
