@@ -149,6 +149,53 @@ export function registrarConsumoTicket(
   return actualizado;
 }
 
+export function ajustarConsumoTicket(
+  busqueda: string,
+  cantidad: number
+): DatosFiscales | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+    perfiles = JSON.parse(raw);
+  } catch {
+    perfiles = {};
+  }
+
+  const query = busqueda.trim().toUpperCase();
+  const mesActual = obtenerMesActual();
+  let matchRfc: string | null = null;
+
+  for (const [key, p] of Object.entries(perfiles)) {
+    if (
+      p.rfc?.toUpperCase().includes(query) ||
+      p.razonSocial?.toUpperCase().includes(query) ||
+      (p.telefono && p.telefono.includes(query)) ||
+      key.includes(query)
+    ) {
+      matchRfc = p.rfc.toUpperCase();
+      break;
+    }
+  }
+
+  if (!matchRfc) return null;
+
+  let perfilActualizado: DatosFiscales | null = null;
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+      perfiles[key] = {
+        ...normalizarPerfilConPlan(perfiles[key]),
+        ticketsUsadosMes: cantidad,
+        periodoMes: mesActual,
+      };
+      perfilActualizado = perfiles[key];
+    }
+  }
+
+  fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  return perfilActualizado;
+}
+
 export function formatearResumenPlan(perfil: DatosFiscales): string {
   const p = normalizarPerfilConPlan(perfil);
   const usados = p.ticketsUsadosMes ?? 0;

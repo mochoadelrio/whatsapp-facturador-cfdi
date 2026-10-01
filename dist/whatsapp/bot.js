@@ -6,7 +6,7 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { formatearResumenPlan, guardarPerfilFiscal, obtenerPerfilFiscal, obtenerTodosLosPerfiles, registrarConsumoTicket, } from "../storage/profiles.js";
+import { ajustarConsumoTicket, formatearResumenPlan, guardarPerfilFiscal, obtenerPerfilFiscal, obtenerTodosLosPerfiles, registrarConsumoTicket, } from "../storage/profiles.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
@@ -834,6 +834,45 @@ Envía cualquier ticket en foto o escribe \`/clientes\` para ver tus reportes.`,
 
 ${formatearResumenPlan(perfilAMostrar)}`,
         });
+        return;
+    }
+    // 2.2 Comando /ajustar-tickets <RFC o Celular> <cantidad>
+    if (textoLimpio.toLowerCase().startsWith("/ajustar-tickets") ||
+        textoLimpio.toLowerCase().startsWith("/set-tickets") ||
+        textoLimpio.toLowerCase().startsWith("/ajustar-saldo")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        let query = perfilKey;
+        let nuevaCantidad = 0;
+        if (partes.length === 2 && !isNaN(Number(partes[1]))) {
+            nuevaCantidad = parseInt(partes[1], 10);
+        }
+        else if (partes.length >= 3 && !isNaN(Number(partes[2]))) {
+            query = partes[1];
+            nuevaCantidad = parseInt(partes[2], 10);
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso correcto:* \`/ajustar-tickets <RFC o Teléfono> <cantidad>\`\nEjemplo: \`/ajustar-tickets VAMC9112056Q2 16\``,
+            });
+            return;
+        }
+        const actualizado = ajustarConsumoTicket(query, nuevaCantidad);
+        if (actualizado) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *Contador de tickets actualizado con éxito:*
+• *Cliente:* ${actualizado.razonSocial} (\`${actualizado.rfc}\`)
+• *Tickets usados este mes:* *${actualizado.ticketsUsadosMes}* de ${actualizado.ticketsIncluidos}
+• *Disponibles restantes:* *${Math.max(0, (actualizado.ticketsIncluidos || 40) - (actualizado.ticketsUsadosMes || 0))}* tickets
+
+${formatearResumenPlan(actualizado)}`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente *"${query}"*. Revisa \`/clientes\`.`,
+            });
+        }
         return;
     }
     // 2.5 Comando /demo o /prueba o /facturar
