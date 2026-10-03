@@ -7,7 +7,6 @@ services:
       - .env
     ports:
       - "3000:3000"
-      - "80:3000"
     volumes:
       # Volúmenes persistentes para que no se pierda la sesión de WhatsApp ni las facturas
       - ./auth_whatsapp:/app/auth_whatsapp
