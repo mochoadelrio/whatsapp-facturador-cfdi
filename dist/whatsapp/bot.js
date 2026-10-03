@@ -1,4 +1,4 @@
-import makeWASocket, { DisconnectReason, downloadMediaMessage, useMultiFileAuthState, } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, DisconnectReason, downloadMediaMessage, useMultiFileAuthState, } from "@whiskeysockets/baileys";
 import * as fs from "fs";
 import * as path from "path";
 import { createRequire } from "module";
@@ -166,12 +166,27 @@ async function enviarMensajeBot(sock, jid, content) {
     const targetJid = normalizarJidEnvio(jid);
     const tarea = colaEnvio.then(async () => {
         try {
-            // Pequeña pausa entre mensajes consecutivos para que el ratchet Signal sincronice limpio
-            await new Promise((r) => setTimeout(r, 350));
+            // 1. Simular presencia humana de escritura ('composing') para evitar filtros anti-bot
+            try {
+                if (typeof sock.sendPresenceUpdate === "function") {
+                    await sock.sendPresenceUpdate("composing", targetJid);
+                }
+            }
+            catch { }
+            // 2. Pausa natural humana (600ms a 1100ms)
+            const delayHumano = Math.floor(Math.random() * 500) + 600;
+            await new Promise((r) => setTimeout(r, delayHumano));
             const sent = await Promise.race([
                 sock.sendMessage(targetJid, content),
                 new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout enviando mensaje WA")), 15000)),
             ]);
+            // 3. Pausar estado de presencia
+            try {
+                if (typeof sock.sendPresenceUpdate === "function") {
+                    await sock.sendPresenceUpdate("paused", targetJid);
+                }
+            }
+            catch { }
             const msgId = sent?.key?.id;
             if (msgId) {
                 mensajesEnviadosPorBot.add(msgId);
@@ -252,6 +267,7 @@ let reconnectingTimeout = null;
 let estadoMotorBot = "RUNNING";
 let ultimaConexionStatus = "connecting";
 let ultimoQrSvg = "";
+let intentosReconexionConsecutivos = 0;
 export function obtenerEstadoMotorBot() {
     const uptimeSec = Math.floor(process.uptime());
     const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
@@ -369,12 +385,14 @@ export async function iniciarBotWhatsApp() {
     const sock = makeWASocket({
         auth: state,
         logger: pino({ level: "silent" }),
+        browser: Browsers.macOS("Chrome"),
         printQRInTerminal: false,
         syncFullHistory: false,
         markOnlineOnConnect: false,
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
-        maxMsgRetryCount: 5,
+        keepAliveIntervalMs: 30000,
+        maxMsgRetryCount: 3,
         getMessage: async (key) => {
             if (key?.id && almacenMensajesEnviados.has(key.id)) {
                 return almacenMensajesEnviados.get(key.id);
@@ -404,11 +422,22 @@ export async function iniciarBotWhatsApp() {
             if (shouldReconnect) {
                 if (reconnectingTimeout)
                     clearTimeout(reconnectingTimeout);
-                const delay = statusCode === 408 ? 6000 : 3000;
+                intentosReconexionConsecutivos++;
+                // Protección anti-bucle: si hay más de 6 fallos seguidos, pausar intentos para proteger el número
+                if (intentosReconexionConsecutivos > 6) {
+                    console.warn("⚠️ Múltiples fallos consecutivos de conexión (>6). Pausando reconexión automática para proteger el número.");
+                    return;
+                }
+                // Backoff exponencial suave con variación aleatoria (jitter): 5s, 8s, 15s, 25s, 35s...
+                const baseDelay = Math.min(35000, 3000 * Math.pow(1.6, Math.min(intentosReconexionConsecutivos, 5)));
+                const jitter = Math.floor(Math.random() * 2000);
+                const delay = Math.round(baseDelay + jitter);
+                console.log(`⏳ Esperando ${Math.round(delay / 1000)}s antes de reconectar limpiamente (intento #${intentosReconexionConsecutivos})...`);
                 reconnectingTimeout = setTimeout(() => iniciarBotWhatsApp(), delay);
             }
             else {
                 console.log("❌ Sesión cerrada o rechazada (403/401/loggedOut). Limpiando auth_whatsapp para generar nuevo código QR...");
+                intentosReconexionConsecutivos = 0;
                 const authFolder = process.env.AUTH_FOLDER || "auth_whatsapp";
                 const dirPath = path.resolve(process.cwd(), authFolder);
                 if (fs.existsSync(dirPath)) {
@@ -424,12 +453,13 @@ export async function iniciarBotWhatsApp() {
                 }
                 if (reconnectingTimeout)
                     clearTimeout(reconnectingTimeout);
-                reconnectingTimeout = setTimeout(() => iniciarBotWhatsApp(), 2000);
+                reconnectingTimeout = setTimeout(() => iniciarBotWhatsApp(), 2500);
             }
         }
         else if (connection === "open") {
             ultimaConexionStatus = "open";
             ultimoQrSvg = "";
+            intentosReconexionConsecutivos = 0;
             console.log("\n✅ ¡Bot de Facturación conectado exitosamente a WhatsApp!");
             console.log("   ID Usuario:", sock.user?.id, "| LID:", sock.user?.lid);
             console.log("💡 Número Bot activo: +52 56 2339 3840 | Administrador: +52 477 392 9593\n");
@@ -530,13 +560,11 @@ Ya estoy 100% en línea listo para recibir tickets y comandos desde tu WhatsApp.
     sock.ev.on("messaging-history.set", async ({ messages }) => {
         if (!Array.isArray(messages) || messages.length === 0)
             return;
-        console.log(`📚 Historial recibido (${messages.length} mensajes). Verificando tickets recientes...`);
+        console.log(`📚 Historial recibido (${messages.length} mensajes sincronizados en segundo plano).`);
+        // Registrar IDs en mensajesProcesados para no volver a responder mensajes viejos del teléfono
         for (const msg of messages) {
-            try {
-                await manejarMensajeEntrante(sock, msg);
-            }
-            catch (err) {
-                console.error("Error procesando mensaje de historial:", err);
+            if (msg?.key?.id) {
+                mensajesProcesados.add(msg.key.id);
             }
         }
     });
