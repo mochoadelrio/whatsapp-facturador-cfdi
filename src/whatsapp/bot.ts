@@ -479,11 +479,12 @@ export async function iniciarBotWhatsApp(): Promise<void> {
         "💡 Cliente activo: CRISTHIAN VALDIVIA MARTINEZ (+5214775907888 | VAMC9112056Q2)\n"
       );
 
-      // Al conectar, solicitar sincronización de mensajes recientes del chat de Cristhian
+      // Al conectar, solicitar sincronización y notificar al admin Manuel
       if (!notificacionInicialEnviada) {
         notificacionInicialEnviada = true;
-        const myIdNum = sock.user?.id?.split(":")[0]?.split("@")[0] || "5214773929593";
+        const myIdNum = sock.user?.id?.split(":")[0]?.split("@")[0] || "5215623393840";
         const selfPnJid = `${myIdNum}@s.whatsapp.net`;
+        const adminJid = "5214773929593@s.whatsapp.net";
 
         setTimeout(async () => {
           try {
@@ -498,19 +499,19 @@ export async function iniciarBotWhatsApp(): Promise<void> {
                 },
                 1790806880000
               );
-              await (sock as any).fetchMessageHistory(
-                20,
-                {
-                  remoteJid: "140974432981152@lid",
-                  fromMe: true,
-                  id: "3EB054DC6267AA29C87DC6",
-                },
-                1790806880000
-              );
             }
           } catch (e: any) {
             console.warn("Aviso al solicitar historial reciente:", e?.message || e);
           }
+
+          // Enviar confirmación al teléfono de Manuel
+          await enviarMensajeBot(sock, adminJid, {
+            text: `${BOT_SIGNATURE}
+🟢 *¡KlientIA Facturación Conectado con Éxito!*
+📱 *Número Oficial del Bot:* +52 56 2339 3840
+
+Ya estoy 100% en línea listo para recibir tickets y comandos desde tu WhatsApp.`,
+          });
 
           await enviarMensajeBot(sock, selfPnJid, {
             text: `${BOT_SIGNATURE}
