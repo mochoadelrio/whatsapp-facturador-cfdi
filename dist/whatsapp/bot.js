@@ -398,7 +398,8 @@ export async function iniciarBotWhatsApp() {
         if (connection === "close") {
             ultimaConexionStatus = "close";
             const statusCode = lastDisconnect?.error?.output?.statusCode;
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            const isFatalAuth = statusCode === DisconnectReason.loggedOut || statusCode === 403 || statusCode === 401;
+            const shouldReconnect = !isFatalAuth;
             console.log(`⚠️ Conexión cerrada (código ${statusCode}). Reconectando: ${shouldReconnect}`);
             if (shouldReconnect) {
                 if (reconnectingTimeout)
@@ -407,7 +408,23 @@ export async function iniciarBotWhatsApp() {
                 reconnectingTimeout = setTimeout(() => iniciarBotWhatsApp(), delay);
             }
             else {
-                console.log("❌ Sesión cerrada. Borra la carpeta 'auth_whatsapp' y vuelve a ejecutar para escanear de nuevo.");
+                console.log("❌ Sesión cerrada o rechazada (403/401/loggedOut). Limpiando auth_whatsapp para generar nuevo código QR...");
+                const authFolder = process.env.AUTH_FOLDER || "auth_whatsapp";
+                const dirPath = path.resolve(process.cwd(), authFolder);
+                if (fs.existsSync(dirPath)) {
+                    try {
+                        for (const f of fs.readdirSync(dirPath)) {
+                            try {
+                                fs.unlinkSync(path.join(dirPath, f));
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                }
+                if (reconnectingTimeout)
+                    clearTimeout(reconnectingTimeout);
+                reconnectingTimeout = setTimeout(() => iniciarBotWhatsApp(), 2000);
             }
         }
         else if (connection === "open") {
@@ -415,27 +432,14 @@ export async function iniciarBotWhatsApp() {
             ultimoQrSvg = "";
             console.log("\n✅ ¡Bot de Facturación conectado exitosamente a WhatsApp!");
             console.log("   ID Usuario:", sock.user?.id, "| LID:", sock.user?.lid);
-            console.log("💡 Cliente activo: CRISTHIAN VALDIVIA MARTINEZ (+5214775907888 | VAMC9112056Q2)\n");
-            // Al conectar, solicitar sincronización y notificar al admin Manuel
+            console.log("💡 Número Bot activo: +52 56 2339 3840 | Administrador: +52 477 392 9593\n");
+            // Al conectar, notificar al admin Manuel y al bot
             if (!notificacionInicialEnviada) {
                 notificacionInicialEnviada = true;
                 const myIdNum = sock.user?.id?.split(":")[0]?.split("@")[0] || "5215623393840";
                 const selfPnJid = `${myIdNum}@s.whatsapp.net`;
                 const adminJid = "5214773929593@s.whatsapp.net";
                 setTimeout(async () => {
-                    try {
-                        console.log("🔄 Solicitando historial reciente del chat de Cristhian (+5214775907888)...");
-                        if (typeof sock.fetchMessageHistory === "function") {
-                            await sock.fetchMessageHistory(20, {
-                                remoteJid: "5214775907888@s.whatsapp.net",
-                                fromMe: true,
-                                id: "3EB054DC6267AA29C87DC6",
-                            }, 1790806880000);
-                        }
-                    }
-                    catch (e) {
-                        console.warn("Aviso al solicitar historial reciente:", e?.message || e);
-                    }
                     // Enviar confirmación al teléfono de Manuel
                     await enviarMensajeBot(sock, adminJid, {
                         text: `${BOT_SIGNATURE}
