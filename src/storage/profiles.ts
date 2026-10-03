@@ -429,3 +429,149 @@ export function formatearResumenPlan(perfil: DatosFiscales): string {
 
   return `📊 *${nombrePaquete} (\$${precioBase} MXN):*\n• *Tickets facturados:* ${usados} de ${incluidos} (*${restantes} disponibles*)${textoVigencia}\n• *Tickets adicionales:* \$${costoExtra}.00 MXN c/u (con recarga prepagada).`;
 }
+
+export interface ClienteUnicoItem extends DatosFiscales {
+  ticketsRestantes: number;
+  diasRestantes: number;
+  jids: string[];
+}
+
+export function obtenerListaClientesUnicos(): ClienteUnicoItem[] {
+  asegurarDirectorio();
+  try {
+    const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+    const perfiles: Record<string, DatosFiscales> = JSON.parse(raw);
+    const grupos = new Map<string, { perfil: DatosFiscales; jids: string[] }>();
+
+    for (const [jid, p] of Object.entries(perfiles)) {
+      const norm = normalizarPerfilConPlan(p);
+      const rfc = (norm.rfc || "SIN_RFC").toUpperCase();
+      if (!grupos.has(rfc)) {
+        grupos.set(rfc, { perfil: norm, jids: [jid] });
+      } else {
+        const item = grupos.get(rfc)!;
+        item.jids.push(jid);
+        // Mantener la versión más completa si existe
+        if (norm.fechaInicioPlan && !item.perfil.fechaInicioPlan) {
+          item.perfil = norm;
+        }
+      }
+    }
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const msHoy = new Date(hoy).getTime();
+    const lista: ClienteUnicoItem[] = [];
+
+    for (const [, { perfil, jids }] of grupos.entries()) {
+      const p = normalizarPerfilConPlan(perfil);
+      const incluidos = p.ticketsIncluidos ?? 40;
+      const usados = p.ticketsUsadosMes ?? 0;
+      const restantes = Math.max(0, incluidos - usados);
+
+      let dias = 30;
+      let estado = p.estadoPlan || "ACTIVO";
+
+      if (p.fechaFinPlan) {
+        const msFin = new Date(p.fechaFinPlan).getTime();
+        dias = Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24));
+        if (dias < 0) {
+          estado = "VENCIDO";
+        } else if (restantes === 0) {
+          estado = "AGOTADO";
+        }
+      }
+
+      lista.push({
+        ...p,
+        estadoPlan: estado,
+        ticketsRestantes: restantes,
+        diasRestantes: Math.max(0, dias),
+        jids,
+      });
+    }
+
+    return lista;
+  } catch (err) {
+    console.error("Error al obtener lista de clientes únicos:", err);
+    return [];
+  }
+}
+
+export function crearOActualizarCliente(perfil: DatosFiscales, telefono?: string): DatosFiscales {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+    perfiles = JSON.parse(raw);
+  } catch {
+    perfiles = {};
+  }
+
+  const telLimpio = (telefono || perfil.telefono || "").replace(/\D/g, "");
+  const num10 = telLimpio.slice(-10);
+  const rfcClean = perfil.rfc.trim().toUpperCase();
+
+  const norm = normalizarPerfilConPlan({
+    ...perfil,
+    rfc: rfcClean,
+    razonSocial: perfil.razonSocial.trim().toUpperCase(),
+    codigoPostal: perfil.codigoPostal.trim(),
+    regimenFiscal: perfil.regimenFiscal.trim(),
+    usoCfdi: (perfil.usoCfdi || "G03").trim().toUpperCase(),
+    email: (perfil.email || "").trim().toLowerCase(),
+    telefono: num10 ? `+521${num10}` : perfil.telefono,
+  });
+
+  // Guardar en todas las llaves existentes con este RFC
+  let actualizado = false;
+  for (const k of Object.keys(perfiles)) {
+    if (perfiles[k]?.rfc?.toUpperCase() === rfcClean) {
+      perfiles[k] = { ...perfiles[k], ...norm };
+      actualizado = true;
+    }
+  }
+
+  // Si tiene número de teléfono, asegurar sus llaves WhatsApp
+  if (num10) {
+    const jid1 = `521${num10}@s.whatsapp.net`;
+    const jid2 = `52${num10}@s.whatsapp.net`;
+    perfiles[jid1] = { ...(perfiles[jid1] || {}), ...norm };
+    perfiles[jid2] = { ...(perfiles[jid2] || {}), ...norm };
+    actualizado = true;
+  }
+
+  // Si no tenía ninguna llave, crear una por defecto con su RFC
+  if (!actualizado) {
+    perfiles[`cliente_${rfcClean}`] = norm;
+  }
+
+  fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  return norm;
+}
+
+export function eliminarClientePorRfc(rfc: string): boolean {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+    perfiles = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+
+  const target = rfc.trim().toUpperCase();
+  let eliminado = false;
+
+  for (const k of Object.keys(perfiles)) {
+    if (perfiles[k]?.rfc?.toUpperCase() === target) {
+      delete perfiles[k];
+      eliminado = true;
+    }
+  }
+
+  if (eliminado) {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  }
+  return eliminado;
+}
+

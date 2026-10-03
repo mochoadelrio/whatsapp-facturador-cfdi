@@ -1,11 +1,12 @@
 import "dotenv/config";
 import { iniciarBotWhatsApp } from "./whatsapp/bot.js";
 import { iniciarServidorMetaWebhook } from "./whatsapp/metaCloudApi.js";
+import { iniciarAdminServer } from "./server/adminServer.js";
 
 async function main() {
   console.log("========================================================");
-  console.log("🚀 Iniciando Bot de Facturación CFDI 4.0 para WhatsApp");
-  console.log("   Motor IA: Gemini 3.8 Flash (@google/genai)");
+  console.log("🚀 Iniciando KlientIA Facturación CFDI 4.0");
+  console.log("   Motor IA: Gemini Flash (@google/genai)");
   console.log("   Motor RPA: Playwright + Conectores Autónomos Oficiales");
   console.log("========================================================\n");
 
@@ -18,11 +19,15 @@ async function main() {
     );
   }
 
+  const port = Number(process.env.PORT) || 3000;
+
+  // Iniciar siempre el Panel de Control Web Administrativo
+  iniciarAdminServer(port);
+
   // Si se configuran credenciales de Meta Cloud API, arrancar el servidor de Webhooks oficial
   if (process.env.META_ACCESS_TOKEN && process.env.META_PHONE_NUMBER_ID) {
-    const port = Number(process.env.PORT) || 3000;
     console.log("🌐 Activando modo oficial: Meta WhatsApp Cloud API (Webhooks)...");
-    iniciarServidorMetaWebhook(port);
+    iniciarServidorMetaWebhook(port + 1);
   } else {
     // Modo estándar: WhatsApp Web / Baileys (Código QR)
     console.log("📱 Activando modo estándar: WhatsApp Web Multi-Device...");

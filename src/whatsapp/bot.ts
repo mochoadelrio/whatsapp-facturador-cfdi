@@ -292,6 +292,45 @@ const BOT_SIGNATURE = "✨ *KlientIA Facturación*";
 
 let currentSock: any = null;
 let reconnectingTimeout: any = null;
+let estadoMotorBot: "RUNNING" | "PAUSED" | "STOPPED" = "RUNNING";
+let ultimaConexionStatus: "open" | "connecting" | "close" = "connecting";
+let ultimoQrSvg: string = "";
+
+export function obtenerEstadoMotorBot() {
+  const uptimeSec = Math.floor(process.uptime());
+  const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+  const myIdNum = currentSock?.user?.id?.split(":")[0]?.split("@")[0] || null;
+  return {
+    motor: estadoMotorBot,
+    conexionWa: ultimaConexionStatus,
+    usuarioConectado: myIdNum,
+    nombreConectado: currentSock?.user?.name || "KlientIA Facturación",
+    qrCodeSvg: ultimoQrSvg,
+    uptimeSec,
+    memoriaMb: memMb,
+    horaServidor: new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
+  };
+}
+
+export async function encenderMotorBot(): Promise<{ ok: boolean; mensaje: string }> {
+  estadoMotorBot = "RUNNING";
+  if (!currentSock || ultimaConexionStatus === "close") {
+    await iniciarBotWhatsApp();
+  }
+  return { ok: true, mensaje: "Motor encendido y escuchando tickets correctamente." };
+}
+
+export function pausarMotorBot(): { ok: boolean; mensaje: string } {
+  estadoMotorBot = "PAUSED";
+  return { ok: true, mensaje: "Motor del bot pausado. No se procesarán tickets hasta reactivarlo." };
+}
+
+export async function reiniciarMotorBot(): Promise<{ ok: boolean; mensaje: string }> {
+  estadoMotorBot = "RUNNING";
+  if (reconnectingTimeout) clearTimeout(reconnectingTimeout);
+  await iniciarBotWhatsApp();
+  return { ok: true, mensaje: "Motor reiniciado exitosamente." };
+}
 
 export async function iniciarBotWhatsApp(): Promise<void> {
   if (currentSock) {
@@ -368,15 +407,17 @@ export async function iniciarBotWhatsApp(): Promise<void> {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      guardarQrSvg(qr);
+      ultimoQrSvg = guardarQrSvg(qr);
+      ultimaConexionStatus = "connecting";
       console.log("\n========================================================");
-      console.log("📱 ESCANEA ESTE CÓDIGO QR DESDE TU WHATSAPP:");
+      console.log("📱 ESCANEA ESTE CÓDIGO QR DESDE TU WHATSAPP O EL PANEL WEB:");
       console.log("   (Configuración -> Dispositivos vinculados -> Vincular)");
       console.log("========================================================\n");
       qrcode.generate(qr, { small: true });
     }
 
     if (connection === "close") {
+      ultimaConexionStatus = "close";
       const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
       console.log(
@@ -392,6 +433,8 @@ export async function iniciarBotWhatsApp(): Promise<void> {
         );
       }
     } else if (connection === "open") {
+      ultimaConexionStatus = "open";
+      ultimoQrSvg = "";
       console.log("\n✅ ¡Bot de Facturación conectado exitosamente a WhatsApp!");
       console.log("   ID Usuario:", sock.user?.id, "| LID:", (sock.user as any)?.lid);
       console.log(
@@ -712,6 +755,45 @@ async function manejarMensajeEntrante(sock: any, msg: WAMessage): Promise<void> 
     tieneDocumento,
     texto: textoLimpio.slice(0, 60),
   });
+
+  // Control de Pausa del Motor desde WhatsApp
+  if (textoLimpio.toLowerCase() === "/pausar") {
+    estadoMotorBot = "PAUSED";
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n⏸️ *Motor de Facturación Pausado*\n\nEl bot ahora ignorará temporalmente el procesamiento de tickets hasta que uses \`/encender\` o lo actives desde el panel de administración web.`,
+    });
+    return;
+  }
+
+  if (textoLimpio.toLowerCase() === "/encender" || textoLimpio.toLowerCase() === "/reanudar") {
+    estadoMotorBot = "RUNNING";
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n▶️ *Motor de Facturación Encendido*\n\nEl bot está 100% activo y procesando tickets en tiempo real.`,
+    });
+    return;
+  }
+
+  if (estadoMotorBot === "PAUSED") {
+    const esComandoAdmin =
+      textoLimpio.startsWith("/") ||
+      textoLimpio.toLowerCase() === "ping" ||
+      textoLimpio.toLowerCase() === "status" ||
+      textoLimpio.toLowerCase() === "comandos";
+
+    if (!esComandoAdmin) {
+      if (tieneImagen || tieneDocumento) {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+⏸️ *Motor de Facturación en Pausa*
+
+El servicio de procesamiento de tickets se encuentra temporalmente en pausa desde el panel de administración.
+
+Tu comprobante ha sido recibido y será procesado en cuanto el motor sea encendido nuevamente (puedes reactivarlo escribiendo \`/encender\` o desde el panel web).`,
+        });
+      }
+      return;
+    }
+  }
 
   // Comando /bienvenida para enviar mensaje de alta directamente a Cristhian (+5214775907888)
   if (textoLimpio.toLowerCase() === "/bienvenida") {
