@@ -14,6 +14,7 @@ import {
   encenderMotorBot,
   pausarMotorBot,
   reiniciarMotorBot,
+  desvincularSesionWhatsApp,
 } from "../whatsapp/bot.js";
 
 const DEFAULT_ADMIN_PIN = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || "klientia2026";
@@ -84,6 +85,15 @@ export function iniciarAdminServer(port: number = 3000): express.Express {
   app.post("/api/motor/restart", requireAuth, async (req, res) => {
     try {
       const result = await reiniciarMotorBot();
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: e?.message || e });
+    }
+  });
+
+  app.post("/api/motor/unlink", requireAuth, async (req, res) => {
+    try {
+      const result = await desvincularSesionWhatsApp();
       res.json(result);
     } catch (e: any) {
       res.status(500).json({ ok: false, error: e?.message || e });
@@ -395,6 +405,11 @@ function generarHtmlPanelAdmin(): string {
           <button id="btnVerQr" onclick="toggleQrModal()" class="hidden items-center gap-2 px-4 py-3 rounded-2xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 font-bold text-sm transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
             Escanear QR
+          </button>
+
+          <button onclick="desvincularNumeroWhatsApp()" title="Desvincular para conectar otro número" class="flex items-center gap-2 px-3.5 py-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-semibold text-xs transition transform active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            Cambiar Número
           </button>
         </div>
       </div>
@@ -771,6 +786,22 @@ function generarHtmlPanelAdmin(): string {
     function toggleQrModal() {
       const qrSec = document.getElementById("qrSection");
       qrSec.classList.toggle("hidden");
+    }
+
+    async function desvincularNumeroWhatsApp() {
+      if (!confirm("¿Deseas desvincular el número actual de WhatsApp para conectar uno nuevo?\\n\\nAl confirmar, se cerrará la sesión actual y aparecerá un nuevo código QR para escanear con tu nuevo número de teléfono.")) return;
+      try {
+        const res = await fetch("/api/motor/unlink", {
+          method: "POST",
+          headers: getHeaders()
+        });
+        const data = await res.json();
+        alert(data.mensaje || "Sesión desvinculada. Escanea el nuevo código QR con tu nuevo número.");
+        document.getElementById("qrSection").classList.remove("hidden");
+        cargarEstado();
+      } catch (e) {
+        alert("Error al desvincular: " + e.message);
+      }
     }
 
     async function cargarClientes() {

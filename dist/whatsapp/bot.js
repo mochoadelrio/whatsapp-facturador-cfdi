@@ -281,6 +281,41 @@ export async function reiniciarMotorBot() {
     await iniciarBotWhatsApp();
     return { ok: true, mensaje: "Motor reiniciado exitosamente." };
 }
+export async function desvincularSesionWhatsApp() {
+    if (reconnectingTimeout)
+        clearTimeout(reconnectingTimeout);
+    if (currentSock) {
+        try {
+            await currentSock.logout();
+        }
+        catch { }
+        try {
+            currentSock.ev.removeAllListeners();
+            currentSock.end(undefined);
+        }
+        catch { }
+        currentSock = null;
+    }
+    ultimaConexionStatus = "connecting";
+    ultimoQrSvg = "";
+    const authFolder = process.env.AUTH_FOLDER || "auth_whatsapp";
+    const dirPath = path.resolve(process.cwd(), authFolder);
+    if (fs.existsSync(dirPath)) {
+        try {
+            for (const f of fs.readdirSync(dirPath)) {
+                try {
+                    fs.unlinkSync(path.join(dirPath, f));
+                }
+                catch { }
+            }
+        }
+        catch { }
+    }
+    setTimeout(() => {
+        iniciarBotWhatsApp();
+    }, 1000);
+    return { ok: true, mensaje: "Sesión desvinculada exitosamente. Escanea el nuevo código QR para conectar el nuevo número." };
+}
 export async function iniciarBotWhatsApp() {
     if (currentSock) {
         try {
