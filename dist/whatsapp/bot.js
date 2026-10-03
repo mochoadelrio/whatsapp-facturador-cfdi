@@ -17,8 +17,12 @@ const mensajesEnviadosPorBot = new Set();
 const almacenMensajesEnviados = new Map();
 const mensajesProcesados = new Set();
 let notificacionInicialEnviada = false;
-// Lista de números/JIDs de clientes externos autorizados para hacer pruebas
+// Lista de números/JIDs de clientes y administradores autorizados
 const clientesAutorizados = new Set([
+    "4773929593",
+    "5214773929593",
+    "524773929593",
+    "16922322174194",
     "4775907888",
     "5214775907888",
     "524775907888",
@@ -650,8 +654,8 @@ async function manejarMensajeEntrante(sock, msg) {
         marcarMensajeProcesado(msg.key.id);
         return;
     }
-    // Si estamos en el chat de Cristhian y el mensaje fue enviado por nosotros (fromMe) sin ser un ticket con imagen, ignorar para no respondernos a nosotros mismos
-    if (isAuthorizedClient && !isSelfChat && msg.key.fromMe && !contenido.imageMessage) {
+    // Si el mensaje fue enviado por el propio bot (fromMe) sin ser un ticket con imagen en self-chat, ignorar
+    if (msg.key.fromMe && !isSelfChat) {
         marcarMensajeProcesado(msg.key.id);
         return;
     }
@@ -668,23 +672,16 @@ async function manejarMensajeEntrante(sock, msg) {
         isAuthorizedClient,
         tieneImagen,
         tieneDocumento,
-        keys: Object.keys(contenido),
         texto: textoLimpio.slice(0, 50),
     });
-    if (!isSelfChat && !isAuthorizedClient) {
-        return;
-    }
     if (!tieneImagen && !tieneDocumento && !textoLimpio) {
         return;
     }
     marcarMensajeProcesado(msg.key.id);
-    const perfilKey = isAuthorizedClient && !isSelfChat
-        ? "5214775907888@s.whatsapp.net"
-        : isSelfChat && myIdNum
-            ? `${myIdNum}@s.whatsapp.net`
-            : remoteJid;
-    const replyJid = isAuthorizedClient && !isSelfChat ? "5214775907888@s.whatsapp.net" : remoteJid;
-    console.log("📩 Procesando mensaje en chat autorizado:", {
+    // La respuesta siempre se envía directamente al usuario que escribió (remoteJid)
+    const replyJid = remoteJid;
+    const perfilKey = remoteJid;
+    console.log("📩 Procesando mensaje:", {
         remoteJid,
         senderPn,
         replyJid,
