@@ -18,8 +18,9 @@ export interface ResultadoValidacionBanxico {
 
 export const DATOS_BANCARIOS_OFICIALES = {
   clabe: "722969020307804434",
-  beneficiario: "Manuel Ochoa del Rio",
-  institucion: "Mercado Pago W",
+  clabeFormateada: "7229 6902 0307 8044 34",
+  beneficiario: "MANUEL OCHOA DEL RIO",
+  institucion: "MERCADO PAGO W.",
   codigoBanxicoReceptor: "90722", // Mercado Pago W en Banxico SPEI
 };
 

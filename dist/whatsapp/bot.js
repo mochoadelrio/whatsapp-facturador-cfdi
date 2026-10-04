@@ -6,7 +6,7 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { activarPlanCliente, ajustarConsumoTicket, formatearResumenPlan, guardarPerfilFiscal, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, verificarEstadoPlan, } from "../storage/profiles.js";
+import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, } from "../storage/profiles.js";
 import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 const require = createRequire(import.meta.url);
@@ -336,6 +336,71 @@ export async function desvincularSesionWhatsApp() {
     }, 1000);
     return { ok: true, mensaje: "Sesión desvinculada exitosamente. Escanea el nuevo código QR para conectar el nuevo número." };
 }
+export async function verificarAvisosVencimientoProactivos(sock) {
+    if (!sock || ultimaConexionStatus !== "open")
+        return;
+    try {
+        const clientes = obtenerListaClientesUnicos();
+        const hoyStr = new Date().toISOString().slice(0, 10);
+        const msHoy = new Date(hoyStr).getTime();
+        for (const cliente of clientes) {
+            if (!cliente.fechaFinPlan)
+                continue;
+            if (cliente.estadoPlan !== "ACTIVO" && cliente.estadoPlan !== "AGOTADO")
+                continue;
+            const msFin = new Date(cliente.fechaFinPlan).getTime();
+            const diasRestantes = Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24));
+            // Avisar con 2 días de anticipación al vencimiento
+            if (diasRestantes === 2) {
+                if (cliente.avisoVencimientoEnviadoParaFecha === cliente.fechaFinPlan) {
+                    continue; // Ya notificado para este ciclo
+                }
+                const targetJid = cliente.jids?.find((j) => !j.startsWith("cliente_") && j.includes("@s.whatsapp.net")) ||
+                    (cliente.telefono ? `${cliente.telefono.replace(/\D/g, "")}@s.whatsapp.net` : null);
+                if (!targetJid)
+                    continue;
+                const ticketsRestantes = Math.max(0, (cliente.ticketsIncluidos ?? 40) - (cliente.ticketsUsadosMes ?? 0));
+                let mensaje = `${BOT_SIGNATURE}
+🔔 *Recordatorio de Renovación de Suscripción*
+
+Hola *${cliente.razonSocial}*, te recordamos que tu periodo mensual de facturación vence en *2 días* (el *${cliente.fechaFinPlan}*).
+
+📊 *Estado actual:*
+• *Plan:* ${cliente.paqueteNombre || "Plan Mensual"}
+• *Folios restantes:* *${ticketsRestantes} tickets* disponibles
+
+Te ofrecemos la opción de realizar el pago de tu renovación hoy mismo para continuar facturando sin ninguna interrupción.
+
+📦 *Paquetes de Renovación (Vigencia de 30 días):*
+1️⃣ *Plan Básico (20 tickets):* \$179 MXN
+2️⃣ *Plan Pro (40 tickets):* \$299 MXN ⭐
+3️⃣ *Plan Negocio (80 tickets):* \$499 MXN
+4️⃣ *Plan Empresa (100 tickets):* \$599 MXN
+
+💳 *Datos bancarios para transferencia SPEI:*
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Cuenta CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+• *Concepto:* \`Renovacion ${cliente.rfc}\`
+
+📅 *Regla de Vigencia:*
+Tu nueva suscripción iniciará **al concluir tu periodo actual** (a partir del ${cliente.fechaFinPlan}), por lo que no pierdes ningún día de tu mes vigente.`;
+                if (ticketsRestantes === 0) {
+                    mensaje += `\n\n⚠️ *Folios agotados:* Como actualmente ya no tienes folios disponibles, si decides no comprar folios extras (\$5.00 c/u) y deseas que tus nuevos 30 días inicien **a partir de hoy**, indícalo al enviar tu comprobante respondiendo *"INICIAR HOY"*.`;
+                }
+                else {
+                    mensaje += `\n\n📲 *Para renovar:* Realiza tu transferencia y envía aquí tu comprobante; validaremos el estatus ante el CEP de Banxico y acreditaremos tus folios automáticamente.`;
+                }
+                await enviarMensajeBot(sock, targetJid, { text: mensaje });
+                marcarAvisoVencimiento(cliente.rfc, cliente.fechaFinPlan);
+                console.log(`🔔 [Aviso 2 días] Notificación enviada a ${cliente.rfc} (${targetJid})`);
+            }
+        }
+    }
+    catch (err) {
+        console.warn("Aviso al verificar vencimientos proactivos:", err?.message || err);
+    }
+}
 export async function iniciarBotWhatsApp() {
     if (currentSock) {
         try {
@@ -513,6 +578,14 @@ Ya estoy 100% en línea listo para recibir tickets y comandos desde tu WhatsApp.
                 fs.writeFileSync(artifactHtmlPath, `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script></head><body class="bg-transparent text-[var(--foreground)] p-4"><div class="bg-[var(--card)] border border-emerald-500/40 rounded-xl p-5 text-center space-y-2"><div class="text-2xl">✅</div><h3 class="font-bold text-base text-emerald-400">¡WhatsApp Conectado Exitosamente!</h3><p class="text-xs text-[var(--muted-foreground)]">Envía en tu chat <b>"Mensajes contigo mismo"</b> el PDF/foto de tu Constancia o la foto de cualquier ticket de compra.</p></div></body></html>`, "utf-8");
             }
             catch { }
+            // Verificación proactiva de avisos de renovación (2 días antes de vencer)
+            setTimeout(() => {
+                verificarAvisosVencimientoProactivos(sock);
+            }, 12000);
+            // Revisar periódicamente cada 2 horas
+            setInterval(() => {
+                verificarAvisosVencimientoProactivos(sock);
+            }, 2 * 60 * 60 * 1000);
             // Procesador de outbox para envíos directos sin reiniciar el bot
             const outboxDir = path.resolve(process.cwd(), "data", "outbox");
             if (!fs.existsSync(outboxDir))
@@ -1165,6 +1238,28 @@ ${formatearResumenPlan(actualizado)}`,
                 caption: `${BOT_SIGNATURE}\n🗂️ *Archivo XML CFDI 4.0 (${ticketDemo.establecimiento})*`,
             });
         }
+        const restantesDemo = Math.max(0, (perfilActualizado.ticketsIncluidos ?? 40) - (perfilActualizado.ticketsUsadosMes ?? 0));
+        if (restantesDemo <= 5 && restantesDemo > 0 && !perfilActualizado.avisoBajoSaldoEnviado) {
+            marcarAvisoBajoSaldo(perfilActualizado.rfc, true);
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Aviso de Saldo: Te quedan ${restantesDemo} folios disponibles*
+
+Tu saldo de folios para este periodo está por agotarse (*${restantesDemo} tickets restantes*).
+¿Deseas adquirir más folios para no interrumpir tu facturación automática?
+
+💳 *Costo de folios adicionales:* \$5.00 MXN cada uno.
+_Ejemplo: 10 folios = \$50 MXN | 20 folios = \$100 MXN_
+
+🏦 *Datos para pago de folios extras (SPEI):*
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Cuenta CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+• *Concepto:* \`Folios extras ${perfilActualizado.rfc}\`
+
+📲 *Importante:* Se requiere el pago previo para liberar los folios. Al realizar tu transferencia envía tu comprobante por aquí; validaremos la liquidación en el CEP de Banxico y liberaremos tus folios de inmediato.`,
+            });
+        }
         return;
     }
     // 3. Comando /rfc
@@ -1192,6 +1287,67 @@ ${formatearResumenPlan(actualizado)}`,
         guardarPerfilFiscal(remoteJid, nuevoPerfil);
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}\n✅ *¡Perfil fiscal guardado con éxito!*\n\n• *RFC:* ${rfc.toUpperCase()}\n• *Razón Social:* ${razonSocial.toUpperCase()}\n• *C.P.:* ${codigoPostal}\n• *Régimen:* ${regimenFiscal}\n• *Uso CFDI:* ${(usoCfdi || "G03").toUpperCase()}\n\nAhora solo envíame la foto de cualquier ticket de venta para facturarlo.`,
+        });
+        return;
+    }
+    // 3.4 Confirmación de inicio inmediato de renovación si se quedaron sin folios
+    if (textoLimpio.toLowerCase() === "iniciar hoy" ||
+        textoLimpio.toLowerCase() === "/iniciar-hoy" ||
+        textoLimpio.toLowerCase() === "iniciar ya" ||
+        textoLimpio.toLowerCase() === "empezar hoy") {
+        const ajustado = cambiarInicioSuscripcionAHoy(perfilKey);
+        if (ajustado) {
+            const restantes = Math.max(0, (ajustado.ticketsIncluidos ?? 40) - (ajustado.ticketsUsadosMes ?? 0));
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *¡Periodo Ajustado a Inicio Inmediato!*
+
+Conforme a tu confirmación:
+• *Cliente:* ${ajustado.razonSocial} (\`${ajustado.rfc}\`)
+• *Nueva fecha de inicio:* *${ajustado.fechaInicioPlan} (Hoy)*
+• *Nueva fecha de vencimiento:* *${ajustado.fechaFinPlan}* (30 días de vigencia)
+• *Folios disponibles:* *${restantes} tickets*
+
+🚀 Ya puedes enviar tus tickets de compra para facturarlos de inmediato.`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró una suscripción renovada pendiente de confirmación para este chat. Escribe \`/plan\` para consultar tu vigencia actual.`,
+            });
+        }
+        return;
+    }
+    // 3.45 Consulta o solicitud de folios extras
+    const tLowQuery = textoLimpio.toLowerCase();
+    if (tLowQuery === "folios extras" ||
+        tLowQuery === "folio extra" ||
+        tLowQuery === "folios" ||
+        tLowQuery.includes("comprar folio") ||
+        tLowQuery.includes("mas folio") ||
+        tLowQuery.includes("más folio") ||
+        tLowQuery.includes("costo de folio") ||
+        tLowQuery.includes("precio de folio") ||
+        tLowQuery.includes("recargar folio")) {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+💳 *Folios Adicionales de Facturación*
+
+• *Costo por folio extra:* *\$5.00 MXN* cada uno.
+• Puedes recargar los folios que necesites según tu consumo:
+  - 5 folios = \$25.00 MXN
+  - 10 folios = \$50.00 MXN
+  - 20 folios = \$100.00 MXN
+  - 40 folios = \$200.00 MXN
+
+🏦 *Datos para Transferencia SPEI:*
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Cuenta CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+• *Concepto:* \`Folios extras ${perfil.rfc}\`
+
+📲 *Importante:* Se solicita el pago previo para liberar los folios. Envía tu comprobante de pago por este chat; validaremos la liquidación en el CEP de Banxico y liberaremos tus folios de inmediato sin alterar la fecha de vencimiento de tu plan.`,
         });
         return;
     }
@@ -1335,35 +1491,57 @@ Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
                 if (!validacion.valido) {
                     await enviarMensajeBot(sock, replyJid, {
                         text: `${BOT_SIGNATURE}
-⚠️ *No pudimos confirmar aún la liquidación en Banxico:*
-• *Detalle:* ${validacion.mensaje}
-• *Monto detectado:* \$${Number(comp.monto).toFixed(2)} MXN
-• *Clave de rastreo:* \`${comp.claveRastreo || "No visible"}\`
+❌ *Estatus del Pago: ${validacion.estado === "NO_ENCONTRADO" ? "NO ENCONTRADO EN BANXICO" : "EN PROCESO / NO ACREDITADO"}*
 
-💡 _Asegúrate de que en la captura se vea claramente la Clave de Rastreo y que la transferencia haya sido enviada a la CLABE \`${DATOS_BANCARIOS_OFICIALES.clabe}\` (${DATOS_BANCARIOS_OFICIALES.institucion})._`,
+• *Resultado:* ${validacion.mensaje}
+• *Monto detectado:* \$${Number(comp.monto).toFixed(2)} MXN
+• *Clave de Rastreo:* \`${comp.claveRastreo || "No visible"}\`
+
+⚠️ *Solicitud de pago:* Para poder liberar tus folios o renovar tu suscripción, requerimos confirmar la liquidación en Banxico CEP. Por favor asegúrate de realizar la transferencia a:
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Cuenta CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+
+Por favor realiza el pago correspondiente o reenvía una captura clara con la Clave de Rastreo visible para volver a validarlo.`,
                     });
                     return;
                 }
                 const monto = Number(comp.monto) || 0;
-                // Si es una recarga de tickets adicionales (menor a $150 MXN, múltiplos de $5)
-                if (monto >= 5 && monto < 150) {
-                    const recarga = recargarTicketsExtra(perfilKey, monto);
+                if (validacion.cepPdfBuffer) {
+                    await enviarMensajeBot(sock, replyJid, {
+                        document: validacion.cepPdfBuffer,
+                        mimetype: "application/pdf",
+                        fileName: `CEP_Banxico_${validacion.claveRastreo}.pdf`,
+                        caption: `${BOT_SIGNATURE}\n🏦 *Comprobante Electrónico de Pago (CEP) Oficial - Banxico*`,
+                    });
+                }
+                // 1. Recarga de folios extras ($5.00 MXN c/u, transferencias menores a $150 o múltiplos de 5)
+                const esMontoFoliosExtras = (monto >= 5 && monto < 150) || /extra|folio/i.test(textoLimpio);
+                if (esMontoFoliosExtras && monto < 150) {
+                    const recarga = recargarTicketsExtra(perfilKey, monto, validacion.claveRastreo);
                     if (recarga) {
+                        const foliosDisponibles = Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) - (recarga.perfil.ticketsUsadosMes ?? 0));
                         await enviarMensajeBot(sock, replyJid, {
                             text: `${BOT_SIGNATURE}
-✅ *¡Recarga de Tickets Verificada Exitosamente!*
-• *Monto validado:* \$${monto.toFixed(2)} MXN
-• *Folios adicionales abonados:* *+${recarga.ticketsAgregados} tickets* (\$5.00 c/u)
-• *Clave Rastreo / CEP:* \`${validacion.claveRastreo}\`
+✅ *Estatus del Pago: LIQUIDADO Y VERIFICADO EN BANXICO*
 
-${formatearResumenPlan(recarga.perfil)}
+• *Estado SPEI:* ${validacion.estado}
+• *Monto acreditado:* \$${monto.toFixed(2)} MXN
+• *Clave de Rastreo:* \`${validacion.claveRastreo}\`
+• *Concepto:* Recarga de folios adicionales (\$5.00 MXN c/u)
+• *Folios liberados:* *+${recarga.ticketsAgregados} tickets*
 
-📸 *¡Listo! Ya puedes continuar enviando las fotos de tus tickets.*`,
+📊 *Balance de Cuenta Actualizado:*
+• *Cliente:* ${recarga.perfil.razonSocial} (\`${recarga.perfil.rfc}\`)
+• *Folios disponibles para usar:* *${foliosDisponibles} tickets*
+• *Vigencia de tu suscripción:* Hasta el ${recarga.perfil.fechaFinPlan || "N/A"} (se mantiene sin alteraciones)
+
+📸 *¡Folios liberados exitosamente!* Ya puedes continuar enviando las fotos de tus tickets de compra.`,
                         });
                         return;
                     }
                 }
-                // Determinar paquete según el monto transferido
+                // 2. Renovación o Activación de Plan Mensual (20, 40, 80, 100 tickets)
                 let ticketsActivar = 40;
                 if (monto >= 550)
                     ticketsActivar = 100;
@@ -1373,20 +1551,71 @@ ${formatearResumenPlan(recarga.perfil)}
                     ticketsActivar = 40;
                 else if (monto >= 150)
                     ticketsActivar = 20;
-                const perfilActivado = activarPlanCliente(perfil.rfc || perfilKey, ticketsActivar, validacion.claveRastreo, 30);
-                if (validacion.cepPdfBuffer) {
-                    await enviarMensajeBot(sock, replyJid, {
-                        document: validacion.cepPdfBuffer,
-                        mimetype: "application/pdf",
-                        fileName: `CEP_Banxico_${validacion.claveRastreo}.pdf`,
-                        caption: `${BOT_SIGNATURE}\n🏦 *Comprobante Electrónico de Pago (CEP) Oficial - Banxico*`,
-                    });
+                const hoyStr = new Date().toISOString().slice(0, 10);
+                const fechaFinActual = perfil.fechaFinPlan;
+                let diasRestantes = 0;
+                if (fechaFinActual) {
+                    const msHoy = new Date(hoyStr).getTime();
+                    const msFin = new Date(fechaFinActual).getTime();
+                    diasRestantes = Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24));
                 }
+                const restantesActuales = Math.max(0, (perfil.ticketsIncluidos ?? 40) - (perfil.ticketsUsadosMes ?? 0));
+                const deseaInicioInmediato = /iniciar\s*hoy|hoy|inmediat|empezar\s*hoy|ahora/i.test(textoLimpio);
+                // Caso A: Renovación de cliente sin folios que confirmó iniciar hoy mismo
+                if (diasRestantes > 0 && restantesActuales === 0 && deseaInicioInmediato) {
+                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, true);
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+🎉 *¡Pago Verificado y Plan Renovado con Inicio Inmediato!*
+
+• *Estatus del Pago:* ✅ LIQUIDADO ANTE BANXICO (${validacion.estado})
+• *Monto acreditado:* \$${monto.toFixed(2)} MXN
+• *Clave de Rastreo:* \`${validacion.claveRastreo}\`
+• *Cliente:* ${renovacion?.perfil.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Paquete:* *${renovacion?.perfil.paqueteNombre}*
+• *Folios liberados:* *${ticketsActivar} tickets*
+
+📅 *Vigencia de 30 días:*
+• *Inicio:* *${renovacion?.fechaInicio} (Hoy)* — _Iniciado hoy por previa confirmación al estar agotados tus folios_
+• *Vencimiento:* *${renovacion?.fechaFin}*
+
+🚀 *¡Tu facturación está habilitada!* Envía tus fotos de tickets para emitir tus facturas de inmediato.`,
+                    });
+                    return;
+                }
+                // Caso B: Renovación anticipada (la suscripción inicia al final de la actual, no hoy)
+                if (diasRestantes > 0) {
+                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, false);
+                    const foliosTotales = Math.max(0, (renovacion?.perfil.ticketsIncluidos ?? 40) - (renovacion?.perfil.ticketsUsadosMes ?? 0));
+                    let msgRenovacion = `${BOT_SIGNATURE}
+🎉 *¡Pago Verificado y Renovación Programada Exitosamente!*
+
+• *Estatus del Pago:* ✅ LIQUIDADO ANTE BANXICO (${validacion.estado})
+• *Monto acreditado:* \$${monto.toFixed(2)} MXN
+• *Clave de Rastreo:* \`${validacion.claveRastreo}\`
+• *Cliente:* ${renovacion?.perfil.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Paquete:* *${renovacion?.perfil.paqueteNombre}*
+• *Folios liberados:* *+${ticketsActivar} tickets* (Total disponibles: *${foliosTotales} tickets*)
+
+📅 *Regla de Vigencia:*
+• *Suscripción actual:* Sigue vigente hasta el *${fechaFinActual}*
+• *Nueva suscripción de 30 días:* Iniciará el *${fechaFinActual}* y vencerá el *${renovacion?.fechaFin}*`;
+                    if (restantesActuales === 0) {
+                        msgRenovacion += `\n\n💡 *Opción de Inicio Inmediato:* Como tus folios del periodo previo estaban en 0, si prefieres no esperar al ${fechaFinActual} y deseas que tus 30 días arranquen **a partir de hoy**, responde a este mensaje con: *"INICIAR HOY"*.`;
+                    }
+                    else {
+                        msgRenovacion += `\n\n✨ Disfrutas de tus nuevos folios desde ahora y tu vigencia de 30 días se añade al término de tu periodo actual garantizando tu cobertura.`;
+                    }
+                    await enviarMensajeBot(sock, replyJid, { text: msgRenovacion });
+                    return;
+                }
+                // Caso C: Plan nuevo o reactivación de plan vencido
+                const perfilActivado = activarPlanCliente(perfil.rfc || perfilKey, ticketsActivar, validacion.claveRastreo, 30);
                 await enviarMensajeBot(sock, replyJid, {
                     text: `${BOT_SIGNATURE}
 🎉 *¡Pago Verificado y Plan Activado por 30 Días!*
 
-• *Estado SPEI Banxico:* ✅ ${validacion.estado}
+• *Estatus del Pago:* ✅ LIQUIDADO ANTE BANXICO (${validacion.estado})
 • *Monto acreditado:* \$${monto.toFixed(2)} MXN
 • *Clave de Rastreo:* \`${validacion.claveRastreo}\`
 • *Cliente:* ${perfilActivado?.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
@@ -1525,6 +1754,30 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
                         if (mySelfJid && mySelfJid !== replyJid) {
                             await enviarMensajeBot(sock, mySelfJid, {
                                 text: `🔔 *LOTE FINALIZADO CON ÉXITO*\n${summary}`,
+                            });
+                        }
+                        // Alerta de 5 folios restantes
+                        const { perfil: pPost } = obtenerPerfilFiscal(replyJid);
+                        const restantes = Math.max(0, (pPost.ticketsIncluidos ?? 40) - (pPost.ticketsUsadosMes ?? 0));
+                        if (restantes <= 5 && restantes > 0 && !pPost.avisoBajoSaldoEnviado) {
+                            marcarAvisoBajoSaldo(pPost.rfc, true);
+                            await enviarMensajeBot(sock, replyJid, {
+                                text: `${BOT_SIGNATURE}
+⚠️ *Aviso de Saldo: Te quedan ${restantes} folios disponibles*
+
+Tu saldo de folios para este periodo está por agotarse (*${restantes} tickets restantes*).
+¿Deseas adquirir más folios para no interrumpir tu facturación automática?
+
+💳 *Costo de folios adicionales:* \$5.00 MXN cada uno.
+_Ejemplo: 10 folios = \$50 MXN | 20 folios = \$100 MXN_
+
+🏦 *Datos para pago de folios extras (SPEI):*
+• *Beneficiario:* ${DATOS_BANCARIOS_OFICIALES.beneficiario}
+• *Cuenta CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Institución:* ${DATOS_BANCARIOS_OFICIALES.institucion}
+• *Concepto:* \`Folios extras ${pPost.rfc}\`
+
+📲 *Importante:* Se requiere el pago previo para liberar los folios. Al realizar tu transferencia envía tu comprobante por aquí; validaremos la liquidación en el CEP de Banxico y liberaremos tus folios de inmediato.`,
                             });
                         }
                     },

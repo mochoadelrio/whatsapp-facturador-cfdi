@@ -16,6 +16,9 @@ export interface DatosFiscales {
   fechaFinPlan?: string; // YYYY-MM-DD
   paqueteNombre?: string; // "Básico (20)", "Pro (40)", "Negocio (80)", "Empresa (100)"
   ultimoCepValidado?: string; // Clave de rastreo Banxico
+  avisoBajoSaldoEnviado?: boolean; // Alerta de 5 folios restantes enviada
+  avisoVencimientoEnviadoParaFecha?: string; // Fecha de fin para la que ya se envió el aviso de 2 días
+  renovacionPendienteConfirmacion?: boolean; // Si renovó con 0 folios y puede optar por inicio inmediato
 }
 
 export interface DatosComprobantePago {

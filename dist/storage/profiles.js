@@ -46,6 +46,9 @@ export function normalizarPerfilConPlan(perfil) {
         fechaInicioPlan: perfil.fechaInicioPlan || (esCristhian ? "2026-09-30" : undefined),
         fechaFinPlan: perfil.fechaFinPlan || (esCristhian ? "2026-10-30" : undefined),
         estadoPlan: perfil.estadoPlan || "ACTIVO",
+        avisoBajoSaldoEnviado: perfil.avisoBajoSaldoEnviado ?? false,
+        avisoVencimientoEnviadoParaFecha: perfil.avisoVencimientoEnviadoParaFecha,
+        renovacionPendienteConfirmacion: perfil.renovacionPendienteConfirmacion ?? false,
     };
 }
 export function obtenerPerfilFiscal(jid) {
@@ -160,7 +163,8 @@ export function ajustarConsumoTicket(busqueda, cantidad) {
         if (p.rfc?.toUpperCase().includes(query) ||
             p.razonSocial?.toUpperCase().includes(query) ||
             (p.telefono && p.telefono.includes(query)) ||
-            key.includes(query)) {
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
             matchRfc = p.rfc.toUpperCase();
             break;
         }
@@ -214,7 +218,8 @@ export function activarPlanCliente(busqueda, tickets, claveCep, diasVigencia = 3
         if (p.rfc?.toUpperCase().includes(query) ||
             p.razonSocial?.toUpperCase().includes(query) ||
             (p.telefono && p.telefono.includes(query)) ||
-            key.includes(query)) {
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
             matchRfc = p.rfc.toUpperCase();
             break;
         }
@@ -241,7 +246,47 @@ export function activarPlanCliente(busqueda, tickets, claveCep, diasVigencia = 3
     fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
     return perfilActualizado;
 }
-export function recargarTicketsExtra(busqueda, monto) {
+export function marcarAvisoBajoSaldo(rfcOrQuery, enviado) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        return;
+    }
+    const query = rfcOrQuery.trim().toUpperCase();
+    for (const k of Object.keys(perfiles)) {
+        if (perfiles[k]?.rfc?.toUpperCase() === query ||
+            perfiles[k]?.telefono?.includes(query) ||
+            k.toUpperCase().includes(query) ||
+            k.includes(rfcOrQuery.trim())) {
+            perfiles[k] = { ...perfiles[k], avisoBajoSaldoEnviado: enviado };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+}
+export function marcarAvisoVencimiento(rfcOrQuery, fechaFin) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        return;
+    }
+    const query = rfcOrQuery.trim().toUpperCase();
+    for (const k of Object.keys(perfiles)) {
+        if (perfiles[k]?.rfc?.toUpperCase() === query ||
+            perfiles[k]?.telefono?.includes(query) ||
+            k.toUpperCase().includes(query) ||
+            k.includes(rfcOrQuery.trim())) {
+            perfiles[k] = { ...perfiles[k], avisoVencimientoEnviadoParaFecha: fechaFin };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+}
+export function recargarTicketsExtra(busqueda, monto, claveCep) {
     const ticketsAgregados = Math.floor(monto / 5);
     if (ticketsAgregados <= 0)
         return null;
@@ -260,7 +305,8 @@ export function recargarTicketsExtra(busqueda, monto) {
         if (p.rfc?.toUpperCase().includes(query) ||
             p.razonSocial?.toUpperCase().includes(query) ||
             (p.telefono && p.telefono.includes(query)) ||
-            key.includes(query)) {
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
             matchRfc = p.rfc.toUpperCase();
             break;
         }
@@ -276,12 +322,146 @@ export function recargarTicketsExtra(busqueda, monto) {
                 ...prev,
                 ticketsIncluidos: nuevosIncluidos,
                 estadoPlan: "ACTIVO",
+                avisoBajoSaldoEnviado: false,
+                ultimoCepValidado: claveCep || prev.ultimoCepValidado,
             };
             perfilActualizado = perfiles[key];
         }
     }
     fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
     return perfilActualizado ? { perfil: perfilActualizado, ticketsAgregados } : null;
+}
+export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInmediato = false) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        perfiles = {};
+    }
+    const query = busqueda.trim().toUpperCase();
+    let matchRfc = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase().includes(query) ||
+            p.razonSocial?.toUpperCase().includes(query) ||
+            (p.telefono && p.telefono.includes(query)) ||
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
+            matchRfc = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!matchRfc)
+        return null;
+    const prevEntry = Object.values(perfiles).find((p) => p.rfc?.toUpperCase() === matchRfc);
+    if (!prevEntry)
+        return null;
+    const base = normalizarPerfilConPlan(prevEntry);
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    const infoPaquete = PAQUETES[tickets] || {
+        nombre: `Plan Personalizado (${tickets} tickets)`,
+        precio: tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5,
+    };
+    let modo = "EXTENSION_CONCATENADA";
+    let fechaInicio = hoyStr;
+    let fechaFin = sumarDias(hoyStr, 30);
+    let ticketsIncluidos = tickets;
+    let ticketsUsadosMes = 0;
+    const fechaFinActual = base.fechaFinPlan;
+    let diasRestantes = 0;
+    if (fechaFinActual) {
+        const msHoy = new Date(hoyStr).getTime();
+        const msFin = new Date(fechaFinActual).getTime();
+        diasRestantes = Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24));
+    }
+    if (fechaFinActual && diasRestantes > 0 && !forzarInicioInmediato) {
+        modo = "EXTENSION_CONCATENADA";
+        fechaInicio = base.fechaInicioPlan || hoyStr;
+        fechaFin = sumarDias(fechaFinActual, 30);
+        ticketsIncluidos = (base.ticketsIncluidos || 40) + tickets;
+        ticketsUsadosMes = base.ticketsUsadosMes || 0;
+    }
+    else {
+        modo = "INICIO_INMEDIATO";
+        fechaInicio = hoyStr;
+        fechaFin = sumarDias(hoyStr, 30);
+        ticketsIncluidos = tickets;
+        ticketsUsadosMes = 0;
+    }
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+            perfiles[key] = {
+                ...perfiles[key],
+                paqueteNombre: infoPaquete.nombre,
+                precioMensual: infoPaquete.precio,
+                ticketsIncluidos,
+                ticketsUsadosMes,
+                fechaInicioPlan: fechaInicio,
+                fechaFinPlan: fechaFin,
+                estadoPlan: "ACTIVO",
+                ultimoCepValidado: claveCep || perfiles[key].ultimoCepValidado,
+                avisoBajoSaldoEnviado: false,
+                avisoVencimientoEnviadoParaFecha: undefined,
+                renovacionPendienteConfirmacion: modo === "EXTENSION_CONCATENADA" && (base.ticketsIncluidos ?? 40) - (base.ticketsUsadosMes ?? 0) <= 0,
+            };
+            perfilActualizado = perfiles[key];
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return perfilActualizado
+        ? {
+            perfil: perfilActualizado,
+            modo,
+            fechaInicio,
+            fechaFin,
+            ticketsTotal: ticketsIncluidos,
+        }
+        : null;
+}
+export function cambiarInicioSuscripcionAHoy(busqueda) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        return null;
+    }
+    const query = busqueda.trim().toUpperCase();
+    let matchRfc = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase().includes(query) ||
+            p.razonSocial?.toUpperCase().includes(query) ||
+            (p.telefono && p.telefono.includes(query)) ||
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
+            matchRfc = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!matchRfc)
+        return null;
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    const finStr = sumarDias(hoyStr, 30);
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+            perfiles[key] = {
+                ...perfiles[key],
+                fechaInicioPlan: hoyStr,
+                fechaFinPlan: finStr,
+                ticketsUsadosMes: 0,
+                estadoPlan: "ACTIVO",
+                avisoBajoSaldoEnviado: false,
+                renovacionPendienteConfirmacion: false,
+            };
+            perfilActualizado = perfiles[key];
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return perfilActualizado;
 }
 export function verificarEstadoPlan(perfil) {
     const p = normalizarPerfilConPlan(perfil);
