@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { obtenerListaClientesUnicos, crearOActualizarCliente, activarPlanCliente, ajustarConsumoTicket, eliminarClientePorRfc, } from "../storage/profiles.js";
 import { obtenerEstadoMotorBot, encenderMotorBot, pausarMotorBot, reiniciarMotorBot, desvincularSesionWhatsApp, } from "../whatsapp/bot.js";
+import { obtenerSolicitudesConectores, actualizarEstadoSolicitudConector, } from "../storage/connectorRequests.js";
 const DEFAULT_ADMIN_PIN = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || "klientia2026";
 export function iniciarAdminServer(port = 3000) {
     const app = express();
@@ -221,6 +222,31 @@ export function iniciarAdminServer(port = 3000) {
             return;
         }
         res.download(filePath, filename);
+    });
+    // Solicitudes de nuevos conectores de proveedores
+    app.get("/api/connectors/requests", requireAuth, (req, res) => {
+        try {
+            const solicitudes = obtenerSolicitudesConectores();
+            res.json({ solicitudes });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
+    });
+    app.post("/api/connectors/requests/:id/status", requireAuth, (req, res) => {
+        try {
+            const id = String(req.params.id);
+            const { estado } = req.body;
+            if (!["PENDIENTE", "EN_DESARROLLO", "INSTALADO"].includes(estado)) {
+                res.status(400).json({ error: "Estado no válido" });
+                return;
+            }
+            const ok = actualizarEstadoSolicitudConector(id, estado);
+            res.json({ ok });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
     });
     // HTML Principal del Panel Administrativo
     app.use((req, res) => {
@@ -470,8 +496,39 @@ function generarHtmlPanelAdmin() {
         </button>
       </div>
 
-      <div id="listaFacturas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <p class="text-xs text-slate-500 col-span-3">Cargando archivos...</p>
+    <!-- Sección de Solicitudes de Conectores (Proveedores Pendientes) -->
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-bold text-white">Solicitudes de Nuevos Conectores</h3>
+            <span id="badgeTotalSolicitudes" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">0</span>
+          </div>
+          <p class="text-xs text-slate-400">Proveedores y comercios solicitados por clientes que aún no tienen conector instalado.</p>
+        </div>
+        <button onclick="cargarSolicitudesConectores()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Actualizar
+        </button>
+      </div>
+
+      <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/40">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 font-semibold">
+            <tr>
+              <th class="py-3 px-4">Comercio / Proveedor</th>
+              <th class="py-3 px-4">RFC Emisor</th>
+              <th class="py-3 px-4">Cliente Solicitante</th>
+              <th class="py-3 px-4 text-center">Peticiones</th>
+              <th class="py-3 px-4">Portal / Folio</th>
+              <th class="py-3 px-4 text-center">Estado</th>
+              <th class="py-3 px-4 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaSolicitudesBody" class="divide-y divide-slate-800/60 font-normal">
+            <tr><td colspan="7" class="text-center py-6 text-xs text-slate-500">Cargando solicitudes...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -997,12 +1054,72 @@ function generarHtmlPanelAdmin() {
       }
     }
 
+    // Cargar Solicitudes de Conectores
+    async function cargarSolicitudesConectores() {
+      try {
+        const res = await fetch("/api/connectors/requests", { headers: getHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById("tablaSolicitudesBody");
+        const badge = document.getElementById("badgeTotalSolicitudes");
+        const solicitudes = data.solicitudes || [];
+
+        badge.innerText = solicitudes.length;
+
+        if (solicitudes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-xs text-slate-500">No hay solicitudes de conectores pendientes. Cuando un cliente envíe un ticket de un proveedor nuevo, aparecerá aquí.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = solicitudes.map(s => {
+          const badgeColor = s.estado === "INSTALADO" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                             s.estado === "EN_DESARROLLO" ? "bg-sky-500/10 text-sky-400 border-sky-500/30" :
+                             "bg-amber-500/10 text-amber-400 border-amber-500/30";
+
+          return '<tr class="hover:bg-slate-900/40 transition">' +
+            '<td class="py-3 px-4 font-bold text-white">' + s.comercio + '</td>' +
+            '<td class="py-3 px-4 font-mono text-[11px] text-slate-400">' + (s.rfcEmisor || "Sin RFC") + '</td>' +
+            '<td class="py-3 px-4 text-slate-300">' + (s.clienteNombre || "Cliente") + '<br/><span class="text-[10px] text-slate-500">' + (s.solicitadoPorJid || "") + '</span></td>' +
+            '<td class="py-3 px-4 text-center font-bold text-amber-400">' + (s.conteo || 1) + '</td>' +
+            '<td class="py-3 px-4 text-[11px] text-slate-400">' + (s.urlPortal ? '<a href="' + s.urlPortal + '" target="_blank" class="text-emerald-400 underline">Portal</a>' : 'Sin URL') + (s.folioTicket ? ' • Folio: ' + s.folioTicket : '') + '</td>' +
+            '<td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ' + badgeColor + '">' + s.estado + '</span></td>' +
+            '<td class="py-3 px-4 text-right space-x-1">' +
+              (s.estado !== "EN_DESARROLLO" && s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'EN_DESARROLLO\')" class="px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 text-[10px] font-semibold border border-sky-500/30">En Desarrollo</button>' : '') +
+              (s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'INSTALADO\')" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30">Instalado</button>' : '') +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function cambiarEstadoSolicitud(id, estado) {
+      try {
+        const res = await fetch("/api/connectors/requests/" + encodeURIComponent(id) + "/status", {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ estado })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          cargarSolicitudesConectores();
+        } else {
+          alert("Error: " + (data.error || "No se pudo actualizar"));
+        }
+      } catch (e) {
+        alert("Error de red");
+      }
+    }
+
     function iniciarActualizacionPeriodica() {
       cargarEstado();
       cargarClientes();
       cargarFacturas();
+      cargarSolicitudesConectores();
       setInterval(cargarEstado, 5000);
       setInterval(cargarClientes, 15000);
+      setInterval(cargarSolicitudesConectores, 15000);
     }
 
     // Inicializar

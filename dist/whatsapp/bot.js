@@ -1791,7 +1791,7 @@ _Ejemplo: 10 folios = \$50 MXN | 20 folios = \$100 MXN_
         catch (error) {
             console.error("Error al procesar archivo:", error);
             await enviarMensajeBot(sock, replyJid, {
-                text: `${BOT_SIGNATURE}\n❌ Ocurrió un error al analizar tu archivo: ${error?.message || "Error desconocido"}`,
+                text: `${BOT_SIGNATURE}\n❌ Error, volver a intentar.`,
             });
         }
     }

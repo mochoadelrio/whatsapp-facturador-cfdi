@@ -26,6 +26,7 @@ import { facturarTicketAtlantimex } from "../connectors/atlantimexConnector.js";
 import { facturarTicketBahiaKino } from "../connectors/bahiaKinoConnector.js";
 import { facturarTicketGrupoModelo } from "../connectors/grupoModeloConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
+import { registrarSolicitudConector } from "../storage/connectorRequests.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
  * URL de facturación, folio o texto detectado.
@@ -635,24 +636,47 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                         onProgress,
                     }, grupo.emailDestino || "facturas@ejemplo.com");
                     break;
-                default:
+                default: {
+                    const comercio = grupo.items[0]?.ticket.establecimiento || "Comercio no reconocido";
+                    const rfcEmisor = grupo.items[0]?.ticket.rfcEmisor;
+                    const urlPortal = grupo.items[0]?.ticket.urlPortalFacturacion;
+                    const totalTicket = grupo.items.reduce((s, t) => s + (Number(t.ticket.montoTotal) || 0), 0);
+                    const folioTicket = grupo.items[0]?.ticket.folioTicket || grupo.items[0]?.ticket.codigoFacturacion;
+                    // Registrar solicitud automática en el panel de control
+                    try {
+                        registrarSolicitudConector({
+                            comercio,
+                            rfcEmisor,
+                            urlPortal,
+                            solicitadoPorJid: perfil.telefono,
+                            clienteNombre: perfil.razonSocial,
+                            totalTicket,
+                            folioTicket,
+                        });
+                        console.log(`📥 Solicitud de conector enviada al panel: ${comercio} (${rfcEmisor || "Sin RFC"})`);
+                    }
+                    catch (err) {
+                        console.error("Error registrando solicitud de conector:", err);
+                    }
                     res = {
                         exito: false,
-                        emisor: grupo.items[0]?.ticket.establecimiento || "Establecimiento desconocido",
-                        total: grupo.items.reduce((s, t) => s + (Number(t.ticket.montoTotal) || 0), 0),
-                        mensaje: `El comercio no cuenta con conector automático directo. Requiere portal web: ${grupo.items[0]?.ticket.urlPortalFacturacion || "No especificado"}`,
+                        emisor: comercio,
+                        total: totalTicket,
+                        mensaje: `❌ Error, volver a intentar. (Proveedor en proceso de conector: *${comercio}*)`,
                         ticketIds: grupo.items.map((t) => t.id),
                     };
                     break;
+                }
             }
             resultados.push(res);
         }
         catch (e) {
+            const emisorNombre = grupo.items[0]?.ticket.establecimiento || grupo.provider;
             resultados.push({
                 exito: false,
-                emisor: grupo.provider,
+                emisor: emisorNombre,
                 total: grupo.items.reduce((s, t) => s + (Number(t.ticket.montoTotal) || 0), 0),
-                mensaje: `Error en conector ${grupo.provider}: ${e?.message || e}`,
+                mensaje: `❌ Error, volver a intentar.`,
                 ticketIds: grupo.items.map((t) => t.id),
             });
         }
