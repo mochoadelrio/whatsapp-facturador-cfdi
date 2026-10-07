@@ -18,6 +18,9 @@ import { facturarTicketMercadoSanJuan } from "../connectors/mercadoSanJuanConnec
 import { facturarTicketBara } from "../connectors/baraConnector.js";
 import { facturarTicketGasNoel } from "../connectors/gasNoelConnector.js";
 import { facturarBoletoFlechaAmarilla } from "../connectors/flechaAmarillaConnector.js";
+import { facturarGuiaCastores } from "../connectors/castoresConnector.js";
+import { facturarTicketDulceriasVazquez } from "../connectors/dulceriasVazquezConnector.js";
+import { facturarTicketCoqueta } from "../connectors/coquetaConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
@@ -154,6 +157,33 @@ export function clasificarProveedorTicket(item) {
         raw.includes("api6609273e0") ||
         raw.includes("cfdiboletoprimeraplus")) {
         return { provider: "FLECHA_AMARILLA" };
+    }
+    // 5h. Transportes Castores (Matriz León, Gto.)
+    if (url.includes("castores.com.mx") ||
+        est.includes("CASTORES") ||
+        raw.includes("transportes castores") ||
+        raw.includes("grupo castores") ||
+        raw.includes("tan020524f53") ||
+        raw.includes("talon") && raw.includes("flete")) {
+        return { provider: "CASTORES" };
+    }
+    // 5i. Dulcerías y Abarroteras Vázquez (León, Gto.)
+    if (url.includes("dulceriashvazquez") ||
+        est.includes("DULCERIAS") && est.includes("VAZQUEZ") ||
+        est.includes("DULCERIAS VAZQUEZ") ||
+        raw.includes("dulcerias vazquez") ||
+        raw.includes("dulcerias y abarroteras vazquez") ||
+        raw.includes("dav9408226e6")) {
+        return { provider: "DULCERIAS_VAZQUEZ" };
+    }
+    // 5j. Calzado Coqueta y Audaz (León, Gto.)
+    if (url.includes("coquetayaudaz") ||
+        est.includes("COQUETA") ||
+        est.includes("AUDAZ") ||
+        raw.includes("coqueta y audaz") ||
+        raw.includes("coq8503158r8") ||
+        raw.includes("calzado coqueta")) {
+        return { provider: "COQUETA" };
     }
     // 6. OXXO GAS (Servicios Gasolineros de México)
     if (url.includes("oxxogas") ||
@@ -387,6 +417,36 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                 case "FLECHA_AMARILLA":
                     for (const itm of grupo.items) {
                         const r = await facturarBoletoFlechaAmarilla({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "CASTORES":
+                    for (const itm of grupo.items) {
+                        const r = await facturarGuiaCastores({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "DULCERIAS_VAZQUEZ":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketDulceriasVazquez({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "COQUETA":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketCoqueta({
                             tickets: [itm],
                             perfil,
                             onProgress,
