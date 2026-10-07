@@ -12,6 +12,7 @@ import { facturarTicketAutoZone } from "../connectors/autozoneConnector.js";
 import { facturarTicketHeb } from "../connectors/hebConnector.js";
 import { facturarTicketChedraui } from "../connectors/chedrauiConnector.js";
 import { facturarTicketSoriana } from "../connectors/sorianaConnector.js";
+import { facturarTicketPepsico } from "../connectors/pepsicoConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
@@ -82,6 +83,19 @@ export function clasificarProveedorTicket(item) {
         raw.includes("facturacion.walmartmexico") ||
         raw.includes("facturacion-clientes.walmart")) {
         return { provider: "WALMART" };
+    }
+    // 5b. Comercializadora PepsiCo México (Sabritas / DSD Ruta / Sabritel / GEPP)
+    if (est.includes("PEPSICO") ||
+        est.includes("SABRITAS") ||
+        est.includes("GAMESA") ||
+        raw.includes("comercializadora pepsico") ||
+        raw.includes("pepsico mexico") ||
+        raw.includes("pepsico méxico") ||
+        raw.includes("sabritel") ||
+        raw.includes("cpm110719sg3") ||
+        raw.includes("cpm1107198q3") ||
+        raw.includes("facturagepp.com.mx")) {
+        return { provider: "PEPSICO" };
     }
     // 6. OXXO GAS (Servicios Gasolineros de México)
     if (url.includes("oxxogas") ||
@@ -255,6 +269,16 @@ export async function procesarLoteCompletoAutonomo(items, perfil, onProgress) {
                 case "WALMART":
                     for (const itm of grupo.items) {
                         const r = await facturarTicketWalmart({
+                            tickets: [itm],
+                            perfil,
+                            onProgress,
+                        });
+                        resultados.push(r);
+                    }
+                    continue;
+                case "PEPSICO":
+                    for (const itm of grupo.items) {
+                        const r = await facturarTicketPepsico({
                             tickets: [itm],
                             perfil,
                             onProgress,
