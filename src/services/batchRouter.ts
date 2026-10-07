@@ -22,6 +22,10 @@ import { facturarBoletoFlechaAmarilla } from "../connectors/flechaAmarillaConnec
 import { facturarGuiaCastores } from "../connectors/castoresConnector.js";
 import { facturarTicketDulceriasVazquez } from "../connectors/dulceriasVazquezConnector.js";
 import { facturarTicketCoqueta } from "../connectors/coquetaConnector.js";
+import { facturarTicketCepesmar } from "../connectors/cepesmarConnector.js";
+import { facturarTicketAtlantimex } from "../connectors/atlantimexConnector.js";
+import { facturarTicketBahiaKino } from "../connectors/bahiaKinoConnector.js";
+import { facturarTicketGrupoModelo } from "../connectors/grupoModeloConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 import { DatosFiscales } from "../types.js";
 
@@ -40,6 +44,10 @@ export type ProviderType =
   | "CASTORES"
   | "DULCERIAS_VAZQUEZ"
   | "COQUETA"
+  | "CEPESMAR"
+  | "ATLANTIMEX"
+  | "BAHIA_KINO"
+  | "GRUPO_MODELO"
   | "OXXO_GAS"
   | "OXXO"
   | "FARMACIAS_GDL"
@@ -265,6 +273,58 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
     raw.includes("calzado coqueta")
   ) {
     return { provider: "COQUETA" };
+  }
+
+  // 5k. Cepesmar (Central de Pescados y Mariscos de León)
+  if (
+    url.includes("cepesmar") ||
+    est.includes("CEPESMAR") ||
+    est.includes("CENTRAL DE PESCADOS Y MARISCOS") ||
+    raw.includes("cepesmar") ||
+    raw.includes("cpm010215kl8") ||
+    raw.includes("pescados y mariscos") && raw.includes("las cruces")
+  ) {
+    return { provider: "CEPESMAR" };
+  }
+
+  // 5l. Grupo Atlantimex (León, Gto.)
+  if (
+    url.includes("atlantimex") ||
+    est.includes("ATLANTIMEX") ||
+    raw.includes("atlantimex") ||
+    raw.includes("cat050614m91") ||
+    raw.includes("pvabastos@atlantimex.com")
+  ) {
+    return { provider: "ATLANTIMEX" };
+  }
+
+  // 5m. Mariscos Bahía Kino (Distribuidora Bahía Kino León)
+  if (
+    url.includes("mariscosbahiakino") ||
+    est.includes("BAHIA KINO") ||
+    est.includes("BAHÍA KINO") ||
+    raw.includes("bahia kino") ||
+    raw.includes("bahía kino") ||
+    raw.includes("dbk1208153a9") ||
+    raw.includes("distribuidora bahia kino")
+  ) {
+    return { provider: "BAHIA_KINO" };
+  }
+
+  // 5n. Grupo Modelo / Corona México (Agencias y Modelorama León)
+  if (
+    url.includes("modelo.gmodelo") ||
+    url.includes("grupomodelo") ||
+    url.includes("modelorama") ||
+    est.includes("GRUPO MODELO") ||
+    est.includes("CERVECERIA MODELO") ||
+    est.includes("MODELORAMA") ||
+    est.includes("CORONA") && (raw.includes("cerveza") || raw.includes("modelo")) ||
+    raw.includes("grupo modelo") ||
+    raw.includes("cerveceria modelo") ||
+    raw.includes("cmm080617bd2")
+  ) {
+    return { provider: "GRUPO_MODELO" };
   }
 
   // 6. OXXO GAS (Servicios Gasolineros de México)
@@ -593,6 +653,50 @@ export async function procesarLoteCompletoAutonomo(
         case "COQUETA":
           for (const itm of grupo.items) {
             const r = await facturarTicketCoqueta({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "CEPESMAR":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketCepesmar({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "ATLANTIMEX":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketAtlantimex({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "BAHIA_KINO":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketBahiaKino({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "GRUPO_MODELO":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketGrupoModelo({
               tickets: [itm],
               perfil,
               onProgress,
