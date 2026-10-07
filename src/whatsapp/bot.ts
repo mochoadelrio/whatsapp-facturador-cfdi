@@ -353,6 +353,81 @@ export function pausarMotorBot(): { ok: boolean; mensaje: string } {
   return { ok: true, mensaje: "Motor del bot pausado. No se procesarán tickets hasta reactivarlo." };
 }
 
+/**
+ * Envía directamente por WhatsApp los archivos PDF y XML de una factura recién generada a un cliente.
+ */
+export async function enviarFacturaDirectaCliente(params: {
+  targetJidOrPhone: string;
+  pdfPath?: string;
+  xmlPath?: string;
+  emisor: string;
+  total?: number;
+  folio?: string;
+  uuid?: string;
+  receptorNombre?: string;
+  receptorRfc?: string;
+}): Promise<{ ok: boolean; mensaje: string }> {
+  if (!currentSock || ultimaConexionStatus !== "open") {
+    return { ok: false, mensaje: "WhatsApp no está conectado en este momento en el servidor." };
+  }
+
+  const rawTarget = params.targetJidOrPhone.trim();
+  const jid = rawTarget.includes("@")
+    ? rawTarget
+    : `${rawTarget.replace(/\D/g, "")}@s.whatsapp.net`;
+  const targetJid = normalizarJidEnvio(jid);
+
+  const emisor = params.emisor || "Proveedor";
+  const folio = params.folio || "Oficial";
+  const uuid = params.uuid || "Validado ante SAT";
+  const total = params.total ? `$${params.total.toFixed(2)} MXN` : "";
+  const receptor = params.receptorNombre
+    ? `${params.receptorNombre}${params.receptorRfc ? ` (\`${params.receptorRfc}\`)` : ""}`
+    : "Cliente";
+
+  let enviado = false;
+
+  // 1. Enviar PDF
+  if (params.pdfPath && fs.existsSync(params.pdfPath)) {
+    const pdfBuffer = fs.readFileSync(params.pdfPath);
+    await enviarMensajeBot(currentSock, targetJid, {
+      document: pdfBuffer,
+      mimetype: "application/pdf",
+      fileName: `Factura_${folio.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`,
+      caption: `🤖 *KlientIA Facturación Automática*
+📄 *Factura CFDI 4.0 Oficial (PDF)*
+• *Emisor:* ${emisor}
+• *Folio:* ${folio}
+• *UUID SAT:* \`${uuid}\`${total ? `\n• *Total:* ${total}` : ""}
+• *Receptor:* ${receptor}
+
+_Tu conector ha sido configurado y tu factura se ha emitido y entregado con éxito._`,
+    });
+    enviado = true;
+  }
+
+  // 2. Enviar XML
+  if (params.xmlPath && fs.existsSync(params.xmlPath)) {
+    const xmlBuffer = fs.readFileSync(params.xmlPath);
+    await enviarMensajeBot(currentSock, targetJid, {
+      document: xmlBuffer,
+      mimetype: "application/xml",
+      fileName: `Factura_${folio.replace(/[^a-zA-Z0-9_-]/g, "_")}.xml`,
+      caption: `🤖 *KlientIA Facturación Automática*
+🗂️ *Comprobante Fiscal Digital XML CFDI 4.0 Oficial*
+• *Emisor:* ${emisor}
+• *UUID SAT:* \`${uuid}\``,
+    });
+    enviado = true;
+  }
+
+  if (!enviado) {
+    return { ok: false, mensaje: "No se encontraron los archivos PDF ni XML para enviar." };
+  }
+
+  return { ok: true, mensaje: `Factura (PDF y XML) enviada exitosamente a ${targetJid}.` };
+}
+
 export async function reiniciarMotorBot(): Promise<{ ok: boolean; mensaje: string }> {
   estadoMotorBot = "RUNNING";
   if (reconnectingTimeout) clearTimeout(reconnectingTimeout);

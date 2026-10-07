@@ -15,6 +15,7 @@ import {
   pausarMotorBot,
   reiniciarMotorBot,
   desvincularSesionWhatsApp,
+  enviarFacturaDirectaCliente,
 } from "../whatsapp/bot.js";
 import {
   obtenerSolicitudesConectores,
@@ -302,6 +303,48 @@ export function iniciarAdminServer(port: number = 3000): express.Express {
     }
   });
 
+  // Enviar factura (PDF y XML) directamente por WhatsApp al cliente
+  app.post("/api/invoices/send-to-client", requireAuth, async (req, res) => {
+    try {
+      const {
+        targetJidOrPhone,
+        pdfFilename,
+        xmlFilename,
+        emisor,
+        total,
+        folio,
+        uuid,
+        receptorNombre,
+        receptorRfc,
+      } = req.body;
+
+      if (!targetJidOrPhone) {
+        res.status(400).json({ error: "Falta el número o JID de WhatsApp del cliente destino." });
+        return;
+      }
+
+      const downloadsDir = path.resolve(process.cwd(), "downloads");
+      const pdfPath = pdfFilename ? path.join(downloadsDir, path.basename(pdfFilename)) : undefined;
+      const xmlPath = xmlFilename ? path.join(downloadsDir, path.basename(xmlFilename)) : undefined;
+
+      const resultado = await enviarFacturaDirectaCliente({
+        targetJidOrPhone,
+        pdfPath,
+        xmlPath,
+        emisor: emisor || "Proveedor",
+        total: total ? Number(total) : undefined,
+        folio: folio || "Oficial",
+        uuid: uuid || "Validado ante SAT",
+        receptorNombre,
+        receptorRfc,
+      });
+
+      res.json(resultado);
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: e?.message || e });
+    }
+  });
+
   // HTML Principal del Panel Administrativo
   app.use((req, res) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -553,6 +596,11 @@ function generarHtmlPanelAdmin(): string {
         </button>
       </div>
 
+      <div id="listaFacturas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <p class="text-xs text-slate-500 col-span-3">Cargando archivos...</p>
+      </div>
+    </div>
+
     <!-- Sección de Solicitudes de Conectores (Proveedores Pendientes) -->
     <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 space-y-4">
       <div class="flex items-center justify-between">
@@ -710,6 +758,61 @@ function generarHtmlPanelAdmin(): string {
       <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
         <button onclick="cerrarModalCliente()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700">Cancelar</button>
         <button onclick="guardarClienteForm()" class="px-5 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 hover:bg-emerald-400">Guardar Cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Enviar Factura a Cliente por WhatsApp -->
+  <div id="modalEnviarFactura" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>📲 Enviar Factura al Cliente</span>
+        </h3>
+        <button onclick="cerrarModalEnviarFactura()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400">Entrega de PDF y XML oficial vía WhatsApp una vez instalado el conector.</p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Destinatario / Cliente</label>
+          <select id="envioClienteSelect" onchange="actualizarDestinoSeleccionado()" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white">
+            <option value="">-- Seleccionar de clientes registrados --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Número o WhatsApp destino *</label>
+          <input type="text" id="envioTelefono" placeholder="+5214775907888" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Archivo PDF (downloads/)</label>
+          <input type="text" id="envioPdf" placeholder="Factura_IWAVX_243004.pdf" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Archivo XML (downloads/)</label>
+          <input type="text" id="envioXml" placeholder="Factura_IWAVX_243004.xml" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Emisor</label>
+            <input type="text" id="envioEmisor" placeholder="Walmart México" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Total MXN</label>
+            <input type="number" step="0.01" id="envioTotal" placeholder="207.00" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="cerrarModalEnviarFactura()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-700">Cancelar</button>
+        <button id="btnConfirmarEnvio" onclick="confirmarEnviarFactura()" class="px-5 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 hover:bg-emerald-400 flex items-center gap-1.5">
+          <span>Enviar PDF & XML</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1090,8 +1193,8 @@ function generarHtmlPanelAdmin(): string {
 
         lista.innerHTML = invoices.slice(0, 12).map(f => {
           const esPdf = f.tipo === "pdf";
-          const icon = esPdf ? '📄' : '⚙️';
-          const badgeClass = esPdf ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+          const counterpartName = esPdf ? f.nombre.replace(/\.pdf$/i, '.xml') : f.nombre.replace(/\.xml$/i, '.pdf');
+          const hasXml = esPdf && invoices.some(x => x.nombre.toLowerCase() === counterpartName.toLowerCase());
 
           return '<div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5 flex items-center justify-between gap-3 hover:border-slate-700 transition">' +
             '<div class="flex items-center gap-3 overflow-hidden">' +
@@ -1101,13 +1204,105 @@ function generarHtmlPanelAdmin(): string {
                 '<p class="text-[10px] text-slate-400">' + f.tamanoKb + ' KB • ' + f.fechaModificacion + '</p>' +
               '</div>' +
             '</div>' +
-            '<a href="' + f.urlDescarga + '" download class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 shrink-0 text-xs border border-slate-700" title="Descargar">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>' +
-            '</a>' +
+            '<div class="flex items-center gap-1.5 shrink-0">' +
+              '<button onclick="abrirModalEnviarFactura(\'' + f.nombre + '\', \'' + (esPdf ? counterpartName : '') + '\')" class="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs border border-emerald-500/30" title="Enviar PDF & XML al Cliente vía WhatsApp">' +
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>' +
+              '</button>' +
+              '<a href="' + f.urlDescarga + '" download class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700" title="Descargar">' +
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>' +
+              '</a>' +
+            '</div>' +
           '</div>';
         }).join('');
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    // Modal Enviar Factura a Cliente
+    function abrirModalEnviarFactura(filename, counterpartName) {
+      const select = document.getElementById("envioClienteSelect");
+      select.innerHTML = '<option value="">-- Seleccionar de clientes registrados --</option>' +
+        todosClientes.map(c => '<option value="' + c.rfc + '" data-tel="' + (c.telefono || '') + '" data-razon="' + c.razonSocial + '">' + c.razonSocial + ' (' + c.rfc + ')' + '</option>').join('');
+
+      const esPdf = filename.toLowerCase().endsWith('.pdf');
+      document.getElementById("envioPdf").value = esPdf ? filename : (counterpartName || '');
+      document.getElementById("envioXml").value = !esPdf ? filename : (counterpartName || '');
+
+      // Autodetectar emisor si el archivo tiene pista
+      if (filename.toLowerCase().includes("walmart")) {
+        document.getElementById("envioEmisor").value = "Walmart México";
+      } else if (filename.toLowerCase().includes("pepsico")) {
+        document.getElementById("envioEmisor").value = "Comercializadora PepsiCo México";
+      } else if (filename.toLowerCase().includes("propimex")) {
+        document.getElementById("envioEmisor").value = "Propimex (Coca-Cola FEMSA)";
+      } else {
+        document.getElementById("envioEmisor").value = "Proveedor";
+      }
+
+      document.getElementById("modalEnviarFactura").classList.remove("hidden");
+      document.getElementById("modalEnviarFactura").classList.add("flex");
+    }
+
+    function cerrarModalEnviarFactura() {
+      document.getElementById("modalEnviarFactura").classList.add("hidden");
+      document.getElementById("modalEnviarFactura").classList.remove("flex");
+    }
+
+    function actualizarDestinoSeleccionado() {
+      const select = document.getElementById("envioClienteSelect");
+      const rfc = select.value;
+      const cliente = todosClientes.find(c => c.rfc === rfc);
+      if (cliente) {
+        document.getElementById("envioTelefono").value = cliente.telefono || "";
+      }
+    }
+
+    async function confirmarEnviarFactura() {
+      const tel = document.getElementById("envioTelefono").value.trim();
+      const pdf = document.getElementById("envioPdf").value.trim();
+      const xml = document.getElementById("envioXml").value.trim();
+      const emisor = document.getElementById("envioEmisor").value.trim();
+      const total = document.getElementById("envioTotal").value.trim();
+      const select = document.getElementById("envioClienteSelect");
+      const rfc = select.value;
+      const cliente = todosClientes.find(c => c.rfc === rfc);
+
+      if (!tel) {
+        alert("Por favor indica el teléfono o JID de WhatsApp del cliente.");
+        return;
+      }
+
+      const btn = document.getElementById("btnConfirmarEnvio");
+      btn.innerText = "Enviando por WhatsApp...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/invoices/send-to-client", {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            targetJidOrPhone: tel,
+            pdfFilename: pdf,
+            xmlFilename: xml,
+            emisor: emisor || "Proveedor",
+            total: total ? Number(total) : undefined,
+            receptorNombre: cliente?.razonSocial,
+            receptorRfc: cliente?.rfc,
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert("✅ Factura (PDF y XML) enviada exitosamente por WhatsApp al cliente.");
+          cerrarModalEnviarFactura();
+        } else {
+          alert("❌ Error: " + (data.mensaje || data.error || "No se pudo enviar"));
+        }
+      } catch (e) {
+        alert("Error de red: " + e.message);
+      } finally {
+        btn.innerText = "Enviar PDF & XML";
+        btn.disabled = false;
       }
     }
 
@@ -1138,16 +1333,35 @@ function generarHtmlPanelAdmin(): string {
             '<td class="py-3 px-4 font-mono text-[11px] text-slate-400">' + (s.rfcEmisor || "Sin RFC") + '</td>' +
             '<td class="py-3 px-4 text-slate-300">' + (s.clienteNombre || "Cliente") + '<br/><span class="text-[10px] text-slate-500">' + (s.solicitadoPorJid || "") + '</span></td>' +
             '<td class="py-3 px-4 text-center font-bold text-amber-400">' + (s.conteo || 1) + '</td>' +
-            '<td class="py-3 px-4 text-[11px] text-slate-400">' + (s.urlPortal ? '<a href="' + s.urlPortal + '" target="_blank" class="text-emerald-400 underline">Portal</a>' : 'Sin URL') + (s.folioTicket ? ' • Folio: ' + s.folioTicket : '') + '</td>' +
+            '<td class="py-3 px-4 text-[11px] text-slate-400">' + (s.urlPortal ? '<a href="' + s.urlPortal + '" target="_blank" class="text-emerald-400 underline">Portal</a>' : 'Sin URL') + (s.folioTicket ? ' • ' + s.folioTicket : '') + '</td>' +
             '<td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ' + badgeColor + '">' + s.estado + '</span></td>' +
-            '<td class="py-3 px-4 text-right space-x-1">' +
+            '<td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">' +
               (s.estado !== "EN_DESARROLLO" && s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'EN_DESARROLLO\')" class="px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 text-[10px] font-semibold border border-sky-500/30">En Desarrollo</button>' : '') +
               (s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'INSTALADO\')" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30">Instalado</button>' : '') +
+              '<button onclick="prepararEnvioDesdeSolicitud(\'' + s.comercio.replace(/'/g, "\\'") + '\', \'' + (s.solicitadoPorJid || '') + '\', \'' + (s.totalTicket || '') + '\', \'' + (s.clienteNombre || '').replace(/'/g, "\\'") + '\')" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30" title="Enviar PDF y XML al Cliente">📤 Enviar</button>' +
             '</td>' +
           '</tr>';
         }).join('');
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    function prepararEnvioDesdeSolicitud(comercio, telefono, total, razonSocial) {
+      abrirModalEnviarFactura('', '');
+      if (comercio) document.getElementById("envioEmisor").value = comercio;
+      if (telefono) document.getElementById("envioTelefono").value = telefono;
+      if (total) document.getElementById("envioTotal").value = total;
+
+      // Buscar si coincide con algún cliente
+      const select = document.getElementById("envioClienteSelect");
+      if (razonSocial) {
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].text.toLowerCase().includes(razonSocial.toLowerCase())) {
+            select.selectedIndex = i;
+            break;
+          }
+        }
       }
     }
 
