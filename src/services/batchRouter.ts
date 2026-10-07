@@ -14,6 +14,11 @@ import { facturarTicketHeb } from "../connectors/hebConnector.js";
 import { facturarTicketChedraui } from "../connectors/chedrauiConnector.js";
 import { facturarTicketSoriana } from "../connectors/sorianaConnector.js";
 import { facturarTicketPepsico } from "../connectors/pepsicoConnector.js";
+import { facturarTicketPropimex } from "../connectors/propimexConnector.js";
+import { facturarTicketMercadoSanJuan } from "../connectors/mercadoSanJuanConnector.js";
+import { facturarTicketBara } from "../connectors/baraConnector.js";
+import { facturarTicketGasNoel } from "../connectors/gasNoelConnector.js";
+import { facturarBoletoFlechaAmarilla } from "../connectors/flechaAmarillaConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 import { DatosFiscales } from "../types.js";
 
@@ -24,6 +29,11 @@ export type ProviderType =
   | "JALA_COMPOSTELA"
   | "WALMART"
   | "PEPSICO"
+  | "PROPIMEX"
+  | "MERCADO_SAN_JUAN"
+  | "BARA"
+  | "GAS_NOEL"
+  | "FLECHA_AMARILLA"
   | "OXXO_GAS"
   | "OXXO"
   | "FARMACIAS_GDL"
@@ -145,6 +155,74 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
     raw.includes("facturagepp.com.mx")
   ) {
     return { provider: "PEPSICO" };
+  }
+
+  // 5c. Propimex S. de R.L. de C.V. (Coca-Cola FEMSA México)
+  if (
+    url.includes("clienteskof") ||
+    est.includes("PROPIMEX") ||
+    est.includes("COCA-COLA") ||
+    est.includes("COCA COLA") ||
+    est.includes("FEMSA") && (raw.includes("kof") || raw.includes("refresco")) ||
+    raw.includes("propimex") ||
+    raw.includes("pro840423sg8") ||
+    raw.includes("coca-cola femsa") ||
+    raw.includes("linea.kof@kof.com.mx")
+  ) {
+    return { provider: "PROPIMEX" };
+  }
+
+  // 5d. Mercado San Juan (MSJ Carnes y Abarrotes - León, Gto.)
+  if (
+    url.includes("mercadosanjuan") ||
+    est.includes("MERCADO SAN JUAN") ||
+    est.includes("SAN JUAN") && (raw.includes("carnes") || raw.includes("abarrotes")) ||
+    raw.includes("mercado san juan") ||
+    raw.includes("mercadosanjuan.com.mx") ||
+    raw.includes("cca980312ra1") ||
+    raw.includes("comercializadora de carnes y abarrotes san juan")
+  ) {
+    return { provider: "MERCADO_SAN_JUAN" };
+  }
+
+  // 5e. Tiendas Bara (FEMSA Comercio)
+  if (
+    url.includes("bara.com.mx") ||
+    est.includes("TIENDAS BARA") ||
+    est.includes("BARA") ||
+    raw.includes("tiendas bara") ||
+    raw.includes("cadena comercial bara") ||
+    raw.includes("ccb0007204m7")
+  ) {
+    return { provider: "BARA" };
+  }
+
+  // 5f. Gas Noel (Grupo Noel - León, Gto.)
+  if (
+    url.includes("gasnoel") ||
+    est.includes("GAS NOEL") ||
+    est.includes("GRUPO NOEL") ||
+    raw.includes("gas noel") ||
+    raw.includes("gno670404n94") ||
+    raw.includes("gasnoel.com.mx")
+  ) {
+    return { provider: "GAS_NOEL" };
+  }
+
+  // 5g. Primera Plus / Grupo Flecha Amarilla (León, Gto.)
+  if (
+    url.includes("facturaelectronicagfa") ||
+    url.includes("primeraplus") ||
+    url.includes("flecha-amarilla") ||
+    est.includes("PRIMERA PLUS") ||
+    est.includes("FLECHA AMARILLA") ||
+    est.includes("AUTOBUSES DE LA PIEDAD") ||
+    raw.includes("primera plus") ||
+    raw.includes("flecha amarilla") ||
+    raw.includes("api6609273e0") ||
+    raw.includes("cfdiboletoprimeraplus")
+  ) {
+    return { provider: "FLECHA_AMARILLA" };
   }
 
   // 6. OXXO GAS (Servicios Gasolineros de México)
@@ -385,6 +463,61 @@ export async function procesarLoteCompletoAutonomo(
         case "PEPSICO":
           for (const itm of grupo.items) {
             const r = await facturarTicketPepsico({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "PROPIMEX":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketPropimex({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "MERCADO_SAN_JUAN":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketMercadoSanJuan({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "BARA":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketBara({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "GAS_NOEL":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketGasNoel({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
+        case "FLECHA_AMARILLA":
+          for (const itm of grupo.items) {
+            const r = await facturarBoletoFlechaAmarilla({
               tickets: [itm],
               perfil,
               onProgress,
