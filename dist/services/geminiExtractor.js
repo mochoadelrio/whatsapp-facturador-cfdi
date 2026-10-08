@@ -136,10 +136,10 @@ async function generarJsonConGemini(params) {
     const apiKey = obtenerApiKey();
     const client = new GoogleGenAI({ apiKey });
     const intentos = [
-        { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 0 },
-        { model: "gemini-2.5-flash", useThinkingZero: true, delayMs: 1200 },
-        { model: "gemini-2.0-flash", useThinkingZero: false, delayMs: 1800 },
-        { model: "gemini-3.8-flash", useThinkingZero: false, delayMs: 2500 },
+        { model: "gemini-3.5-flash", useThinkingZero: true, delayMs: 0 },
+        { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 1000 },
+        { model: "gemini-3.5-flash", useThinkingZero: false, delayMs: 1500 },
+        { model: "gemini-3.1-flash-lite", useThinkingZero: true, delayMs: 2000 },
     ];
     let ultimoError = null;
     for (let i = 0; i < intentos.length; i++) {

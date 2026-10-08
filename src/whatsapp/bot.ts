@@ -55,6 +55,7 @@ const clientesAutorizados = new Set<string>([
   "5214775907888",
   "524775907888",
   "140974432981152",
+  "2027996352627",
 ]);
 
 // Mapa de usuarios LID -> PN canónico para evitar sesiones Signal divididas (Bad MAC)
@@ -62,6 +63,7 @@ const LID_A_PN_MAP: Record<string, string> = {
   "16922322174194": "5214773929593",
   "140974432981152": "5214775907888",
   "524775907888": "5214775907888",
+  "2027996352627": "5215623393840",
 };
 
 function canonicalizarSessionKey(id: string): string {
