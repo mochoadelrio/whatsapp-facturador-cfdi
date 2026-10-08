@@ -9,6 +9,7 @@ RUN npm ci
 # Copiar el código fuente y compilar TypeScript
 COPY tsconfig.json ./
 COPY src ./src
+COPY data ./data
 RUN npm run build
 
 # Crear directorios de datos persistentes

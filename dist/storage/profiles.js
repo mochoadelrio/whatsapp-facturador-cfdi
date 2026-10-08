@@ -27,8 +27,15 @@ function asegurarDirectorio() {
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    if (!fs.existsSync(PROFILES_FILE)) {
-        fs.writeFileSync(PROFILES_FILE, JSON.stringify({}, null, 2), "utf-8");
+    if (!fs.existsSync(PROFILES_FILE) || fs.readFileSync(PROFILES_FILE, "utf-8").trim() === "{}" || !fs.readFileSync(PROFILES_FILE, "utf-8").trim()) {
+        const defaultData = {
+            "5214773929593@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
+            "16922322174194@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
+            "5214775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
+            "524775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
+            "140974432981152@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 }
+        };
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(defaultData, null, 2), "utf-8");
     }
 }
 export function normalizarPerfilConPlan(perfil) {
