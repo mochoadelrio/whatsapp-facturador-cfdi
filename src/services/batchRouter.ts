@@ -26,6 +26,7 @@ import { facturarTicketCepesmar } from "../connectors/cepesmarConnector.js";
 import { facturarTicketAtlantimex } from "../connectors/atlantimexConnector.js";
 import { facturarTicketBahiaKino } from "../connectors/bahiaKinoConnector.js";
 import { facturarTicketGrupoModelo } from "../connectors/grupoModeloConnector.js";
+import { facturarTicketVictoriaCarnitas } from "../connectors/victoriaCarnitasConnector.js";
 import { solicitarFacturaPorCorreo } from "../connectors/emailInvoiceConnector.js";
 import { registrarSolicitudConector } from "../storage/connectorRequests.js";
 import { DatosFiscales } from "../types.js";
@@ -49,6 +50,7 @@ export type ProviderType =
   | "ATLANTIMEX"
   | "BAHIA_KINO"
   | "GRUPO_MODELO"
+  | "VICTORIA_CARNITAS"
   | "OXXO_GAS"
   | "OXXO"
   | "FARMACIAS_GDL"
@@ -326,6 +328,19 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
     raw.includes("cmm080617bd2")
   ) {
     return { provider: "GRUPO_MODELO" };
+  }
+
+  // 5o. Victoria Asados y Carnitas (SoftRestaurant / mefacturo.mx - León / Silao)
+  if (
+    url.includes("aeropuertovictoria") ||
+    url.includes("mefacturo.mx") ||
+    est.includes("VICTORIA ASADOS") ||
+    est.includes("VICTORIA") && (est.includes("CARNITAS") || raw.includes("carnitas") || raw.includes("asados")) ||
+    raw.includes("victoria asados y carnitas") ||
+    raw.includes("aaae870115133") ||
+    raw.includes("aeropuertovictoria")
+  ) {
+    return { provider: "VICTORIA_CARNITAS" };
   }
 
   // 6. OXXO GAS (Servicios Gasolineros de México)
@@ -706,6 +721,17 @@ export async function procesarLoteCompletoAutonomo(
           }
           continue;
 
+        case "VICTORIA_CARNITAS":
+          for (const itm of grupo.items) {
+            const r = await facturarTicketVictoriaCarnitas({
+              tickets: [itm],
+              perfil,
+              onProgress,
+            });
+            resultados.push(r);
+          }
+          continue;
+
         case "OXXO_GAS":
           for (const itm of grupo.items) {
             const r = await facturarTicketOxxoGas({
@@ -823,6 +849,14 @@ export async function procesarLoteCompletoAutonomo(
           const totalTicket = grupo.items.reduce((s, t) => s + (Number(t.ticket.montoTotal) || 0), 0);
           const folioTicket = grupo.items[0]?.ticket.folioTicket || grupo.items[0]?.ticket.codigoFacturacion;
 
+          // Notificar proactivamente al cliente que se está trabajando y configurando el conector
+          if (onProgress) {
+            await onProgress(
+              `🔍 *Localizando portal oficial y configurando conector para ${comercio}...*\n` +
+              `Estamos preparando la integración automática para emitir tu factura.`
+            );
+          }
+
           // Registrar solicitud automática en el panel de control
           try {
             registrarSolicitudConector({
@@ -843,7 +877,7 @@ export async function procesarLoteCompletoAutonomo(
             exito: false,
             emisor: comercio,
             total: totalTicket,
-            mensaje: `❌ Error, volver a intentar. (Proveedor en proceso de conector: *${comercio}*)`,
+            mensaje: `⏳ *Estamos trabajando en la factura de ${comercio}:* Detectamos tu ticket y estamos integrando el conector oficial para emitirla y enviarte tu PDF y XML en breve.`,
             ticketIds: grupo.items.map((t) => t.id),
           };
           break;

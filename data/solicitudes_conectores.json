@@ -1,0 +1,15 @@
+[
+  {
+    "id": "req_1791439574761_5v9y",
+    "comercio": "VICTORIA ASADOS Y CARNITAS",
+    "rfcEmisor": "AAAE870115133",
+    "urlPortal": "HTTPS://MEFACTURO.MX/AEROPUERTOVICTORIA",
+    "fechaSolicitud": "2026-10-08T06:06:14.761Z",
+    "solicitadoPorJid": "+5214775907888",
+    "clienteNombre": "CRISTHIAN VALDIVIA MARTINEZ",
+    "totalTicket": 527,
+    "folioTicket": "202872",
+    "estado": "INSTALADO",
+    "conteo": 1
+  }
+]
