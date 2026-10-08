@@ -420,7 +420,13 @@ function generarHtmlPanelAdmin(): string {
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <nav class="hidden md:flex items-center gap-1 mr-2 text-xs font-semibold">
+          <a href="#seccion-clientes" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Clientes & Planes</a>
+          <a href="#listaFacturas" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Facturas</a>
+          <a href="#badgeTotalSolicitudes" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">Conectores</a>
+        </nav>
+
         <!-- Indicador de conexión -->
         <div id="waBadge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium border bg-slate-800 border-slate-700 text-slate-300">
           <span class="w-2 h-2 rounded-full bg-slate-500"></span>
@@ -548,7 +554,7 @@ function generarHtmlPanelAdmin(): string {
     </div>
 
     <!-- Sección de Clientes y Planes -->
-    <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 space-y-6">
+    <div id="seccion-clientes" class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 space-y-6 scroll-mt-20">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 class="text-xl font-extrabold text-white">Clientes & Planes Activos</h3>
