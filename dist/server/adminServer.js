@@ -965,9 +965,9 @@ function generarHtmlPanelAdmin() {
             (c.diasRestantes !== undefined ? ('<div class="text-[10px] text-slate-400">' + c.diasRestantes + ' días restantes</div>') : '') +
           '</td>' +
           '<td class="py-4 px-4 text-right space-x-1 whitespace-nowrap">' +
-            '<button onclick="abrirModalPlan(\\'' + c.rfc + '\\')" title="Cambiar o Renovar Plan" class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold border border-emerald-500/20">⚡ Plan</button>' +
-            '<button onclick="abrirModalAjustar(\\'' + c.rfc + '\\', ' + usados + ')" title="Fijar tickets usados" class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold border border-amber-500/20">🔢 Folios</button>' +
-            '<button onclick="eliminarCliente(\\'' + c.rfc + '\\')" title="Eliminar Cliente" class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold border border-rose-500/20">🗑️</button>' +
+            '<button data-rfc="' + c.rfc + '" onclick="abrirModalPlan(this.dataset.rfc)" title="Cambiar o Renovar Plan" class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold border border-emerald-500/20">⚡ Plan</button>' +
+            '<button data-rfc="' + c.rfc + '" data-usados="' + usados + '" onclick="abrirModalAjustar(this.dataset.rfc, Number(this.dataset.usados))" title="Fijar tickets usados" class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold border border-amber-500/20">🔢 Folios</button>' +
+            '<button data-rfc="' + c.rfc + '" onclick="eliminarCliente(this.dataset.rfc)" title="Eliminar Cliente" class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold border border-rose-500/20">🗑️</button>' +
           '</td>' +
         '</tr>';
       }).join('');
@@ -1127,6 +1127,7 @@ function generarHtmlPanelAdmin() {
 
         lista.innerHTML = invoices.slice(0, 12).map(f => {
           const esPdf = f.tipo === "pdf";
+          const icon = esPdf ? '📄' : '📋';
           const counterpartName = esPdf ? f.nombre.replace(/\.pdf$/i, '.xml') : f.nombre.replace(/\.xml$/i, '.pdf');
           const hasXml = esPdf && invoices.some(x => x.nombre.toLowerCase() === counterpartName.toLowerCase());
 
@@ -1139,7 +1140,7 @@ function generarHtmlPanelAdmin() {
               '</div>' +
             '</div>' +
             '<div class="flex items-center gap-1.5 shrink-0">' +
-              '<button onclick="abrirModalEnviarFactura(\'' + f.nombre + '\', \'' + (esPdf ? counterpartName : '') + '\')" class="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs border border-emerald-500/30" title="Enviar PDF & XML al Cliente vía WhatsApp">' +
+              '<button data-nombre="' + encodeURIComponent(f.nombre) + '" data-counterpart="' + encodeURIComponent(esPdf ? counterpartName : '') + '" onclick="abrirModalEnviarFactura(decodeURIComponent(this.dataset.nombre), decodeURIComponent(this.dataset.counterpart))" class="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs border border-emerald-500/30" title="Enviar PDF & XML al Cliente vía WhatsApp">' +
                 '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>' +
               '</button>' +
               '<a href="' + f.urlDescarga + '" download class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700" title="Descargar">' +
@@ -1270,9 +1271,9 @@ function generarHtmlPanelAdmin() {
             '<td class="py-3 px-4 text-[11px] text-slate-400">' + (s.urlPortal ? '<a href="' + s.urlPortal + '" target="_blank" class="text-emerald-400 underline">Portal</a>' : 'Sin URL') + (s.folioTicket ? ' • ' + s.folioTicket : '') + '</td>' +
             '<td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ' + badgeColor + '">' + s.estado + '</span></td>' +
             '<td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">' +
-              (s.estado !== "EN_DESARROLLO" && s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'EN_DESARROLLO\')" class="px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 text-[10px] font-semibold border border-sky-500/30">En Desarrollo</button>' : '') +
-              (s.estado !== "INSTALADO" ? '<button onclick="cambiarEstadoSolicitud(\'' + s.id + '\', \'INSTALADO\')" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30">Instalado</button>' : '') +
-              '<button onclick="prepararEnvioDesdeSolicitud(\'' + s.comercio.replace(/'/g, "\\'") + '\', \'' + (s.solicitadoPorJid || '') + '\', \'' + (s.totalTicket || '') + '\', \'' + (s.clienteNombre || '').replace(/'/g, "\\'") + '\')" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30" title="Enviar PDF y XML al Cliente">📤 Enviar</button>' +
+              (s.estado !== "EN_DESARROLLO" && s.estado !== "INSTALADO" ? '<button data-id="' + s.id + '" data-estado="EN_DESARROLLO" onclick="cambiarEstadoSolicitud(this.dataset.id, this.dataset.estado)" class="px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 text-[10px] font-semibold border border-sky-500/30">En Desarrollo</button>' : '') +
+              (s.estado !== "INSTALADO" ? '<button data-id="' + s.id + '" data-estado="INSTALADO" onclick="cambiarEstadoSolicitud(this.dataset.id, this.dataset.estado)" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30">Instalado</button>' : '') +
+              '<button data-comercio="' + encodeURIComponent(s.comercio || '') + '" data-jid="' + encodeURIComponent(s.solicitadoPorJid || '') + '" data-total="' + encodeURIComponent(s.totalTicket || '') + '" data-nombre="' + encodeURIComponent(s.clienteNombre || '') + '" onclick="prepararEnvioDesdeSolicitud(decodeURIComponent(this.dataset.comercio), decodeURIComponent(this.dataset.jid), decodeURIComponent(this.dataset.total), decodeURIComponent(this.dataset.nombre))" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] font-semibold border border-emerald-500/30" title="Enviar PDF y XML al Cliente">📤 Enviar</button>' +
             '</td>' +
           '</tr>';
         }).join('');

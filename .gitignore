@@ -8,4 +8,6 @@ scratch/tickets_recibidos/
 data/mensajes_procesados.json
 data/outbox/
 *.png
+*.db
+scratch/
 .DS_Store

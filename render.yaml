@@ -1,6 +1,6 @@
 services:
-  - type: worker
-    name: facturador-cfdi-bot
+  - type: web
+    name: klientia-facturacion
     runtime: docker
     dockerfilePath: Dockerfile
     plan: starter
@@ -15,6 +15,8 @@ services:
         value: "true"
       - key: AUTH_FOLDER
         value: data/auth_whatsapp
+      - key: ADMIN_PIN
+        value: "klientia2026"
       - key: GEMINI_API_KEY
         sync: false
       - key: SMTP_HOST
