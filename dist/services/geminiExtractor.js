@@ -137,9 +137,9 @@ async function generarJsonConGemini(params) {
     const client = new GoogleGenAI({ apiKey });
     const intentos = [
         { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 0 },
-        { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 1800 },
+        { model: "gemini-2.5-flash", useThinkingZero: true, delayMs: 1200 },
+        { model: "gemini-2.0-flash", useThinkingZero: false, delayMs: 1800 },
         { model: "gemini-3.8-flash", useThinkingZero: false, delayMs: 2500 },
-        { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 3500 },
     ];
     let ultimoError = null;
     for (let i = 0; i < intentos.length; i++) {
