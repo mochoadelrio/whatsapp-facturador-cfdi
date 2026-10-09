@@ -10,6 +10,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 COPY data ./data
+COPY assets ./assets
 RUN npm run build
 
 # Crear directorios de datos persistentes

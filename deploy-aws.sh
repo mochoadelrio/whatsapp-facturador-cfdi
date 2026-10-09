@@ -72,6 +72,7 @@ sudo docker run -d \
   -e PORT=3008 \
   -v "$APP_DIR/data:/app/data" \
   -v "$APP_DIR/downloads:/app/downloads" \
+  -v "$APP_DIR/assets:/app/assets" \
   --env-file .env \
   klientia-facturacion:latest
 
