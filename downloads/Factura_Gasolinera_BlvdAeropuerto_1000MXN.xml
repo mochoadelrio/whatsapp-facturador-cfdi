@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="4.0" Serie="WA" Folio="0000690256" Fecha="2026-10-08T20:22:23" FormaPago="28" SubTotal="865.54" Moneda="MXN" Total="1000.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="37545">
+  <cfdi:Emisor Rfc="SBA950215KG9" Nombre="SERVICIO BLVD. AEROPUERTO" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="VAMC9112056Q2" Nombre="CRISTHIAN VALDIVIA MARTINEZ" DomicilioFiscalReceptor="37545" RegimenFiscalReceptor="626" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="01010101" Cantidad="42.571" ClaveUnidad="H87" Descripcion="GASOLINA REGULAR 87 OCTANOS (G_REGULAR)" ValorUnitario="20.33" Importe="865.54" ObjetoImp="02"/>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="134.46">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="865.54" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="134.46"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital Version="1.1" UUID="355C9B08-C78D-4464-A67B-BE6B14CB956D" FechaTimbrado="2026-10-08T20:22:23" RfcProvCertif="SAT970701NN3" SelloCFD="SIMULACION_DEMO_WHATSAPP_CFDI40" NoCertificadoSAT="00001000000504465028" SelloSAT="SELLO_SAT_DEMO"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

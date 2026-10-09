@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="4.0" Serie="WA" Folio="243004" Fecha="2026-10-07T01:11:44" FormaPago="01" SubTotal="186.72" Moneda="MXN" Total="207.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="37545">
+  <cfdi:Emisor Rfc="NWM9709244W4" Nombre="NUEVA WAL MART DE MEXICO" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="VAMC9112056Q2" Nombre="CRISTHIAN VALDIVIA MARTINEZ" DomicilioFiscalReceptor="37545" RegimenFiscalReceptor="626" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="01010101" Cantidad="2" ClaveUnidad="H87" Descripcion="HIELO (50202302)" ValorUnitario="30.00" Importe="60.00" ObjetoImp="02"/>
+    <cfdi:Concepto ClaveProdServ="01010101" Cantidad="3" ClaveUnidad="H87" Descripcion="GV PREMIUM SERVILLETAS (14111705)" ValorUnitario="42.24" Importe="126.72" ObjetoImp="02"/>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="20.28">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="186.72" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="20.28"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital Version="1.1" UUID="079B9593-DA62-4BDC-BE22-E07C7D404974" FechaTimbrado="2026-10-07T01:11:44" RfcProvCertif="SAT970701NN3" SelloCFD="SIMULACION_DEMO_WHATSAPP_CFDI40" NoCertificadoSAT="00001000000504465028" SelloSAT="SELLO_SAT_DEMO"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

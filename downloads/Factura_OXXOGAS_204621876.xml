@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="4.0" Serie="WA" Folio="204621876" Fecha="2026-10-08T20:16:31" FormaPago="04" SubTotal="517.24" Moneda="MXN" Total="600.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="37545">
+  <cfdi:Emisor Rfc="SGM950714DC2" Nombre="OXXOGAS" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="VAMC9112056Q2" Nombre="CRISTHIAN VALDIVIA MARTINEZ" DomicilioFiscalReceptor="37545" RegimenFiscalReceptor="626" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="01010101" Cantidad="20.007" ClaveUnidad="H87" Descripcion="PREMIUM" ValorUnitario="29.99" Importe="600.00" ObjetoImp="02"/>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="82.76">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="517.24" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="82.76"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital Version="1.1" UUID="C7F0FD50-0756-47EC-A039-46DE78E1399D" FechaTimbrado="2026-10-08T20:16:31" RfcProvCertif="SAT970701NN3" SelloCFD="SIMULACION_DEMO_WHATSAPP_CFDI40" NoCertificadoSAT="00001000000504465028" SelloSAT="SELLO_SAT_DEMO"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

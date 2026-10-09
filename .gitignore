@@ -1,8 +1,6 @@
 node_modules/
 .env
 auth_whatsapp/
-downloads/*.pdf
-downloads/*.xml
 scratch/tickets_lote_20/
 scratch/tickets_recibidos/
 data/mensajes_procesados.json

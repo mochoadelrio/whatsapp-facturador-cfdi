@@ -245,21 +245,33 @@ export function iniciarAdminServer(port: number = 3000): express.Express {
         urlDescarga: string;
       }> = [];
 
+      const ahora = new Date();
+      const mesActual = ahora.getMonth();
+      const anioActual = ahora.getFullYear();
+
       for (const f of files) {
         if (!f.endsWith(".pdf") && !f.endsWith(".xml")) continue;
         const filePath = path.join(downloadsDir, f);
         const stat = fs.statSync(filePath);
+
+        // Mostrar únicamente las facturas correspondientes al mes vigente
+        const fechaArchivo = new Date(stat.mtime);
+        if (fechaArchivo.getMonth() !== mesActual || fechaArchivo.getFullYear() !== anioActual) {
+          continue;
+        }
+
         facturas.push({
           nombre: f,
           tipo: f.endsWith(".pdf") ? "pdf" : "xml",
           tamanoKb: Math.round(stat.size / 1024),
           fechaModificacion: stat.mtime.toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
           urlDescarga: `/api/invoices/download/${encodeURIComponent(f)}`,
+          ...( { mtimeMs: stat.mtimeMs } as any ),
         });
       }
 
       // Ordenar más recientes primero
-      facturas.sort((a, b) => b.nombre.localeCompare(a.nombre));
+      facturas.sort((a: any, b: any) => b.mtimeMs - a.mtimeMs);
 
       res.json({ invoices: facturas });
     } catch (e: any) {
