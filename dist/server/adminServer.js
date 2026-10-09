@@ -12,6 +12,9 @@ export function iniciarAdminServer(port = 3000) {
     // Servir logo y recursos estáticos
     const assetsDir = path.resolve(process.cwd(), "assets");
     app.use("/assets", express.static(assetsDir));
+    app.get("/favicon.ico", (req, res) => {
+        res.sendFile(path.resolve(assetsDir, "favicon.ico"));
+    });
     // Middleware opcional de autenticación simple por PIN/token
     function requireAuth(req, res, next) {
         const pin = req.headers["x-admin-pin"] || req.query.pin;
@@ -307,7 +310,10 @@ function generarHtmlPanelAdmin() {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KlientIA Facturación - Panel de Control</title>
-  <link rel="icon" type="image/jpeg" href="/assets/logo_klientia.jpg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon_32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon.png" />
+  <link rel="shortcut icon" href="/assets/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -327,10 +333,11 @@ function generarHtmlPanelAdmin() {
   <!-- Modal de Login PIN -->
   <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center space-y-5">
-      <img src="/assets/logo_klientia.jpg" alt="KlientIA Logo" class="w-20 h-20 rounded-2xl mx-auto shadow-lg border border-slate-700 object-cover" />
+      <div class="flex justify-center items-center py-1">
+        <img src="/assets/logo_klientia.png" alt="KlientIA Facturación" class="h-24 w-auto mx-auto object-contain drop-shadow-xl" />
+      </div>
       <div>
-        <h2 class="text-xl font-bold text-white">KlientIA Facturación</h2>
-        <p class="text-xs text-slate-400 mt-1">Panel de Control & Motor de Autofacturación</p>
+        <p class="text-xs text-slate-400 font-medium">Panel de Control & Motor de Autofacturación CFDI 4.0</p>
       </div>
       <div class="space-y-3">
         <label class="block text-xs font-semibold text-slate-300 text-left">PIN de Acceso Administrador</label>
@@ -347,11 +354,14 @@ function generarHtmlPanelAdmin() {
   <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-lg sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <img src="/assets/logo_klientia.jpg" alt="KlientIA Logo" class="w-10 h-10 rounded-xl border border-slate-700 object-cover shadow-sm" />
+        <div class="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-md p-1 group hover:border-emerald-500/50 transition">
+          <img src="/assets/klientia_icon.png" alt="KlientIA" class="w-full h-full object-contain drop-shadow" />
+        </div>
         <div>
           <h1 class="font-extrabold text-base tracking-tight text-white flex items-center gap-2">
-            KlientIA Facturación
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">v2.0 CFDI 4.0</span>
+            Klient<span class="text-emerald-400">IA</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">Facturación</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700">v2.0 CFDI 4.0</span>
           </h1>
           <p class="text-[11px] text-slate-400">Panel Central de Clientes y Motor RPA</p>
         </div>
