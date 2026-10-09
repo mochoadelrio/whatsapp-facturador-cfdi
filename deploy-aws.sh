@@ -69,6 +69,7 @@ sudo docker run -d \
   --name klientia-bot \
   --restart always \
   -p 3008:3008 \
+  -e PORT=3008 \
   -v "$APP_DIR/data:/app/data" \
   -v "$APP_DIR/downloads:/app/downloads" \
   --env-file .env \
