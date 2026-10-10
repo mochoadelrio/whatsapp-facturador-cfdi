@@ -915,8 +915,13 @@ async function manejarMensajeEntrante(sock: any, msg: WAMessage): Promise<void> 
     ?.replace(/\D/g, "");
   const isAdmin = Boolean(
     isSelfChat ||
-      (remNum && (remNum.endsWith("4773929593") || remNum === "2027996352627")) ||
-      (senderPn && senderPn.endsWith("4773929593"))
+      (remNum &&
+        (remNum.endsWith("4773929593") ||
+          remNum === "2027996352627" ||
+          remNum === "16922322174194" ||
+          remNum.endsWith("5623393840"))) ||
+      (senderPn &&
+        (senderPn.endsWith("4773929593") || senderPn.endsWith("5623393840")))
   );
   const pushNameLower = String(msg.pushName || "").toLowerCase();
   const isCristhianByName =
