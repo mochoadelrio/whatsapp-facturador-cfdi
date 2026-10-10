@@ -898,11 +898,12 @@ export async function procesarLoteCompletoAutonomo(
             const downloadsDir = path.resolve(process.cwd(), "downloads");
             if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
             const cleanName = (item.ticket.establecimiento || "CFDI").replace(/[^a-zA-Z0-9_-]/g, "_");
-            const baseName = `Factura_${cleanName}_${uuid.slice(0, 8)}`;
+            const folioStr = (item.ticket.folioTicket || uuid.slice(0, 8)).replace(/[^a-zA-Z0-9_-]/g, "_");
+            const baseName = `Factura_${cleanName}_Folio_${folioStr}_${uuid.slice(0, 6)}`;
             fs.writeFileSync(path.join(downloadsDir, `${baseName}.pdf`), pdfBuf);
             fs.writeFileSync(path.join(downloadsDir, `${baseName}.xml`), xmlBuf);
 
-            res = {
+            resultados.push({
               exito: true,
               emisor: item.ticket.establecimiento || res.emisor,
               total: Number(item.ticket.montoTotal) || res.total,
@@ -911,52 +912,54 @@ export async function procesarLoteCompletoAutonomo(
               folio: item.ticket.folioTicket || uuid.slice(0, 8),
               pdfBuffer: pdfBuf,
               xmlBuffer: xmlBuf,
-              mensaje: `✅ Factura CFDI 4.0 emitida con éxito para ${item.ticket.establecimiento || res.emisor}.`,
+              mensaje: `✅ Factura CFDI 4.0 emitida con éxito para ${item.ticket.establecimiento || res.emisor} (Folio: ${item.ticket.folioTicket || "Oficial"}).`,
               ticketIds: [item.id],
-            };
+            });
           } catch (genErr) {
             console.error("Error generando CFDI 4.0 fallback:", genErr);
           }
         }
+      } else {
+        resultados.push(res);
       }
-
-      resultados.push(res);
     } catch (e: any) {
       const emisorNombre = grupo.items[0]?.ticket?.establecimiento || grupo.provider;
       if (process.env.MODO_FACTURACION !== "real" && grupo.items.length > 0) {
-        try {
-          const item = grupo.items[0];
-          const uuid = generarUuidFiscal();
-          const pdfBuf = await generarPdfCfdi40(item.ticket, perfil, uuid);
-          const xmlBuf = generarXmlCfdi40(item.ticket, perfil, uuid);
+        for (const item of grupo.items) {
+          try {
+            const uuid = generarUuidFiscal();
+            const pdfBuf = await generarPdfCfdi40(item.ticket, perfil, uuid);
+            const xmlBuf = generarXmlCfdi40(item.ticket, perfil, uuid);
 
-          const downloadsDir = path.resolve(process.cwd(), "downloads");
-          if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
-          const cleanName = (item.ticket.establecimiento || "CFDI").replace(/[^a-zA-Z0-9_-]/g, "_");
-          const baseName = `Factura_${cleanName}_${uuid.slice(0, 8)}`;
-          fs.writeFileSync(path.join(downloadsDir, `${baseName}.pdf`), pdfBuf);
-          fs.writeFileSync(path.join(downloadsDir, `${baseName}.xml`), xmlBuf);
+            const downloadsDir = path.resolve(process.cwd(), "downloads");
+            if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
+            const cleanName = (item.ticket.establecimiento || "CFDI").replace(/[^a-zA-Z0-9_-]/g, "_");
+            const folioStr = (item.ticket.folioTicket || uuid.slice(0, 8)).replace(/[^a-zA-Z0-9_-]/g, "_");
+            const baseName = `Factura_${cleanName}_Folio_${folioStr}_${uuid.slice(0, 6)}`;
+            fs.writeFileSync(path.join(downloadsDir, `${baseName}.pdf`), pdfBuf);
+            fs.writeFileSync(path.join(downloadsDir, `${baseName}.xml`), xmlBuf);
 
-          resultados.push({
-            exito: true,
-            emisor: item.ticket.establecimiento || emisorNombre,
-            total: Number(item.ticket.montoTotal) || 0,
-            uuid,
-            serie: "A",
-            folio: item.ticket.folioTicket || uuid.slice(0, 8),
-            pdfBuffer: pdfBuf,
-            xmlBuffer: xmlBuf,
-            mensaje: `✅ Factura CFDI 4.0 emitida para ${item.ticket.establecimiento || emisorNombre}.`,
-            ticketIds: [item.id],
-          });
-        } catch {
-          resultados.push({
-            exito: false,
-            emisor: emisorNombre,
-            total: grupo.items.reduce((s, t) => s + (Number(t.ticket.montoTotal) || 0), 0),
-            mensaje: `❌ Error, volver a intentar.`,
-            ticketIds: grupo.items.map((t) => t.id),
-          });
+            resultados.push({
+              exito: true,
+              emisor: item.ticket.establecimiento || emisorNombre,
+              total: Number(item.ticket.montoTotal) || 0,
+              uuid,
+              serie: "A",
+              folio: item.ticket.folioTicket || uuid.slice(0, 8),
+              pdfBuffer: pdfBuf,
+              xmlBuffer: xmlBuf,
+              mensaje: `✅ Factura CFDI 4.0 emitida para ${item.ticket.establecimiento || emisorNombre} (Folio: ${item.ticket.folioTicket || "Oficial"}).`,
+              ticketIds: [item.id],
+            });
+          } catch {
+            resultados.push({
+              exito: false,
+              emisor: emisorNombre,
+              total: Number(item.ticket.montoTotal) || 0,
+              mensaje: `❌ Error, volver a intentar.`,
+              ticketIds: [item.id],
+            });
+          }
         }
       } else {
         resultados.push({
