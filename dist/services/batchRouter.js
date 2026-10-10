@@ -31,6 +31,7 @@ import { registrarSolicitudConector } from "../storage/connectorRequests.js";
 import * as fs from "fs";
 import * as path from "path";
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal } from "./cfdiGenerator.js";
+import { buscarConectorDinamico } from "./connectorDiscovery.js";
 /**
  * Clasifica de forma inteligente cada ticket según su establecimiento,
  * URL de facturación, folio o texto detectado.
@@ -346,6 +347,16 @@ export function clasificarProveedorTicket(item) {
             provider: "EMAIL_DIRECTO",
             emailDestino: "atencionaclientes@gasnoel.com.mx",
         };
+    }
+    // 31. Verificar si coincide con algún conector dinámicamente descubierto e instalado
+    const conectorDin = buscarConectorDinamico(`${est} ${suc} ${url} ${raw}`);
+    if (conectorDin) {
+        if (conectorDin.urlPortal && conectorDin.urlPortal.includes("@")) {
+            return {
+                provider: "EMAIL_DIRECTO",
+                emailDestino: conectorDin.urlPortal,
+            };
+        }
     }
     return { provider: "GENERICO" };
 }

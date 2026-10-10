@@ -33,6 +33,7 @@ import { DatosFiscales } from "../types.js";
 import * as fs from "fs";
 import * as path from "path";
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal } from "./cfdiGenerator.js";
+import { buscarConectorDinamico } from "./connectorDiscovery.js";
 
 export type ProviderType =
   | "RCO"
@@ -483,6 +484,17 @@ export function clasificarProveedorTicket(item: TicketBatchItem): {
       provider: "EMAIL_DIRECTO",
       emailDestino: "atencionaclientes@gasnoel.com.mx",
     };
+  }
+
+  // 31. Verificar si coincide con algún conector dinámicamente descubierto e instalado
+  const conectorDin = buscarConectorDinamico(`${est} ${suc} ${url} ${raw}`);
+  if (conectorDin) {
+    if (conectorDin.urlPortal && conectorDin.urlPortal.includes("@")) {
+      return {
+        provider: "EMAIL_DIRECTO",
+        emailDestino: conectorDin.urlPortal,
+      };
+    }
   }
 
   return { provider: "GENERICO" };

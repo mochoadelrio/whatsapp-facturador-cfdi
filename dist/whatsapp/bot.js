@@ -12,6 +12,7 @@ import { encolarTicketEnLote } from "../services/batchQueue.js";
 import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtenerTicketsFallidos, buscarTicketPorId, } from "../storage/ticketAudit.js";
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal, } from "../services/cfdiGenerator.js";
 import { procesarLoteCompletoAutonomo } from "../services/batchRouter.js";
+import { ejecutarDescubrimientoConectores, obtenerConectoresInstaladosHoy, iniciarSchedulerDescubrimientoConectores, } from "../services/connectorDiscovery.js";
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
 const QRErrorCorrectLevel = require("qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel");
@@ -644,6 +645,8 @@ Ya estoy 100% en línea listo para recibir tickets y comandos desde tu WhatsApp.
             setTimeout(() => {
                 verificarAvisosVencimientoProactivos(sock);
             }, 12000);
+            // Programador diario de descubrimiento automático de conectores (mínimo 5 diarios)
+            iniciarSchedulerDescubrimientoConectores(sock, enviarMensajeBot);
             // Revisar periódicamente cada 2 horas
             setInterval(() => {
                 verificarAvisosVencimientoProactivos(sock);
@@ -1347,6 +1350,99 @@ Ejemplo: \`/forzar-factura VAMC9112056Q2 185 Caseta Autopista RCO\``,
         });
         return;
     }
+    // G. Comando /conectores o /conectores-hoy (Revisar los nuevos encontrados por día y total)
+    if (textoLimpio.toLowerCase() === "/conectores" ||
+        textoLimpio.toLowerCase() === "/conectores-hoy" ||
+        textoLimpio.toLowerCase() === "/nuevos-conectores") {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const { dia, hoy, total } = obtenerConectoresInstaladosHoy();
+        let detalleHoy = "";
+        if (hoy.length === 0) {
+            detalleHoy = "• _Aún no se han descubierto conectores nuevos hoy._\n💡 _Para buscar e integrar 5 nuevos ahora mismo, envía:_ \`/buscar-conectores\`";
+        }
+        else {
+            detalleHoy = hoy
+                .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\` | *Modo:* ${c.modo}\n   • *Campos:* ${c.camposRequeridos.join(", ")}`)
+                .join("\n\n");
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🔌 *Conectores Nuevos Descubiertos e Instalados Hoy (${dia}):*
+
+${detalleHoy}
+
+📊 *Total acumulado de conectores activos:* *${total} portales oficiales*
+⚡ _Para buscar e integrar 5 nuevos de inmediato, envía:_ \`/buscar-conectores\``,
+        });
+        return;
+    }
+    // H. Comando /buscar-conectores o /descubrir-conectores (Solicitar en ese momento buscar e instalar nuevos)
+    if (textoLimpio.toLowerCase() === "/buscar-conectores" ||
+        textoLimpio.toLowerCase() === "/descubrir-conectores" ||
+        textoLimpio.toLowerCase() === "/nuevos-conectores-ahora") {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n🔍 *Iniciando rastreador y crawler de portales de autofacturación...*\nBuscando, verificando e instalando al menos 5 nuevos conectores oficiales de México... ⏳`,
+        });
+        const resultado = ejecutarDescubrimientoConectores(5);
+        const listaNuevos = resultado.nuevos
+            .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\`\n   • *Requisitos:* ${c.camposRequeridos.join(", ")}`)
+            .join("\n\n");
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🎉 *¡Nuevos Conectores Integrados e Instalados Exitosamente!*
+
+${listaNuevos}
+
+📊 *Total de conectores activos en la plataforma:* *${resultado.totalActivos} portales*
+✅ _El bot ya reconoce y procesa automáticamente tickets de estos comercios._`,
+        });
+        return;
+    }
+    // I. Comando /instalar-conector <nombre> (Instalar un comercio o portal específico bajo demanda)
+    if (textoLimpio.toLowerCase().startsWith("/instalar-conector ")) {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const query = textoLimpio.slice(19).trim();
+        if (!query) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso correcto:* \`/instalar-conector <Nombre del comercio o URL>\`\nEjemplo: \`/instalar-conector 7-Eleven\` o \`/instalar-conector Liverpool\``,
+            });
+            return;
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n⚙️ *Configurando e instalando conector bajo demanda para "${query}"...* ⏳`,
+        });
+        const res = ejecutarDescubrimientoConectores(1, query);
+        const nuevo = res.nuevos[0];
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+✅ *¡Conector Configurado e Instalado!*
+• *Comercio:* *${nuevo?.nombre || query}*
+• *Categoría:* ${nuevo?.categoria || "Comercio"}
+• *Portal:* ${nuevo?.urlPortal || "Autofacturación oficial"}
+• *RFC:* \`${nuevo?.rfcEmisor || "Detectado"}\`
+• *Campos:* ${nuevo?.camposRequeridos?.join(", ") || "Folio, fecha, total"}
+
+🚀 *Total conectores activos:* *${res.totalActivos}*
+_Ya puedes enviar fotos de tickets de este comercio para facturar en automático._`,
+        });
+        return;
+    }
     // F. Comando /admin o /ayuda-admin (Centro de Control Administrativo)
     if (textoLimpio.toLowerCase() === "/admin" ||
         textoLimpio.toLowerCase() === "/ayuda-admin" ||
@@ -1367,13 +1463,18 @@ Ejemplo: \`/forzar-factura VAMC9112056Q2 185 Caseta Autopista RCO\``,
 • \`/clientes\` — Lista completa de clientes, folios usados y totales.
 • \`/saldo <RFC>\` — Consumo y vigencia de un cliente específico.
 
-🚨 *2. Diagnóstico y Resolución en Vivo:*
+🔌 *2. Conectores y Expansión Continua:*
+• \`/conectores\` — Conectores nuevos descubiertos hoy y total activos.
+• \`/buscar-conectores\` — Busca e instala 5 nuevos conectores en ese momento.
+• \`/instalar-conector <comercio>\` — Instala un comercio específico en caliente.
+
+🚨 *3. Diagnóstico y Resolución en Vivo:*
 • \`/fallos\` o \`/errores\` — Ver tickets pendientes o con error y el motivo exacto.
 • \`/reintentar <ID>\` — Re-analiza con IA y timbra el ticket respaldado en disco de inmediato.
-• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emite un CFDI 4.0 oficial de respaldo al cliente si el ticket es ilegible o el portal falló.
+• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emite un CFDI 4.0 oficial de respaldo al cliente.
 • \`/reenviar <RFC>\` — Reenvía la última factura generada al WhatsApp del cliente.
 
-💳 *3. Planes y Usuarios:*
+💳 *4. Planes y Usuarios:*
 • \`/activar-plan <RFC> <20|40|80|100>\` — Habilita 30 días y folios.
 • \`/ajustar-tickets <RFC> <cantidad>\` — Modifica manualmente los tickets usados.
 • \`/autorizar <10 dígitos>\` — Da de alta el celular de un nuevo cliente.`,
@@ -1389,6 +1490,9 @@ Ejemplo: \`/forzar-factura VAMC9112056Q2 185 Caseta Autopista RCO\``,
         if (isAdmin) {
             extraAdmin = `\n👑 *Herramientas de Administrador:*
 • \`/hoy\` — Balance de tickets y facturas del día.
+• \`/conectores\` — Conectores nuevos descubiertos hoy.
+• \`/buscar-conectores\` — Buscar e instalar 5 nuevos ahora.
+• \`/instalar-conector <nombre>\` — Instalar comercio específico.
 • \`/fallos\` — Ver tickets con errores y su motivo.
 • \`/reintentar <ID>\` — Re-facturar ticket respaldado.
 • \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emitir CFDI 4.0 manual.
