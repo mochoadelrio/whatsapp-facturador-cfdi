@@ -1367,12 +1367,13 @@ Ejemplo: \`/forzar-factura VAMC9112056Q2 185 Caseta Autopista RCO\``,
         }
         else {
             detalleHoy = hoy
-                .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\` | *Modo:* ${c.modo}\n   • *Campos:* ${c.camposRequeridos.join(", ")}`)
+                .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Zona:* 📍 ${c.zona || "León, Gto y Bajío"}\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\` | *Modo:* ${c.modo}\n   • *Campos:* ${c.camposRequeridos.join(", ")}`)
                 .join("\n\n");
         }
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
 🔌 *Conectores Nuevos Descubiertos e Instalados Hoy (${dia}):*
+📍 _Prioridad: León, Guanajuato y alrededores_
 
 ${detalleHoy}
 
@@ -1392,15 +1393,15 @@ ${detalleHoy}
             return;
         }
         await enviarMensajeBot(sock, replyJid, {
-            text: `${BOT_SIGNATURE}\n🔍 *Iniciando rastreador y crawler de portales de autofacturación...*\nBuscando, verificando e instalando al menos 5 nuevos conectores oficiales de México... ⏳`,
+            text: `${BOT_SIGNATURE}\n🔍 *Iniciando rastreador y crawler de portales de autofacturación...*\nBuscando, verificando e instalando al menos 5 nuevos conectores de León, Guanajuato y la región... ⏳`,
         });
         const resultado = ejecutarDescubrimientoConectores(5);
         const listaNuevos = resultado.nuevos
-            .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\`\n   • *Requisitos:* ${c.camposRequeridos.join(", ")}`)
+            .map((c, idx) => `${idx + 1}. *${c.nombre}* (${c.categoria})\n   • *Zona:* 📍 ${c.zona || "León, Gto y Bajío"}\n   • *Portal:* ${c.urlPortal}\n   • *RFC:* \`${c.rfcEmisor}\`\n   • *Requisitos:* ${c.camposRequeridos.join(", ")}`)
             .join("\n\n");
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
-🎉 *¡Nuevos Conectores Integrados e Instalados Exitosamente!*
+🎉 *¡Nuevos Conectores de León y Región Instalados Exitosamente!*
 
 ${listaNuevos}
 

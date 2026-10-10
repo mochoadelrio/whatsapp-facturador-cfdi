@@ -1,0 +1,125 @@
+[
+  {
+    "id": "conn_1791667313973_n7xw",
+    "nombre": "Primera Plus / Grupo Flecha Amarilla (Matriz León)",
+    "zona": "León, Gto (Corporativo Matriz La Luz)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "TFA8402014T1",
+    "urlPortal": "https://facturacion.primeraplus.com.mx/",
+    "patrones": [
+      "primera plus",
+      "primeraplus",
+      "flecha amarilla",
+      "servicios coordinados",
+      "unebus leon silao"
+    ],
+    "camposRequeridos": [
+      "token boleto",
+      "origen",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-10",
+    "fechaHoraInstalacion": "10/10/2026, 3:21:53 p.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791667313973_6naq",
+    "nombre": "Transportes Castores (Matriz Blvd. Aeropuerto León)",
+    "zona": "León, Gto (Matriz Blvd. Aeropuerto)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "TCA840428514",
+    "urlPortal": "https://facturacion.castores.com.mx/",
+    "patrones": [
+      "castores",
+      "transportes castores",
+      "castores paqueteria",
+      "envios castores leon"
+    ],
+    "camposRequeridos": [
+      "talón de embarque",
+      "guía",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-10",
+    "fechaHoraInstalacion": "10/10/2026, 3:21:53 p.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791667313973_s60n",
+    "nombre": "OXXO Gas León y Bajío",
+    "zona": "León, Guanajuato y Corredor Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "SGM950714DC2",
+    "urlPortal": "https://facturacion.oxxogas.com/",
+    "patrones": [
+      "oxxo gas",
+      "oxxogas",
+      "servicios gasolineros de mexico",
+      "gasolinera oxxo gas leon"
+    ],
+    "camposRequeridos": [
+      "referencia facturación",
+      "estación",
+      "monto"
+    ],
+    "fechaInstalacion": "2026-10-10",
+    "fechaHoraInstalacion": "10/10/2026, 3:21:53 p.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791667313973_nory",
+    "nombre": "Tiendas Bara (Supermercados Bara Bajío)",
+    "zona": "León, Silao, Irapuato y Bajío",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "CBR9802058G7",
+    "urlPortal": "https://facturacion.tiendasbara.com.mx/",
+    "patrones": [
+      "tiendas bara",
+      "bara",
+      "bara leon",
+      "supermercados bara"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-10",
+    "fechaHoraInstalacion": "10/10/2026, 3:21:53 p.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791667313973_a6jz",
+    "nombre": "Farmacias ISSEG (Gobierno de Guanajuato)",
+    "zona": "León, Guanajuato e ISSEG Estatal",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "ISS800101QG1",
+    "urlPortal": "https://facturacion.farmaciasisseg.com/",
+    "patrones": [
+      "isseg",
+      "farmacias isseg",
+      "farmacia isseg",
+      "instituto de seguridad social guanajuato"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "folio",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-10",
+    "fechaHoraInstalacion": "10/10/2026, 3:21:53 p.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  }
+]
