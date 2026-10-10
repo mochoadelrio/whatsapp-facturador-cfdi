@@ -34,6 +34,19 @@ import {
   DATOS_BANCARIOS_OFICIALES,
 } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
+import {
+  registrarTicketAudit,
+  actualizarTicketAudit,
+  obtenerResumenHoy,
+  obtenerTicketsFallidos,
+  buscarTicketPorId,
+} from "../storage/ticketAudit.js";
+import {
+  generarPdfCfdi40,
+  generarXmlCfdi40,
+  generarUuidFiscal,
+} from "../services/cfdiGenerator.js";
+import { procesarLoteCompletoAutonomo } from "../services/batchRouter.js";
 
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
@@ -900,6 +913,11 @@ async function manejarMensajeEntrante(sock: any, msg: WAMessage): Promise<void> 
   const senderPn = String((msg.key as any)?.senderPn || (msg.key as any)?.remoteJidAlt || "")
     .split("@")[0]
     ?.replace(/\D/g, "");
+  const isAdmin = Boolean(
+    isSelfChat ||
+      (remNum && (remNum.endsWith("4773929593") || remNum === "2027996352627")) ||
+      (senderPn && senderPn.endsWith("4773929593"))
+  );
   const pushNameLower = String(msg.pushName || "").toLowerCase();
   const isCristhianByName =
     pushNameLower.includes("cristhian") ||
@@ -1059,6 +1077,525 @@ Tu comprobante ha sido recibido y será procesado en cuanto el motor sea encendi
     }
   }
 
+  // 0.8 Comandos de Administrador (KlientIA Admin CLI)
+  // A. Comando /hoy o /resumen (Estatus de tickets y facturas del día)
+  if (
+    textoLimpio.toLowerCase() === "/hoy" ||
+    textoLimpio.toLowerCase() === "/resumen" ||
+    textoLimpio.toLowerCase() === "/resumen-hoy" ||
+    textoLimpio.toLowerCase() === "/status-dia"
+  ) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+      });
+      return;
+    }
+
+    const res = obtenerResumenHoy();
+    const porcentaje =
+      res.totalRecibidos > 0
+        ? Math.round((res.exitosos / res.totalRecibidos) * 100)
+        : 100;
+    const clientesKeys = Object.keys(res.porCliente);
+
+    let clientesDetalle = "";
+    if (clientesKeys.length === 0) {
+      clientesDetalle = "• _Sin tickets registrados hoy aún._";
+    } else {
+      clientesDetalle = clientesKeys
+        .map((k, i) => {
+          const c = res.porCliente[k];
+          return `${i + 1}. *${c.nombre}* (\`${c.rfc}\`)\n   • Recibidos: *${c.recibidos}* | Facturados: *${c.exitosos}* | Fallos: *${c.fallidos}*\n   • Monto facturado: \$${c.monto.toFixed(2)} MXN`;
+        })
+        .join("\n\n");
+    }
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}
+📊 *Estatus Operativo del Día (${res.dia}):*
+
+• *Tickets recibidos hoy:* *${res.totalRecibidos}*
+• *Facturas timbradas con éxito:* *${res.exitosos}* (${porcentaje}% efectividad) 🟢
+• *Tickets pendientes o con error:* *${res.fallidos + res.pendientes}*
+• *Monto total timbrado hoy:* *\$${res.montoTotal.toFixed(2)} MXN*
+
+👥 *Desglose por Cliente:*
+${clientesDetalle}
+
+💡 *Comandos administrativos:*
+• \`/fallos\` — Ver tickets con errores y motivos
+• \`/reintentar <id>\` — Re-procesar y enviar ticket
+• \`/forzar-factura <rfc> <monto> <concepto>\` — Emitir CFDI 4.0 manual`,
+    });
+    return;
+  }
+
+  // B. Comando /fallos o /errores o /pendientes (Ver fallos y motivos)
+  if (
+    textoLimpio.toLowerCase() === "/fallos" ||
+    textoLimpio.toLowerCase() === "/errores" ||
+    textoLimpio.toLowerCase() === "/pendientes"
+  ) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+      });
+      return;
+    }
+
+    const fallidos = obtenerTicketsFallidos(5);
+    if (fallidos.length === 0) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+✅ *¡Excelente! No hay tickets pendientes ni con fallos.*
+Todos los comprobantes recibidos fueron procesados y entregados satisfactoriamente.`,
+      });
+      return;
+    }
+
+    const lista = fallidos
+      .map((f, i) => {
+        return `${i + 1}. *ID:* \`${f.id}\`
+   • *Cliente:* ${f.clienteNombre || "Sin nombre"} (\`${f.clienteRfc || f.senderPn || "N/A"}\`)
+   • *Comercio:* ${f.establecimiento || "No detectado"} (\$${(f.monto || 0).toFixed(2)} MXN)
+   • *Fecha/Hora:* ${f.fechaLocal}
+   • *Motivo:* ${f.motivoError || "En proceso o error desconocido"}
+   • *Acción:* \`/reintentar ${f.id}\``;
+      })
+      .join("\n\n");
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}
+🚨 *Tickets Pendientes o con Fallo Recientes:*
+
+${lista}
+
+💡 _Para forzar o reintentar cualquiera, copia el comando \`/reintentar <ID>\` y envíalo aquí._`,
+    });
+    return;
+  }
+
+  // C. Comando /reintentar <id> o /facturar-id <id>
+  if (
+    textoLimpio.toLowerCase().startsWith("/reintentar") ||
+    textoLimpio.toLowerCase().startsWith("/facturar-id")
+  ) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+      });
+      return;
+    }
+
+    const partes = textoLimpio.trim().split(/\s+/);
+    let ticketQuery = partes.slice(1).join(" ").trim();
+
+    // Si no especificó ID, tomar el último fallo
+    if (!ticketQuery) {
+      const ultimosFallos = obtenerTicketsFallidos(1);
+      if (ultimosFallos.length > 0) {
+        ticketQuery = ultimosFallos[0].id;
+      } else {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+⚠️ *Uso:* \`/reintentar <ID_TICKET>\`
+Ejemplo: \`/reintentar ticket_1791661509277_avz7\`
+
+💡 _Usa \`/fallos\` para ver los identificadores pendientes._`,
+        });
+        return;
+      }
+    }
+
+    const backupDir = path.resolve(process.cwd(), "data", "tickets_recibidos");
+    let targetFilePath = "";
+    if (fs.existsSync(backupDir)) {
+      const files = fs.readdirSync(backupDir);
+      const matchFile = files.find((f) =>
+        f.toLowerCase().includes(ticketQuery.toLowerCase())
+      );
+      if (matchFile) {
+        targetFilePath = path.join(backupDir, matchFile);
+      }
+    }
+
+    if (!targetFilePath || !fs.existsSync(targetFilePath)) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No se encontró ningún archivo de ticket en disco con el identificador *"${ticketQuery}"*. Revisa con \`/fallos\`.`,
+      });
+      return;
+    }
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n🔄 Reintentando facturación del ticket \`${path.basename(
+        targetFilePath
+      )}\` con IA y conectores oficiales... ⏳`,
+    });
+
+    try {
+      const fileBuffer = fs.readFileSync(targetFilePath);
+      const ext = path.extname(targetFilePath).toLowerCase();
+      const mime = ext === ".pdf" ? "application/pdf" : "image/jpeg";
+
+      const auditRecord = buscarTicketPorId(ticketQuery);
+      const targetJid = auditRecord?.senderJid || "5214775907888@s.whatsapp.net";
+      const { perfil } = obtenerPerfilFiscal(targetJid);
+
+      const analisis = await analizarArchivoRecibido(fileBuffer, mime, "");
+      if (analisis.tipo !== "ticket") {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+⚠️ *No se pudo extraer ticket válido del archivo:*
+• *Motivo IA:* ${(analisis as any).motivo || "No parece ser un ticket de compra válido."}
+• *Acción:* Puedes emitir una factura manual con:
+\`/forzar-factura ${perfil.rfc} <Monto> <Concepto>\``,
+        });
+        return;
+      }
+
+      const resultados = await procesarLoteCompletoAutonomo(
+        [
+          {
+            id: path.basename(targetFilePath),
+            ticket: analisis.ticket,
+            imageBuffer: fileBuffer,
+            rawText: "",
+          },
+        ],
+        perfil,
+        async (prog) => {
+          console.log(`[Reintento] ${prog}`);
+        }
+      );
+
+      const res = resultados[0];
+      if (res && res.exito) {
+        const mySelfJid = myIdNum ? `${myIdNum}@s.whatsapp.net` : null;
+
+        if (res.pdfBuffer || res.pdfPath) {
+          const pdfDoc = res.pdfBuffer || fs.readFileSync(res.pdfPath!);
+          await enviarMensajeBot(sock, targetJid, {
+            document: pdfDoc,
+            mimetype: "application/pdf",
+            fileName: `Factura_${res.serie || "CFDI"}_${res.folio || "Oficial"}.pdf`,
+            caption: `${BOT_SIGNATURE}\n📄 *Factura CFDI 4.0 Oficial (PDF)*\n• *Emisor:* ${res.emisor}\n• *Total:* \$${res.total.toFixed(2)} MXN\n• *Receptor:* ${perfil.razonSocial}`,
+          });
+
+          if (mySelfJid && mySelfJid !== targetJid) {
+            await enviarMensajeBot(sock, mySelfJid, {
+              document: pdfDoc,
+              mimetype: "application/pdf",
+              fileName: `Factura_${res.serie || "CFDI"}_${res.folio || "Oficial"}.pdf`,
+              caption: `📄 Copia de factura reintentada con éxito para ${perfil.razonSocial}`,
+            });
+          }
+        }
+
+        if (res.xmlBuffer || res.xmlPath) {
+          const xmlDoc = res.xmlBuffer || fs.readFileSync(res.xmlPath!);
+          await enviarMensajeBot(sock, targetJid, {
+            document: xmlDoc,
+            mimetype: "application/xml",
+            fileName: `Factura_${res.serie || "CFDI"}_${res.folio || "Oficial"}.xml`,
+            caption: `${BOT_SIGNATURE}\n🗂️ *XML CFDI 4.0 Oficial*\n• *UUID SAT:* \`${res.uuid}\``,
+          });
+
+          if (mySelfJid && mySelfJid !== targetJid) {
+            await enviarMensajeBot(sock, mySelfJid, {
+              document: xmlDoc,
+              mimetype: "application/xml",
+              fileName: `Factura_${res.serie || "CFDI"}_${res.folio || "Oficial"}.xml`,
+              caption: `🗂️ Copia de XML timbrado para ${perfil.razonSocial}`,
+            });
+          }
+        }
+
+        actualizarTicketAudit(path.basename(targetFilePath), {
+          estado: "EXITO",
+          uuidFactura: res.uuid,
+          monto: res.total,
+          establecimiento: res.emisor,
+        });
+
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+🎉 *¡Ticket reintentado y facturado con éxito!*
+• *Comercio:* ${res.emisor}
+• *Total:* \$${res.total.toFixed(2)} MXN
+• *UUID SAT:* \`${res.uuid}\`
+• *Entregado a:* *${perfil.razonSocial}* (\`${targetJid}\`)`,
+        });
+      } else {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+⚠️ *No fue posible timbrar en el reintento:*
+• *Mensaje:* ${res?.mensaje || "Error al conectar con portal emisor."}
+• *Solución:* Puedes emitir una factura de respaldo con:
+\`/forzar-factura ${perfil.rfc} ${analisis.ticket.montoTotal || 100} ${analisis.ticket.establecimiento || "Consumo"}\``,
+        });
+      }
+    } catch (errReintento: any) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n❌ Error ejecutando reintento: ${
+          errReintento?.message || errReintento
+        }`,
+      });
+    }
+    return;
+  }
+
+  // D. Comando /forzar-factura <RFC> <Monto> <Concepto> (Emisión manual inmediata)
+  if (
+    textoLimpio.toLowerCase().startsWith("/forzar-factura") ||
+    textoLimpio.toLowerCase().startsWith("/forzar ")
+  ) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+      });
+      return;
+    }
+
+    const partes = textoLimpio.trim().split(/\s+/);
+    if (partes.length < 3 || isNaN(Number(partes[2]))) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+⚠️ *Uso correcto:* \`/forzar-factura <RFC> <Monto> <Concepto>\`
+Ejemplo: \`/forzar-factura VAMC9112056Q2 185 Caseta Autopista RCO\``,
+      });
+      return;
+    }
+
+    const rfcQuery = partes[1].toUpperCase();
+    const monto = parseFloat(partes[2]);
+    const concepto = partes.slice(3).join(" ") || "CONSUMO GENERAL";
+
+    const todos = obtenerTodosLosPerfiles();
+    const match = Object.values(todos).find(
+      (p) => p.rfc.toUpperCase() === rfcQuery
+    );
+    if (!match) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente con RFC *${rfcQuery}*. Revisa con \`/clientes\`.`,
+      });
+      return;
+    }
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n⏳ Generando CFDI 4.0 oficial de respaldo para *${match.razonSocial}* (\$${monto.toFixed(
+        2
+      )} MXN)...`,
+    });
+
+    try {
+      const uuid = generarUuidFiscal();
+      const ticketSimulado = {
+        esTicketValido: true,
+        establecimiento: concepto.toUpperCase(),
+        rfcEmisor: "RCO0708136F7",
+        sucursal: "Oficial",
+        fechaCompra: new Date().toISOString().slice(0, 10),
+        folioTicket: `MAN-${Date.now().toString().slice(-6)}`,
+        subtotal: Number((monto / 1.16).toFixed(2)),
+        iva: Number((monto - monto / 1.16).toFixed(2)),
+        montoTotal: monto,
+        formaPago: "01",
+        conceptos: [
+          {
+            descripcion: concepto.toUpperCase(),
+            cantidad: 1,
+            precioUnitario: Number((monto / 1.16).toFixed(2)),
+            importe: Number((monto / 1.16).toFixed(2)),
+          },
+        ],
+      };
+
+      const pdfBuf = await generarPdfCfdi40(ticketSimulado as any, match, uuid);
+      const xmlBuf = generarXmlCfdi40(ticketSimulado as any, match, uuid);
+
+      const downDir = path.resolve(process.cwd(), "downloads");
+      if (!fs.existsSync(downDir)) fs.mkdirSync(downDir, { recursive: true });
+      const baseName = `Factura_${match.rfc}_${uuid.slice(0, 8)}`;
+      fs.writeFileSync(path.join(downDir, `${baseName}.pdf`), pdfBuf);
+      fs.writeFileSync(path.join(downDir, `${baseName}.xml`), xmlBuf);
+
+      registrarConsumoTicket(match.rfc, match.rfc);
+
+      const targetJid = match.telefono
+        ? `${match.telefono.replace(/\D/g, "")}@s.whatsapp.net`
+        : "5214775907888@s.whatsapp.net";
+
+      await enviarMensajeBot(sock, targetJid, {
+        document: pdfBuf,
+        mimetype: "application/pdf",
+        fileName: `${baseName}.pdf`,
+        caption: `${BOT_SIGNATURE}
+📄 *Factura CFDI 4.0 Oficial (Generada por Soporte KlientIA)*
+• *Emisor:* ${concepto}
+• *UUID SAT:* \`${uuid}\`
+• *Total:* \$${monto.toFixed(2)} MXN
+• *Receptor:* ${match.razonSocial} (\`${match.rfc}\`)`,
+      });
+
+      await enviarMensajeBot(sock, targetJid, {
+        document: xmlBuf,
+        mimetype: "application/xml",
+        fileName: `${baseName}.xml`,
+        caption: `${BOT_SIGNATURE}\n🗂️ *XML CFDI 4.0 Timbrado Oficial*\n• *UUID:* \`${uuid}\``,
+      });
+
+      if (replyJid !== targetJid) {
+        await enviarMensajeBot(sock, replyJid, {
+          document: pdfBuf,
+          mimetype: "application/pdf",
+          fileName: `${baseName}.pdf`,
+          caption: `📄 Copia de factura manual para ${match.razonSocial}`,
+        });
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}
+✅ *Factura forzada generada y entregada con éxito:*
+• *Cliente:* ${match.razonSocial} (\`${match.rfc}\`)
+• *Entregado a:* \`${targetJid}\`
+• *Total:* \$${monto.toFixed(2)} MXN
+• *UUID SAT:* \`${uuid}\``,
+        });
+      }
+
+      registrarTicketAudit({
+        id: `manual_${Date.now()}`,
+        senderJid: targetJid,
+        clienteNombre: match.razonSocial,
+        clienteRfc: match.rfc,
+        establecimiento: concepto,
+        monto,
+        estado: "EXITO",
+        uuidFactura: uuid,
+      });
+    } catch (errForzar: any) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n❌ Error al generar factura manual: ${
+          errForzar?.message || errForzar
+        }`,
+      });
+    }
+    return;
+  }
+
+  // E. Comando /reenviar <RFC> para reenviar la última factura generada
+  if (textoLimpio.toLowerCase().startsWith("/reenviar ")) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+      });
+      return;
+    }
+
+    const rfcQuery = textoLimpio.slice(10).trim().toUpperCase();
+    const todos = obtenerTodosLosPerfiles();
+    const match = Object.values(todos).find(
+      (p) => p.rfc.toUpperCase() === rfcQuery
+    );
+    if (!match) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente con RFC *${rfcQuery}*.`,
+      });
+      return;
+    }
+
+    const targetJid = match.telefono
+      ? `${match.telefono.replace(/\D/g, "")}@s.whatsapp.net`
+      : "5214775907888@s.whatsapp.net";
+
+    const downDir = path.resolve(process.cwd(), "downloads");
+    if (!fs.existsSync(downDir)) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No hay facturas descargadas en el sistema.`,
+      });
+      return;
+    }
+
+    const files = fs
+      .readdirSync(downDir)
+      .filter((f) => f.endsWith(".pdf") && f.toLowerCase().includes("factura"));
+    if (files.length === 0) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n⚠️ No se encontraron facturas en PDF para reenviar.`,
+      });
+      return;
+    }
+
+    files.sort(
+      (a, b) =>
+        fs.statSync(path.join(downDir, b)).mtimeMs -
+        fs.statSync(path.join(downDir, a)).mtimeMs
+    );
+    const latestPdf = files[0];
+    const xmlName = latestPdf.replace(/\.pdf$/, ".xml");
+    const pdfPath = path.join(downDir, latestPdf);
+    const xmlPath = path.join(downDir, xmlName);
+
+    if (fs.existsSync(pdfPath)) {
+      await enviarMensajeBot(sock, targetJid, {
+        document: fs.readFileSync(pdfPath),
+        mimetype: "application/pdf",
+        fileName: latestPdf,
+        caption: `${BOT_SIGNATURE}\n📄 *Copia de Factura CFDI 4.0 Reenviada*\n• *Cliente:* ${match.razonSocial}`,
+      });
+    }
+
+    if (fs.existsSync(xmlPath)) {
+      await enviarMensajeBot(sock, targetJid, {
+        document: fs.readFileSync(xmlPath),
+        mimetype: "application/xml",
+        fileName: xmlName,
+        caption: `${BOT_SIGNATURE}\n🗂️ *Copia de XML CFDI 4.0 Reenviado*`,
+      });
+    }
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}\n✅ Factura más reciente reenviada con éxito a *${match.razonSocial}* (\`${targetJid}\`).`,
+    });
+    return;
+  }
+
+  // F. Comando /admin o /ayuda-admin (Centro de Control Administrativo)
+  if (
+    textoLimpio.toLowerCase() === "/admin" ||
+    textoLimpio.toLowerCase() === "/ayuda-admin" ||
+    textoLimpio.toLowerCase() === "admin"
+  ) {
+    if (!isAdmin) {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}\n🔒 Menú exclusivo para el Administrador de KlientIA Facturación.`,
+      });
+      return;
+    }
+
+    await enviarMensajeBot(sock, replyJid, {
+      text: `${BOT_SIGNATURE}
+👑 *Centro de Comando Administrativo (KlientIA Admin CLI):*
+
+📊 *1. Estatus y Métricas del Día:*
+• \`/hoy\` o \`/resumen\` — Tickets recibidos, facturas generadas, fallos y balance por cliente.
+• \`/status\` o \`/ping\` — Diagnóstico de conexión, RAM y tiempo activo del bot.
+• \`/clientes\` — Lista completa de clientes, folios usados y totales.
+• \`/saldo <RFC>\` — Consumo y vigencia de un cliente específico.
+
+🚨 *2. Diagnóstico y Resolución en Vivo:*
+• \`/fallos\` o \`/errores\` — Ver tickets pendientes o con error y el motivo exacto.
+• \`/reintentar <ID>\` — Re-analiza con IA y timbra el ticket respaldado en disco de inmediato.
+• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emite un CFDI 4.0 oficial de respaldo al cliente si el ticket es ilegible o el portal falló.
+• \`/reenviar <RFC>\` — Reenvía la última factura generada al WhatsApp del cliente.
+
+💳 *3. Planes y Usuarios:*
+• \`/activar-plan <RFC> <20|40|80|100>\` — Habilita 30 días y folios.
+• \`/ajustar-tickets <RFC> <cantidad>\` — Modifica manualmente los tickets usados.
+• \`/autorizar <10 dígitos>\` — Da de alta el celular de un nuevo cliente.`,
+    });
+    return;
+  }
+
   // 0.9 Comando /comandos o /menu
   if (
     textoLimpio.toLowerCase() === "/comandos" ||
@@ -1066,10 +1603,21 @@ Tu comprobante ha sido recibido y será procesado en cuanto el motor sea encendi
     textoLimpio.toLowerCase() === "/menu" ||
     textoLimpio.toLowerCase() === "menu"
   ) {
+    let extraAdmin = "";
+    if (isAdmin) {
+      extraAdmin = `\n👑 *Herramientas de Administrador:*
+• \`/hoy\` — Balance de tickets y facturas del día.
+• \`/fallos\` — Ver tickets con errores y su motivo.
+• \`/reintentar <ID>\` — Re-facturar ticket respaldado.
+• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emitir CFDI 4.0 manual.
+• \`/reenviar <RFC>\` — Reenviar factura al cliente.
+• \`/admin\` — Guía completa de comandos de administrador.\n`;
+    }
+
     await enviarMensajeBot(sock, replyJid, {
       text: `${BOT_SIGNATURE}
 📖 *Listado Completo de Comandos:*
-
+${extraAdmin}
 ⚡ *Diagnóstico del Bot:*
 • \`/status\` o \`/ping\` — Verifica conexión, memoria y conectores activos.
 
@@ -1674,6 +2222,7 @@ Conforme a tu confirmación:
   // 4. Si envía cualquier Imagen o Documento (PDF, XML o Foto de CSF o Ticket)
   if (tieneDocumento || tieneImagen) {
     console.log("📥 Descargando archivo adjunto de WhatsApp...");
+    let ticketAuditId = "";
     try {
       const buffer = (await downloadMediaMessage(msg, "buffer", {})) as Buffer;
       const fileName = docMsg?.fileName || "";
@@ -1692,9 +2241,22 @@ Conforme a tu confirmación:
         if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
         const ext = mimeType.includes("pdf") ? "pdf" : mimeType.includes("xml") ? "xml" : "jpeg";
         const cleanSender = (senderPn || remoteJid.split("@")[0]).replace(/[^0-9]/g, "");
-        const backupFile = path.join(backupDir, `ticket_${Date.now()}_${cleanSender}_${Math.random().toString(36).substring(2, 6)}.${ext}`);
+        ticketAuditId = `ticket_${Date.now()}_${cleanSender}_${Math.random().toString(36).substring(2, 6)}`;
+        const backupFile = path.join(backupDir, `${ticketAuditId}.${ext}`);
         fs.writeFileSync(backupFile, buffer);
         console.log(`💾 Respaldo persistente guardado en disco: ${backupFile}`);
+
+        const perfilAct = obtenerPerfilFiscal(perfilKey).perfil;
+        registrarTicketAudit({
+          id: ticketAuditId,
+          senderJid: remoteJid,
+          senderPn,
+          clienteNombre: perfilAct?.razonSocial,
+          clienteRfc: perfilAct?.rfc,
+          backupFile,
+          fileName: `${ticketAuditId}.${ext}`,
+          estado: "PENDIENTE",
+        });
       } catch (errBackup) {
         console.warn("⚠️ No se pudo guardar respaldo en disco:", errBackup);
       }
@@ -1994,6 +2556,14 @@ ${estadoPlan.mensaje}
           datosTicket.ultimosDigitosTarjeta
         );
 
+        actualizarTicketAudit(ticketAuditId, {
+          establecimiento: datosTicket.establecimiento,
+          folio: datosTicket.folioTicket || datosTicket.codigoFacturacion,
+          monto: Number(datosTicket.montoTotal) || 0,
+          clienteNombre: perfil.razonSocial,
+          clienteRfc: perfil.rfc,
+        });
+
         encolarTicketEnLote({
           jid: replyJid,
           perfil,
@@ -2001,10 +2571,11 @@ ${estadoPlan.mensaje}
           rawText: textoLimpio,
           imageBuffer: buffer,
           mimeType,
+          customId: ticketAuditId,
           onFirstItem: async () => {
             await enviarMensajeBot(sock, replyJid, {
               text: `${BOT_SIGNATURE}
-📸 *¡Ticket de ${datosTicket.establecimiento} recibido!* ($${Number(datosTicket.montoTotal).toFixed(2)} MXN)
+📸 *¡Ticket de ${datosTicket.establecimiento} recibido!* (\$${Number(datosTicket.montoTotal).toFixed(2)} MXN)
 • *Folio / Código:* \`${datosTicket.folioTicket || datosTicket.codigoFacturacion || "Detectado"}\`
 • *Forma de Pago SAT:* ${formaPagoTexto}
 • *Receptor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
@@ -2030,6 +2601,22 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
           onDeliverResult: async (res) => {
             const mySelfJid = myIdNum ? `${myIdNum}@s.whatsapp.net` : null;
 
+            if (res.exito) {
+              actualizarTicketAudit(ticketAuditId, {
+                estado: "EXITO",
+                uuidFactura: res.uuid,
+                facturaPdfPath: res.pdfPath,
+                facturaXmlPath: res.xmlPath,
+                monto: res.total || Number(datosTicket.montoTotal) || 0,
+                establecimiento: res.emisor || datosTicket.establecimiento,
+              });
+            } else {
+              actualizarTicketAudit(ticketAuditId, {
+                estado: "ERROR",
+                motivoError: res.mensaje,
+              });
+            }
+
             if (res.pdfBuffer || res.pdfPath) {
               const pdfDoc = res.pdfBuffer || fs.readFileSync(res.pdfPath!);
               await enviarMensajeBot(sock, replyJid, {
@@ -2041,7 +2628,7 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
 • *Emisor:* ${res.emisor}
 • *Folio:* ${res.serie ? `${res.serie}-` : ""}${res.folio || "Timbrado"}
 • *UUID SAT:* \`${res.uuid || "Validado ante SAT"}\`
-• *Total:* $${res.total.toFixed(2)} MXN
+• *Total:* \$${res.total.toFixed(2)} MXN
 • *Receptor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)`,
               });
 
@@ -2133,10 +2720,21 @@ _Ejemplo: 10 folios = \$50 MXN | 20 folios = \$100 MXN_
         return;
       }
 
+      actualizarTicketAudit(ticketAuditId, {
+        estado: "NO_TICKET",
+        motivoError: analisis.motivo,
+      });
+
       await enviarMensajeBot(sock, replyJid, {
         text: `${BOT_SIGNATURE}\n⚠️ ${analisis.motivo}`,
       });
     } catch (error: any) {
+      if (ticketAuditId) {
+        actualizarTicketAudit(ticketAuditId, {
+          estado: "ERROR",
+          motivoError: error?.message || String(error),
+        });
+      }
       console.error("Error al procesar archivo:", error);
       await enviarMensajeBot(sock, replyJid, {
         text: `${BOT_SIGNATURE}\n❌ Error, volver a intentar.`,

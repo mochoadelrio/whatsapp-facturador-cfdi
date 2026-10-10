@@ -26,6 +26,7 @@ export function encolarTicketEnLote(params: {
   rawText?: string;
   imageBuffer?: Buffer;
   mimeType?: string;
+  customId?: string;
   onFirstItem?: () => Promise<void> | void;
   onItemCountUpdate?: (count: number) => Promise<void> | void;
   onProcessStart?: (count: number) => Promise<void> | void;
@@ -40,6 +41,7 @@ export function encolarTicketEnLote(params: {
     rawText,
     imageBuffer,
     mimeType,
+    customId,
     onFirstItem,
     onItemCountUpdate,
     onProcessStart,
@@ -63,13 +65,13 @@ export function encolarTicketEnLote(params: {
   }
 
   // Guardar copia local de la imagen para posibles adjuntos de correo o auditoría
-  const ticketsDir = path.resolve(process.cwd(), "scratch", "tickets_recibidos");
+  const ticketsDir = path.resolve(process.cwd(), "data", "tickets_recibidos");
   if (!fs.existsSync(ticketsDir)) fs.mkdirSync(ticketsDir, { recursive: true });
 
   const ext = mimeType?.includes("png") ? "png" : "jpeg";
-  const itemId = `ticket_${Date.now()}_${session.items.length + 1}`;
+  const itemId = customId || `ticket_${Date.now()}_${session.items.length + 1}`;
   const imgPath = path.join(ticketsDir, `${itemId}.${ext}`);
-  if (imageBuffer) {
+  if (imageBuffer && !fs.existsSync(imgPath)) {
     fs.writeFileSync(imgPath, imageBuffer);
   }
 

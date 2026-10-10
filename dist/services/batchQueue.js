@@ -8,7 +8,7 @@ const DEBOUNCE_WAIT_MS = 8000; // 8 segundos después del último ticket recibid
  * Si el usuario envía varios tickets seguidos, se acumulan y se procesan juntos.
  */
 export function encolarTicketEnLote(params) {
-    const { jid, perfil, ticket, rawText, imageBuffer, mimeType, onFirstItem, onItemCountUpdate, onProcessStart, onDeliverResult, onBatchComplete, onProgressNotice, } = params;
+    const { jid, perfil, ticket, rawText, imageBuffer, mimeType, customId, onFirstItem, onItemCountUpdate, onProcessStart, onDeliverResult, onBatchComplete, onProgressNotice, } = params;
     let session = activeSessions.get(jid);
     const isFirst = !session;
     if (!session) {
@@ -22,13 +22,13 @@ export function encolarTicketEnLote(params) {
         activeSessions.set(jid, session);
     }
     // Guardar copia local de la imagen para posibles adjuntos de correo o auditoría
-    const ticketsDir = path.resolve(process.cwd(), "scratch", "tickets_recibidos");
+    const ticketsDir = path.resolve(process.cwd(), "data", "tickets_recibidos");
     if (!fs.existsSync(ticketsDir))
         fs.mkdirSync(ticketsDir, { recursive: true });
     const ext = mimeType?.includes("png") ? "png" : "jpeg";
-    const itemId = `ticket_${Date.now()}_${session.items.length + 1}`;
+    const itemId = customId || `ticket_${Date.now()}_${session.items.length + 1}`;
     const imgPath = path.join(ticketsDir, `${itemId}.${ext}`);
-    if (imageBuffer) {
+    if (imageBuffer && !fs.existsSync(imgPath)) {
         fs.writeFileSync(imgPath, imageBuffer);
     }
     session.items.push({
