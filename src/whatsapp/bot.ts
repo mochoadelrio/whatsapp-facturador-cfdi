@@ -1686,6 +1686,19 @@ Conforme a tu confirmación:
         `🤖 Archivo descargado (${buffer.length} bytes, ${mimeType}, fileName: ${fileName}). Analizando...`
       );
 
+      // Guardar copia local de respaldo inmediatamente para que el ticket nunca se pierda
+      try {
+        const backupDir = path.resolve(process.cwd(), "data/tickets_recibidos");
+        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        const ext = mimeType.includes("pdf") ? "pdf" : mimeType.includes("xml") ? "xml" : "jpeg";
+        const cleanSender = (senderPn || remoteJid.split("@")[0]).replace(/[^0-9]/g, "");
+        const backupFile = path.join(backupDir, `ticket_${Date.now()}_${cleanSender}_${Math.random().toString(36).substring(2, 6)}.${ext}`);
+        fs.writeFileSync(backupFile, buffer);
+        console.log(`💾 Respaldo persistente guardado en disco: ${backupFile}`);
+      } catch (errBackup) {
+        console.warn("⚠️ No se pudo guardar respaldo en disco:", errBackup);
+      }
+
       // 4A. Si tú (en tu propio chat) subes el XML o PDF de una factura real timbrada para entregársela al cliente:
       const esXml =
         mimeType.includes("xml") || fileName.toLowerCase().endsWith(".xml");

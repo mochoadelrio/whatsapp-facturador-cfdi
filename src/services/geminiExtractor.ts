@@ -153,9 +153,9 @@ async function generarJsonConGemini(params: {
 
   const intentos = [
     { model: "gemini-3.5-flash", useThinkingZero: true, delayMs: 0 },
-    { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 1000 },
-    { model: "gemini-3.5-flash", useThinkingZero: false, delayMs: 1500 },
-    { model: "gemini-3.1-flash-lite", useThinkingZero: true, delayMs: 2000 },
+    { model: "gemini-3.5-flash-lite", useThinkingZero: true, delayMs: 800 },
+    { model: "gemini-3.1-flash-lite", useThinkingZero: true, delayMs: 1200 },
+    { model: "gemini-3.8-flash", useThinkingZero: true, delayMs: 1800 },
   ];
 
   let ultimoError: any = null;

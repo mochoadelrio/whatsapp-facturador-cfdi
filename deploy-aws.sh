@@ -43,7 +43,7 @@ cd "$APP_DIR"
 if [ ! -f ".env" ]; then
   echo "⚙️ Creando archivo .env inicial..."
   cat << 'EOF' > .env
-GEMINI_API_KEY=AQ.Ab8RN6I3cDkqO1pi4-ByiHWR8yvWowyaJzCGKqaDts9Awg7jMQ
+GEMINI_API_KEY=${GEMINI_API_KEY:-tu_api_key_de_gemini}
 ADMIN_PIN=klientia2026
 PORT=3008
 MODO_FACTURACION=hibrido
