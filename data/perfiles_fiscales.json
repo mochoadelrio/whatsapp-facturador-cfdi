@@ -11,11 +11,13 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 18,
+    "ticketsUsadosMes": 10,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
-    "periodoMes": "2026-10"
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
   },
   "16922322174194@lid": {
     "rfc": "VAMC9112056Q2",
@@ -29,11 +31,13 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 18,
+    "ticketsUsadosMes": 10,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
-    "periodoMes": "2026-10"
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
   },
   "5214775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -47,11 +51,13 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 18,
+    "ticketsUsadosMes": 10,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
-    "periodoMes": "2026-10"
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
   },
   "524775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -65,11 +71,13 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 18,
+    "ticketsUsadosMes": 10,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
-    "periodoMes": "2026-10"
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
   },
   "140974432981152@lid": {
     "rfc": "VAMC9112056Q2",
@@ -83,10 +91,32 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 18,
+    "ticketsUsadosMes": 10,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
-    "periodoMes": "2026-10"
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
+  },
+  "2027996352627@lid": {
+    "rfc": "VAMC9112056Q2",
+    "razonSocial": "CRISTHIAN VALDIVIA MARTINEZ",
+    "codigoPostal": "37545",
+    "regimenFiscal": "626",
+    "usoCfdi": "G03",
+    "email": "cristhian.valdivia@ejemplo.com",
+    "telefono": "+5214775907888",
+    "paqueteNombre": "Plan Pro (40 tickets)",
+    "precioMensual": 299,
+    "ticketsIncluidos": 40,
+    "costoTicketExtra": 5,
+    "ticketsUsadosMes": 10,
+    "fechaInicioPlan": "2026-09-30",
+    "fechaFinPlan": "2026-10-30",
+    "estadoPlan": "ACTIVO",
+    "periodoMes": "2026-10",
+    "avisoBajoSaldoEnviado": false,
+    "renovacionPendienteConfirmacion": false
   }
 }
