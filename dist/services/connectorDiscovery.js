@@ -960,16 +960,28 @@ export const CATALOGO_CANDIDATOS_MEXICO = [
         camposRequeridos: ["folio ticket", "complejo", "total"],
     },
 ];
-export function leerConectoresInstalados() {
+let cachedConectores = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 15000; // 15 seconds cache
+export function leerConectoresInstalados(forceRefresh = false) {
+    const now = Date.now();
+    if (!forceRefresh && cachedConectores && (now - lastCacheTime < CACHE_TTL_MS)) {
+        return cachedConectores;
+    }
     try {
-        if (!fs.existsSync(FILE_PATH))
+        if (!fs.existsSync(FILE_PATH)) {
+            cachedConectores = [];
+            lastCacheTime = now;
             return [];
+        }
         const raw = fs.readFileSync(FILE_PATH, "utf-8");
-        return JSON.parse(raw);
+        cachedConectores = JSON.parse(raw);
+        lastCacheTime = now;
+        return cachedConectores || [];
     }
     catch (err) {
         console.error("[ConnectorDiscovery] Error al leer conectores instalados:", err);
-        return [];
+        return cachedConectores || [];
     }
 }
 export function guardarConectoresInstalados(items) {
@@ -978,6 +990,8 @@ export function guardarConectoresInstalados(items) {
         if (!fs.existsSync(dir))
             fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(FILE_PATH, JSON.stringify(items, null, 2), "utf-8");
+        cachedConectores = items;
+        lastCacheTime = Date.now();
     }
     catch (err) {
         console.error("[ConnectorDiscovery] Error guardando conectores instalados:", err);
