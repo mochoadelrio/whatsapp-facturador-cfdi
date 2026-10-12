@@ -1,5 +1,2192 @@
 [
   {
+    "id": "conn_1791822719026_c24q",
+    "nombre": "Central de Autobuses de León (Estacionamiento)",
+    "zona": "León, Gto (Blvd. Hilario Medina)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "CAL7008154K8",
+    "urlPortal": "https://facturacion.centralautobusesleon.com/",
+    "patrones": [
+      "central de autobuses leon",
+      "estacionamiento central leon"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_a12b",
+    "nombre": "Parque Guanajuato Bicentenario (Silao / León)",
+    "zona": "Silao - León, Gto (Carretera 45)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "PGB1008154M3",
+    "urlPortal": "https://facturacion.pgbicentenario.com/",
+    "patrones": [
+      "parque guanajuato bicentenario",
+      "bicentenario silao",
+      "estacionamiento bicentenario"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_0q52",
+    "nombre": "Recórcholis Entretenimiento",
+    "zona": "Plaza Mayor León y Altacia",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "REC8908154N7",
+    "urlPortal": "https://facturacion.recorcholis.com.mx/",
+    "patrones": [
+      "recorcholis leon",
+      "recorcholis plaza mayor"
+    ],
+    "camposRequeridos": [
+      "tarjeta / ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_h4iw",
+    "nombre": "Cinemex Cines",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CMI9304192L5",
+    "urlPortal": "https://facturacion.cinemex.com/",
+    "patrones": [
+      "cinemex leon",
+      "cinemex"
+    ],
+    "camposRequeridos": [
+      "transacción",
+      "complejo",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_3wp9",
+    "nombre": "Cinépolis México",
+    "zona": "León, Gto (Plaza Mayor / Centro Max / Altacia) y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CNE9305141D2",
+    "urlPortal": "https://facturacion.cinepolis.com/",
+    "patrones": [
+      "cinepolis leon",
+      "cinépolis plaza mayor",
+      "cinepolis centro max"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "complejo",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_5v8n",
+    "nombre": "Sanver Ferreterías León",
+    "zona": "León, Gto",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "SFE8808153M4",
+    "urlPortal": "https://facturacion.sanver.com.mx/",
+    "patrones": [
+      "sanver leon",
+      "ferreterias sanver"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_vinw",
+    "nombre": "Cyberpuerta México (Cómputo y Hardware)",
+    "zona": "Nacional y Envíos León",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "CYB0808159L2",
+    "urlPortal": "https://facturacion.cyberpuerta.mx/",
+    "patrones": [
+      "cyberpuerta",
+      "cyberpuerta mexico"
+    ],
+    "camposRequeridos": [
+      "número de pedido",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_wpem",
+    "nombre": "iShop Mixup México",
+    "zona": "Plaza Mayor León",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "MIX8508153M9",
+    "urlPortal": "https://facturacion.mixup.com/",
+    "patrones": [
+      "ishop leon",
+      "mixup plaza mayor leon",
+      "ishop mixup"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_ls6p",
+    "nombre": "MacStore México (Apple Premium Reseller)",
+    "zona": "Plaza Mayor León y Altacia",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "MCS0108154L8",
+    "urlPortal": "https://facturacion.macstoreonline.com.mx/",
+    "patrones": [
+      "macstore leon",
+      "macstore plaza mayor",
+      "macstore altacia"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_ca7r",
+    "nombre": "RadioShack México",
+    "zona": "Plaza Mayor León y Nacional",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "RSM9208153N4",
+    "urlPortal": "https://facturacion.radioshack.com.mx/",
+    "patrones": [
+      "radioshack leon",
+      "radio shack plaza mayor"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_mm7k",
+    "nombre": "Office Max México",
+    "zona": "Centro Max León y Nacional",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "OMX9608154K9",
+    "urlPortal": "https://facturacion.officemax.com.mx/",
+    "patrones": [
+      "office max leon",
+      "officemax centro max"
+    ],
+    "camposRequeridos": [
+      "itu / código de ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_roi8",
+    "nombre": "Papelerías Tony México",
+    "zona": "León, Gto (Centro) y Nacional",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "PTS9204097M8",
+    "urlPortal": "https://facturacion.tony.com.mx/",
+    "patrones": [
+      "papelerias tony leon",
+      "tony papelerias"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_q2eh",
+    "nombre": "Casa Myers Ferretería",
+    "zona": "Nacional",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "CMY8208154M5",
+    "urlPortal": "https://facturacion.casamyers.com.mx/",
+    "patrones": [
+      "casa myers",
+      "ferreteria casa myers"
+    ],
+    "camposRequeridos": [
+      "factura ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_21ts",
+    "nombre": "Ferreterías Calzada",
+    "zona": "Bajío y Occidente",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "FCA8508153L2",
+    "urlPortal": "https://facturacion.ferreteriacalzada.com/",
+    "patrones": [
+      "ferreterias calzada",
+      "ferreteria calzada leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_1g4x",
+    "nombre": "Truper Herramientas México",
+    "zona": "Distribuidores León y Nacional",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "THE7908154N8",
+    "urlPortal": "https://facturacion.truper.com/",
+    "patrones": [
+      "truper",
+      "herramientas truper",
+      "fix truper"
+    ],
+    "camposRequeridos": [
+      "folio remisión",
+      "cliente",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_uz16",
+    "nombre": "Laboratorios Biomédicos de León",
+    "zona": "León, Gto (López Mateos)",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "LBL9408153N1",
+    "urlPortal": "https://facturacion.biomedicosdeleon.com.mx/",
+    "patrones": [
+      "biomedicos de leon",
+      "laboratorios biomedicos"
+    ],
+    "camposRequeridos": [
+      "recibo",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_t9g0",
+    "nombre": "Quest Diagnostics Laboratorios",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "QDM9808154L6",
+    "urlPortal": "https://facturacion.questdiagnostics.com.mx/",
+    "patrones": [
+      "quest diagnostics",
+      "laboratorios quest"
+    ],
+    "camposRequeridos": [
+      "orden",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_jpcg",
+    "nombre": "Farmacias Similares (Dr. Simi)",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "FSI9708154K3",
+    "urlPortal": "https://facturacion.farmaciassimilares.com/",
+    "patrones": [
+      "farmacias similares",
+      "dr simi leon",
+      "similares"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_vkk5",
+    "nombre": "Farmacias Yza México",
+    "zona": "Bajío y Nacional",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "FYZ0308159L8",
+    "urlPortal": "https://facturacion.yza.mx/",
+    "patrones": [
+      "farmacias yza",
+      "yza leon"
+    ],
+    "camposRequeridos": [
+      "código de facturación",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_sdtk",
+    "nombre": "Farmacias Farmapronto",
+    "zona": "León, Gto y Bajío",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "FPR9208154N2",
+    "urlPortal": "https://facturacion.farmapronto.com.mx/",
+    "patrones": [
+      "farmapronto",
+      "farmapronto leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_7tpj",
+    "nombre": "Scorpion Mayorista León",
+    "zona": "León, Gto (Blvd. Torres Landa)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "SCM0108153M2",
+    "urlPortal": "https://facturacion.scorpion.com.mx/",
+    "patrones": [
+      "scorpion leon",
+      "grupo scorpion abarrotes"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_y73a",
+    "nombre": "Dulcerías El Tigre León",
+    "zona": "León, Gto (Centro / San Juan Bosco)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "DET9208154K3",
+    "urlPortal": "https://facturacion.dulceriaseltigre.com.mx/",
+    "patrones": [
+      "dulcerias el tigre",
+      "el tigre leon"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_thud",
+    "nombre": "Tiendas Extra México",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "TEX9308154M1",
+    "urlPortal": "https://facturacion.tiendasextra.com.mx/",
+    "patrones": [
+      "tiendas extra",
+      "extra conveniencia"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_1t6j",
+    "nombre": "Bodega Aurrera Express León",
+    "zona": "León, Gto (Colonias León)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "NWM9709244W5",
+    "urlPortal": "https://facturacion.walmartmexico.com.mx/",
+    "patrones": [
+      "aurrera express leon",
+      "bodega aurrera express"
+    ],
+    "camposRequeridos": [
+      "tc #",
+      "tr #",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_hlpl",
+    "nombre": "SuperMayoreo Central León",
+    "zona": "León, Gto (Central de Abastos)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "SMC9508153L8",
+    "urlPortal": "https://facturacion.supermayoreo.com.mx/",
+    "patrones": [
+      "supermayoreo central",
+      "central de abastos leon abarrotes"
+    ],
+    "camposRequeridos": [
+      "factura ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_9ssz",
+    "nombre": "Waldo's Dólar Mart México",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "WDM9908154K7",
+    "urlPortal": "https://facturacion.waldos.com/",
+    "patrones": [
+      "waldos leon",
+      "waldo's leon",
+      "tiendas waldos"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_d5su",
+    "nombre": "Tiendas Woolworth / Del Sol",
+    "zona": "León, Gto (Centro) y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "CSO6305148N2",
+    "urlPortal": "https://facturacion.delsol.com.mx/",
+    "patrones": [
+      "woolworth leon",
+      "tiendas del sol leon"
+    ],
+    "camposRequeridos": [
+      "código de ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_8b19",
+    "nombre": "Elektra (Grupo Salinas)",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "ELE8404288N1",
+    "urlPortal": "https://facturacion.elektra.com.mx/",
+    "patrones": [
+      "elektra leon",
+      "tiendas elektra"
+    ],
+    "camposRequeridos": [
+      "folio pedido / ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_fv7j",
+    "nombre": "Coppel (Tiendas y Mueblerías)",
+    "zona": "León, Gto (Múltiples Sucursales) y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "COP920428Q20",
+    "urlPortal": "https://facturacion.coppel.com/",
+    "patrones": [
+      "coppel leon",
+      "tiendas coppel",
+      "coppel mueblerias"
+    ],
+    "camposRequeridos": [
+      "folio de compra",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_nr8e",
+    "nombre": "El Palacio de Hierro",
+    "zona": "Plaza Mayor León y Nacional",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "EPH8309154M7",
+    "urlPortal": "https://facturacion.elpalaciodehierro.com/",
+    "patrones": [
+      "palacio de hierro",
+      "el palacio de hierro leon"
+    ],
+    "camposRequeridos": [
+      "código de facturación",
+      "terminal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_zpy4",
+    "nombre": "Cervecería de Barrio",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CBA0608159L4",
+    "urlPortal": "https://facturacion.lacerveceriadebarrio.com.mx/",
+    "patrones": [
+      "cerveceria de barrio"
+    ],
+    "camposRequeridos": [
+      "cheque",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_79n6",
+    "nombre": "Fisher's Restaurantes de Mariscos",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "FIS8908154N3",
+    "urlPortal": "https://facturacion.fishers.com.mx/",
+    "patrones": [
+      "fishers",
+      "restaurante fishers"
+    ],
+    "camposRequeridos": [
+      "cuenta",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_kkgy",
+    "nombre": "Churrería El Moro",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CEM8508153K1",
+    "urlPortal": "https://facturacion.elmoro.mx/",
+    "patrones": [
+      "el moro",
+      "churreria el moro"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_qyk9",
+    "nombre": "Tim Hortons México",
+    "zona": "Bajío y Centro",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "THM1608154L8",
+    "urlPortal": "https://facturacion.timhortons.com.mx/",
+    "patrones": [
+      "tim hortons",
+      "tim hortons mexico"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_8vkw",
+    "nombre": "Krispy Kreme México",
+    "zona": "León, Gto (Plaza Mayor / Altacia)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "KKM0308159K2",
+    "urlPortal": "https://facturacion.krispykreme.mx/",
+    "patrones": [
+      "krispy kreme leon",
+      "donas krispy kreme"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_z7ql",
+    "nombre": "Dairy Queen México",
+    "zona": "León, Gto (Plaza Mayor / Centro Max / Altacia)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "DQM9008154N5",
+    "urlPortal": "https://facturacion.dairyqueen.com.mx/",
+    "patrones": [
+      "dairy queen leon",
+      "dq leon",
+      "dairy queen"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_fsiy",
+    "nombre": "IHOP México Restaurantes",
+    "zona": "Bajío y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "IHO0708154L9",
+    "urlPortal": "https://facturacion.ihopmexico.com/",
+    "patrones": [
+      "ihop",
+      "ihop leon",
+      "ihop restaurantes"
+    ],
+    "camposRequeridos": [
+      "número de cheque",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_bmc2",
+    "nombre": "Potzollcalli Restaurantes",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "POT8809153M6",
+    "urlPortal": "https://facturacion.potzollcalli.com.mx/",
+    "patrones": [
+      "potzollcalli"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_ax2x",
+    "nombre": "Casa de Toño Restaurantes",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CTO9208154K8",
+    "urlPortal": "https://facturacion.casadetono.com.mx/",
+    "patrones": [
+      "casa de toño",
+      "la casa de toño"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_rxf9",
+    "nombre": "La Mansión Restaurantes",
+    "zona": "Bajío y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "LMA6405148N2",
+    "urlPortal": "https://facturacion.lamansion.com.mx/",
+    "patrones": [
+      "la mansion",
+      "restaurante la mansion"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_no24",
+    "nombre": "The Cheesecake Factory México",
+    "zona": "Nacional y Centros Comerciales",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "TCF1408159M3",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "the cheesecake factory",
+      "cheesecake factory"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_k4o1",
+    "nombre": "P.F. Chang's México (Alsea)",
+    "zona": "Plaza Mayor León y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "PFC0908154L7",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "pf changs",
+      "p.f. changs leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_ompd",
+    "nombre": "Chili's Grill & Bar México",
+    "zona": "Plaza Mayor León y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "GCH9304194M2",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "chilis leon",
+      "chili's grill",
+      "chilis plaza mayor"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_5ih8",
+    "nombre": "Vips Restaurantes (Grupo Alsea)",
+    "zona": "León, Gto (Centro Max / López Mateos)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "VIP9104085K1",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "vips leon",
+      "restaurantes vips",
+      "vips centro max"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_uu6d",
+    "nombre": "Toks Restaurantes (Grupo Gigante)",
+    "zona": "León, Gto (Plaza Mayor / Centro Max)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "RTO840921RE4",
+    "urlPortal": "https://facturacion.toks.com.mx/",
+    "patrones": [
+      "toks leon",
+      "restaurante toks",
+      "toks plaza mayor"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "fecha",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_qdwz",
+    "nombre": "Sleep Inn / Choice Hotels",
+    "zona": "Bajío y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CHO0408159M2",
+    "urlPortal": "https://facturacion.choicehotels.com.mx/",
+    "patrones": [
+      "sleep inn",
+      "choice hotels"
+    ],
+    "camposRequeridos": [
+      "reservación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_vig3",
+    "nombre": "Hoteles Lucerna",
+    "zona": "Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HLU6608154N1",
+    "urlPortal": "https://facturacion.hoteleslucerna.com/",
+    "patrones": [
+      "hotel lucerna",
+      "hoteles lucerna"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_i3n8",
+    "nombre": "Hampton by Hilton Hoteles",
+    "zona": "Bajío y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HBH1008153K4",
+    "urlPortal": "https://facturacion.hilton.com/",
+    "patrones": [
+      "hampton by hilton",
+      "hilton leon"
+    ],
+    "camposRequeridos": [
+      "confirmación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_7as3",
+    "nombre": "Hoteles Misión México",
+    "zona": "Guanajuato Capital y Bajío",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HMI7605149L8",
+    "urlPortal": "https://facturacion.hotelesmision.com.mx/",
+    "patrones": [
+      "hotel mision guanajuato",
+      "hoteles mision"
+    ],
+    "camposRequeridos": [
+      "folio huésped",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_l5r6",
+    "nombre": "Quinta Real Hoteles (Camino Real)",
+    "zona": "Occidente y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HQR9008154M2",
+    "urlPortal": "https://facturacion.caminoreal.com/",
+    "patrones": [
+      "quinta real",
+      "camino real"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_pbpp",
+    "nombre": "Ibis Hoteles (Grupo Accor)",
+    "zona": "Bajío y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "IBI0204128N5",
+    "urlPortal": "https://facturacion.accor.com/",
+    "patrones": [
+      "hotel ibis",
+      "ibis leon",
+      "ibis irapuato"
+    ],
+    "camposRequeridos": [
+      "número de estancia",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_ksi9",
+    "nombre": "Holiday Inn Express León",
+    "zona": "León, Gto (Centro de Convenciones / Plaza Mayor)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HIE8809154L6",
+    "urlPortal": "https://facturacion.ihg.com/",
+    "patrones": [
+      "holiday inn leon",
+      "holiday inn express leon"
+    ],
+    "camposRequeridos": [
+      "confirmación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_w664",
+    "nombre": "One Hoteles (Grupo Posadas)",
+    "zona": "León, Gto (Poliforum) y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "ONE0608149K1",
+    "urlPortal": "https://facturacion.onehoteles.com/",
+    "patrones": [
+      "hotel one leon",
+      "one poliforum leon"
+    ],
+    "camposRequeridos": [
+      "reservación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_gyz4",
+    "nombre": "Fiesta Americana / Fiesta Inn (Grupo Posadas)",
+    "zona": "León, Gto (Cerro Gordo) y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "POS9208153M8",
+    "urlPortal": "https://facturacion.posadas.com/",
+    "patrones": [
+      "fiesta americana leon",
+      "fiesta inn leon",
+      "grupo posadas"
+    ],
+    "camposRequeridos": [
+      "folio reservación",
+      "folio factura",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_b0pa",
+    "nombre": "City Express Hoteles (Marriott)",
+    "zona": "León, Gto (Poliforum / Campestre) y Nacional",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "HCE0206148K5",
+    "urlPortal": "https://facturacion.cityexpress.com/",
+    "patrones": [
+      "city express leon",
+      "city express poliforum",
+      "city express junior"
+    ],
+    "camposRequeridos": [
+      "código de reservación / folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_uiuy",
+    "nombre": "Estación de Servicio Paseo del Jerez",
+    "zona": "León, Gto (López Mateos y Jerez)",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "SPJ8908154N2",
+    "urlPortal": "https://facturacion.pemex.com/",
+    "patrones": [
+      "paseo del jerez gasolinera",
+      "estacion jerez leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_mfto",
+    "nombre": "Estación de Servicio Campestre León",
+    "zona": "León, Gto (Blvd. Campestre)",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "ESC9108154M3",
+    "urlPortal": "https://facturacion.pemex.com/",
+    "patrones": [
+      "servicio campestre leon",
+      "gasolinera campestre leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_uy5t",
+    "nombre": "Gas Imperial Guanajuato",
+    "zona": "Guanajuato y Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "GIM7809124L5",
+    "urlPortal": "https://facturacion.gasimperial.com.mx/",
+    "patrones": [
+      "gas imperial",
+      "gas imperial leon"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_mlvh",
+    "nombre": "Potro Gas Combustibles",
+    "zona": "León, Gto",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "PGA0504128N6",
+    "urlPortal": "https://facturacion.potrogas.com.mx/",
+    "patrones": [
+      "potro gas",
+      "potrogas leon"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_wulr",
+    "nombre": "Gas Rosa / Sigsa (Gas LP)",
+    "zona": "León y Zona Metropolitana",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "GRO8809154K2",
+    "urlPortal": "https://facturacion.gasrosa.com.mx/",
+    "patrones": [
+      "gas rosa",
+      "gas rosa leon"
+    ],
+    "camposRequeridos": [
+      "folio remisión",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_a3o6",
+    "nombre": "Gas Express Nieto (Gas LP y Carburación)",
+    "zona": "León, Guanajuato y Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "GEN5004128N9",
+    "urlPortal": "https://facturacion.gasnieto.com/",
+    "patrones": [
+      "gas express nieto",
+      "gas nieto leon",
+      "estacion gas nieto"
+    ],
+    "camposRequeridos": [
+      "nota de remisión / ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_jxjc",
+    "nombre": "Servifácil Gasolineras",
+    "zona": "Carreteras Nacionales",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "SFA9208154R1",
+    "urlPortal": "https://facturacion.servifacil.com.mx/",
+    "patrones": [
+      "servifacil",
+      "gasolineras servifacil"
+    ],
+    "camposRequeridos": [
+      "referencia",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_l920",
+    "nombre": "Hidrosina Plus Estaciones",
+    "zona": "Nacional y Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "HPL9408153M6",
+    "urlPortal": "https://facturacion.hidrosina.com.mx/",
+    "patrones": [
+      "hidrosina plus",
+      "estaciones hidrosina"
+    ],
+    "camposRequeridos": [
+      "código",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_sjso",
+    "nombre": "Repsol Combustibles México",
+    "zona": "Bajío y Centro",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "RCM1802148P7",
+    "urlPortal": "https://facturacion.repsol.com.mx/",
+    "patrones": [
+      "repsol combustibles",
+      "repsol estacion"
+    ],
+    "camposRequeridos": [
+      "referencia",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_870v",
+    "nombre": "La Gas Estaciones de Servicio",
+    "zona": "Sureste y Carreteras",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "LGA1508149F2",
+    "urlPortal": "https://facturacion.lagas.com.mx/",
+    "patrones": [
+      "la gas",
+      "gasolinera la gas"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_4dhz",
+    "nombre": "Nexum Gasolineras (Grupo Garel)",
+    "zona": "Bajío y Huasteca",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "NEX0108154K8",
+    "urlPortal": "https://facturacion.nexum.com.mx/",
+    "patrones": [
+      "nexum",
+      "gasolineras nexum",
+      "estacion nexum"
+    ],
+    "camposRequeridos": [
+      "referencia",
+      "estación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_4voj",
+    "nombre": "Arco Gasolineras México",
+    "zona": "Nacional",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "ARG1709148L5",
+    "urlPortal": "https://facturacion.arco.com/",
+    "patrones": [
+      "arco gasolineras",
+      "gasolinera arco"
+    ],
+    "camposRequeridos": [
+      "código web",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_kw6d",
+    "nombre": "Gulf Gasolineras México",
+    "zona": "León, Gto (Blvd. Hidalgo) y Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "GME1604148N2",
+    "urlPortal": "https://facturacion.gulf.mx/",
+    "patrones": [
+      "gulf leon",
+      "gasolinera gulf",
+      "estacion gulf"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "estación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_zg5v",
+    "nombre": "Chevron Gasolineras México",
+    "zona": "Bajío y Norte",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "CME1708234D1",
+    "urlPortal": "https://facturacion.chevroncombustibles.com.mx/",
+    "patrones": [
+      "chevron",
+      "gasolinera chevron",
+      "combustibles chevron"
+    ],
+    "camposRequeridos": [
+      "referencia",
+      "estación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_7t5b",
+    "nombre": "Pemex Gasolineras (Transformación Industrial)",
+    "zona": "León, Gto y Red Carretera Nacional",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "PTI1511019C1",
+    "urlPortal": "https://facturacion.pemex.com/",
+    "patrones": [
+      "gasolinera pemex",
+      "franquicia pemex",
+      "estacion pemex"
+    ],
+    "camposRequeridos": [
+      "estación de servicio",
+      "folio ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_iu3z",
+    "nombre": "UPS de México Paquetería",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "UME8909153M8",
+    "urlPortal": "https://facturacion.ups.com.mx/",
+    "patrones": [
+      "ups mexico",
+      "ups leon"
+    ],
+    "camposRequeridos": [
+      "número de guía tracking",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_jcgu",
+    "nombre": "Redpack Paquetería",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "RED9411082K5",
+    "urlPortal": "https://facturacion.redpack.com.mx/",
+    "patrones": [
+      "redpack",
+      "redpack leon"
+    ],
+    "camposRequeridos": [
+      "guía",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_vrws",
+    "nombre": "FedEx Express México",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "FME9606148K2",
+    "urlPortal": "https://facturacion.fedex.com.mx/",
+    "patrones": [
+      "fedex mexico",
+      "fedex leon",
+      "guia fedex"
+    ],
+    "camposRequeridos": [
+      "número de rastreo",
+      "cuenta",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_bvyb",
+    "nombre": "Paquetexpress (Envíos y Logística)",
+    "zona": "León, Gto (Blvd. Aeropuerto) y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "PAQ9406158G3",
+    "urlPortal": "https://facturacion.paquetexpress.com.mx/",
+    "patrones": [
+      "paquetexpress",
+      "paquetexpress leon"
+    ],
+    "camposRequeridos": [
+      "número de guía",
+      "código rastreo",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_l15z",
+    "nombre": "DiDi México (Viajes y Delivery)",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "DMO1804179R8",
+    "urlPortal": "https://facturacion.didiglobal.com/",
+    "patrones": [
+      "didi viaje",
+      "didi food",
+      "didi mexico"
+    ],
+    "camposRequeridos": [
+      "orden id",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_oe1r",
+    "nombre": "Uber México (Viajes y Facturación)",
+    "zona": "León, Gto y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "UBE1405149R4",
+    "urlPortal": "https://riders.uber.com/tax-invoices",
+    "patrones": [
+      "uber viaje",
+      "uber mexico",
+      "recibo uber"
+    ],
+    "camposRequeridos": [
+      "id de viaje",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_0wal",
+    "nombre": "Transportes Chihuahuenses Autobuses",
+    "zona": "Bajío y Pacífico Norte",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "TCH6004128N1",
+    "urlPortal": "https://facturacion.chihuahuenses.com.mx/",
+    "patrones": [
+      "chihuahuenses autobuses",
+      "transportes chihuahuenses"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_s5az",
+    "nombre": "Transportes del Norte / Grupo Senda",
+    "zona": "Bajío y Norte",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "GSN8809128P4",
+    "urlPortal": "https://facturacion.gruposenda.com/",
+    "patrones": [
+      "grupo senda",
+      "transportes del norte"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_qg9q",
+    "nombre": "Autovías / La Línea Autobuses",
+    "zona": "León, Michoacán y CDMX",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "ALL9108153K2",
+    "urlPortal": "https://facturacion.autovias.com.mx/",
+    "patrones": [
+      "autovias autobuses",
+      "la linea autobuses"
+    ],
+    "camposRequeridos": [
+      "token boleto",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_vw38",
+    "nombre": "ADO (Autobuses de Oriente)",
+    "zona": "Nacional y Sureste",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "ADO3912239L5",
+    "urlPortal": "https://facturacion.ado.com.mx/",
+    "patrones": [
+      "ado",
+      "autobuses ado",
+      "boletos ado"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "asiento",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_qop5",
+    "nombre": "Autobuses Futura / Grupo Estrella Blanca",
+    "zona": "León, Bajío y Nacional",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "GEB6305148V2",
+    "urlPortal": "https://facturacion.estrellablanca.com.mx/",
+    "patrones": [
+      "autobuses futura",
+      "estrella blanca",
+      "transportes chihuahuenses"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "tr #",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_rklr",
+    "nombre": "Omnibus de México (Autobuses Foráneos)",
+    "zona": "León, Bajío y Norte de México",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "OME5611059G8",
+    "urlPortal": "https://facturacion.odm.com.mx/",
+    "patrones": [
+      "omnibus de mexico",
+      "odm autobuses",
+      "omnibus leon"
+    ],
+    "camposRequeridos": [
+      "token boleto",
+      "origen",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_w3zl",
+    "nombre": "VivaAerobus (Aeroenlaces Nacionales)",
+    "zona": "Nacional (BJX Aeropuerto)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "ANA050518RL1",
+    "urlPortal": "https://facturacion.vivaaerobus.com/",
+    "patrones": [
+      "vivaaerobus",
+      "viva aerobus",
+      "vuelo viva"
+    ],
+    "camposRequeridos": [
+      "clave de confirmación",
+      "correo"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_mwmh",
+    "nombre": "Volaris (Controladora Vuela)",
+    "zona": "Nacional e Internacional (BJX Aeropuerto)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "CVU0507204U9",
+    "urlPortal": "https://facturacion.volaris.com/",
+    "patrones": [
+      "volaris",
+      "vuelo volaris",
+      "reservacion volaris"
+    ],
+    "camposRequeridos": [
+      "clave de reservación (pnr)",
+      "apellido"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_stkx",
+    "nombre": "Aeroméxico (Boletos y Vuelos)",
+    "zona": "Nacional e Internacional (BJX Aeropuerto)",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "AME880912I89",
+    "urlPortal": "https://facturacion.aeromexico.com/",
+    "patrones": [
+      "aeromexico",
+      "boletos aeromexico",
+      "vuelo aeromexico"
+    ],
+    "camposRequeridos": [
+      "número de boleto (ticket #)",
+      "código de reservación"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_jteb",
+    "nombre": "Libramiento de San Luis Potosí",
+    "zona": "San Luis Potosí y Corredor 57",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "LSL0608149F5",
+    "urlPortal": "https://facturacion.libamientoslp.com.mx/",
+    "patrones": [
+      "libramiento san luis",
+      "libramiento slp"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_yn33",
+    "nombre": "Libramiento de Irapuato / Bajío",
+    "zona": "Irapuato - León y Corredor Bajío",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "LIB0409152M6",
+    "urlPortal": "https://facturacion.libramientoirapuato.com.mx/",
+    "patrones": [
+      "libramiento irapuato",
+      "autopista irapuato"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_lz6h",
+    "nombre": "Autopista Urbana Norte (AUN Supervía)",
+    "zona": "CDMX y Conexiones",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AUN1004153E7",
+    "urlPortal": "https://facturacion.supervia.mx/",
+    "patrones": [
+      "autopista urbana norte",
+      "supervia poniente"
+    ],
+    "camposRequeridos": [
+      "tag",
+      "transacción",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_zy2c",
+    "nombre": "Autopista Chamapa - La Venta",
+    "zona": "Valle de México",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "CLV9310148G2",
+    "urlPortal": "https://facturacion.chamapa-laventa.com.mx/",
+    "patrones": [
+      "chamapa la venta",
+      "caseta loma linda"
+    ],
+    "camposRequeridos": [
+      "folio nru",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_u9mi",
+    "nombre": "Autopista Siglo XXI (Puebla - Atlixco)",
+    "zona": "Puebla y Centro",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "ASU0105228L3",
+    "urlPortal": "https://facturacion.autopistasigloxxi.com.mx/",
+    "patrones": [
+      "puebla atlixco",
+      "autopista siglo xxi"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_uccl",
+    "nombre": "Autovías de Michoacán / Caseta Feliciano",
+    "zona": "Bajío Sur / Michoacán",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AVM0807149K1",
+    "urlPortal": "https://facturacion.autoviasmichoacan.com.mx/",
+    "patrones": [
+      "autovias de michoacan",
+      "caseta feliciano",
+      "caseta santa casilda"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_b79j",
+    "nombre": "Autopista Monterrey - Nuevo Laredo",
+    "zona": "Noreste Frontera",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AMN0408151D8",
+    "urlPortal": "https://facturacion.monterreynuevolaredo.com.mx/",
+    "patrones": [
+      "monterrey nuevo laredo",
+      "caseta sabinas"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_l1tk",
+    "nombre": "Autopista Mazatlán - Culiacán",
+    "zona": "Pacífico Norte",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AMC0904123F6",
+    "urlPortal": "https://facturacion.mazatlan-culiacan.com.mx/",
+    "patrones": [
+      "mazatlan culiacan",
+      "caseta marmol",
+      "caseta costa rica"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_hyv0",
+    "nombre": "Autopista León - Aguascalientes (RCO Tramo Norte)",
+    "zona": "León - Lagos - Aguascalientes",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "RCO0708136V7",
+    "urlPortal": "https://facturacion.redviacorta.mx/",
+    "patrones": [
+      "leon aguascalientes",
+      "caseta encarnacion",
+      "rco tramo norte"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "código",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_hkte",
+    "nombre": "Autopista Zapotlanejo - Lagos de Moreno",
+    "zona": "Altos de Jalisco y Bajío",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AZL0506148K2",
+    "urlPortal": "https://facturacion.zapotlanejolagos.com.mx/",
+    "patrones": [
+      "zapotlanejo lagos",
+      "lagos de moreno autopista",
+      "caseta tepatitlan"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_x482",
+    "nombre": "Autopista Guadalajara - Colima",
+    "zona": "Occidente",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AGC9108154Z1",
+    "urlPortal": "https://facturacion.autopistaguadalajaracolima.com/",
+    "patrones": [
+      "guadalajara colima",
+      "caseta acatlan",
+      "caseta sayula"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "código",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_n7eu",
+    "nombre": "Autopista Cuernavaca - Acapulco (Autopista del Sol)",
+    "zona": "Morelos - Guerrero",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "CPF6307036N1",
+    "urlPortal": "https://facturacioncapufe.com.mx/",
+    "patrones": [
+      "autopista del sol",
+      "cuernavaca acapulco",
+      "caseta paso morelos"
+    ],
+    "camposRequeridos": [
+      "código facturación",
+      "carril",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_7yfp",
+    "nombre": "Autopista Toluca - Atlacomulco",
+    "zona": "Estado de México y Conexión Bajío",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "ATA9904229G5",
+    "urlPortal": "https://facturacion.atlacomulco.com.mx/",
+    "patrones": [
+      "toluca atlacomulco",
+      "caseta atlacomulco"
+    ],
+    "camposRequeridos": [
+      "folio nru",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_0d81",
+    "nombre": "ViPass / Tag Pase Carreteras",
+    "zona": "Autopistas Nacionales",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "VPA1005127K4",
+    "urlPortal": "https://facturacion.pase.com.mx/",
+    "patrones": [
+      "vipass",
+      "tag pase",
+      "pase telepeaje"
+    ],
+    "camposRequeridos": [
+      "tag",
+      "cuenta",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
+    "id": "conn_1791822719026_6l0x",
+    "nombre": "PASE Televía / IAVE (Tag Telepeaje)",
+    "zona": "Autopistas Nacionales y Bajío",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "TVA0708083X2",
+    "urlPortal": "https://facturacion.televia.com.mx/",
+    "patrones": [
+      "televia",
+      "pase televia",
+      "tag televia",
+      "iave"
+    ],
+    "camposRequeridos": [
+      "número de tag",
+      "fecha",
+      "monto"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:31:58 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "MANUAL_ADMIN"
+  },
+  {
     "id": "conn_1791821415186_cl45",
     "nombre": "Aeropuerto Internacional del Bajío (BJX - Grupo Aeroportuario GAP)",
     "zona": "Silao - León, Gto (BJX Guanajuato)",
