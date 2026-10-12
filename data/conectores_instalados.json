@@ -1,5 +1,785 @@
 [
   {
+    "id": "conn_1791821045313_c6ae",
+    "nombre": "Restaurante Argentilia León (Cortes y Negocios)",
+    "zona": "León, Gto (Zona Campestre)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "ARG0408103A5",
+    "urlPortal": "https://facturacion.argentilia.com.mx/",
+    "patrones": [
+      "argentilia leon",
+      "restaurante argentilia",
+      "argentilia campestre"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_14jz",
+    "nombre": "Papelerías Lumen León (Materiales y Oficina)",
+    "zona": "León, Gto (Zona Campestre / López Mateos)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "ALU891012KT4",
+    "urlPortal": "https://facturacion.lumen.com.mx/",
+    "patrones": [
+      "lumen leon",
+      "papelerias lumen",
+      "lumen campestre"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "sucursal",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_q96e",
+    "nombre": "Steren Electrónica León (Tecnología y Ferretería Digital)",
+    "zona": "León, Gto (Centro Peatonal / Plaza Mayor / Centro Max)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "EST9008298Q8",
+    "urlPortal": "https://facturacion.steren.com.mx/",
+    "patrones": [
+      "steren leon",
+      "electronica steren",
+      "steren plaza mayor"
+    ],
+    "camposRequeridos": [
+      "número de ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_hg1m",
+    "nombre": "Pinturas Comex León (Materiales y Mantenimiento)",
+    "zona": "León, Gto (López Mateos / Torres Landa)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "CDF8101297N8",
+    "urlPortal": "https://facturacion.comex.com.mx/",
+    "patrones": [
+      "comex leon",
+      "pinturas comex",
+      "distribuidora comex leon"
+    ],
+    "camposRequeridos": [
+      "número de ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_dc1u",
+    "nombre": "Tiendas Chedraui León (Plaza Mayor / Poliforum)",
+    "zona": "León, Gto (Plaza Mayor / Poliforum)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "TCH850701RM1",
+    "urlPortal": "https://facturacion.chedraui.com.mx/",
+    "patrones": [
+      "chedraui leon",
+      "tiendas chedraui leon",
+      "chedraui poliforum"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_ixgl",
+    "nombre": "Tiendas Soriana León (Híper y Súper)",
+    "zona": "León, Gto (Maravillas / Malecón / Satélite / Cerro Gordo)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "TSO991022PB6",
+    "urlPortal": "https://facturacion.soriana.com/",
+    "patrones": [
+      "soriana leon",
+      "soriana hiper maravillas",
+      "soriana malecon",
+      "tiendas soriana leon"
+    ],
+    "camposRequeridos": [
+      "código de ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_ca9a",
+    "nombre": "Bodega Aurrera y Walmart León (Retail y Abarrotes)",
+    "zona": "León, Gto (San Juan Bosco / Delta / Clouthier)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "NWM9709244W4",
+    "urlPortal": "https://facturacion.walmartmexico.com.mx/",
+    "patrones": [
+      "bodega aurrera leon",
+      "aurrera san juan bosco",
+      "aurrera torres landa",
+      "mi bodega aurrera leon"
+    ],
+    "camposRequeridos": [
+      "tc #",
+      "tr #",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791821045313_v7gr",
+    "nombre": "AutoZone León (Refacciones y Autopartes)",
+    "zona": "León, Gto (Torres Landa / Aeropuerto / Hidalgo)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "AME9701095U2",
+    "urlPortal": "https://facturacion.autozone.com.mx/",
+    "patrones": [
+      "autozone leon",
+      "autozone de mexico",
+      "refaccionaria autozone"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:04:05 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820842055_q6b3",
+    "nombre": "Pinfra (Promotora y Operadora de Infraestructura)",
+    "zona": "Autopistas de Cuota Nacionales",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "PIN0709033X1",
+    "urlPortal": "https://facturacion.pinfra.com.mx/",
+    "patrones": [
+      "pinfra",
+      "autopistas pinfra",
+      "promotora y operadora"
+    ],
+    "camposRequeridos": [
+      "folio nru",
+      "plaza",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:00:42 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820842055_qpta",
+    "nombre": "Autopista Arco Norte",
+    "zona": "Circuito Exterior y Centro",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "AAN0512206W0",
+    "urlPortal": "https://arconorte.com.mx/facturacion/",
+    "patrones": [
+      "arco norte",
+      "autopista arco norte",
+      "concesionaria mexiquense"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "entronque",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:00:42 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820842055_qe43",
+    "nombre": "CAPUFE (Caminos y Puentes Federales)",
+    "zona": "Autopistas Federales",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "CPF6307036N0",
+    "urlPortal": "https://facturacioncapufe.com.mx/",
+    "patrones": [
+      "capufe",
+      "caminos y puentes federales",
+      "sisfact",
+      "plaza de cobro"
+    ],
+    "camposRequeridos": [
+      "código facturación",
+      "fecha",
+      "carril",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:00:42 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820842055_75pq",
+    "nombre": "7-Eleven Bajío / León",
+    "zona": "León y Corredor Bajío",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "SEM9807011U0",
+    "urlPortal": "https://e-factura.7-eleven.com.mx/",
+    "patrones": [
+      "7-eleven leon",
+      "7 eleven bajio",
+      "siete eleven"
+    ],
+    "camposRequeridos": [
+      "ticket id",
+      "tienda",
+      "caja",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:00:42 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820842055_ky6k",
+    "nombre": "Starbucks Campestre / Plaza Mayor León",
+    "zona": "León, Gto (Campestre / Plaza Mayor / Altacia)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "CBE9109119F0",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "starbucks leon",
+      "starbucks campestre",
+      "starbucks plaza mayor"
+    ],
+    "camposRequeridos": [
+      "número de ticket",
+      "tienda",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 10:00:42 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820797323_524u",
+    "nombre": "Italianni's Plaza Mayor León",
+    "zona": "León, Gto (Plaza Mayor)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "ITA9808244N6",
+    "urlPortal": "https://facturacion.alsea.com.mx/",
+    "patrones": [
+      "italiannis leon",
+      "italianni's plaza mayor leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 9:59:57 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820797323_71uj",
+    "nombre": "La Comer / Fresko León (Plaza Mayor / Insurgentes)",
+    "zona": "León, Gto (Insurgentes / Plaza Mayor)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "LCM0512143K1",
+    "urlPortal": "https://facturacion.lacomer.com.mx/",
+    "patrones": [
+      "la comer leon",
+      "fresko leon",
+      "city market"
+    ],
+    "camposRequeridos": [
+      "código de ticket",
+      "tienda",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 9:59:57 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820797323_pbdq",
+    "nombre": "Farmacias del Ahorro León",
+    "zona": "León, Gto",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "CFA9104117S8",
+    "urlPortal": "https://www.fahorro.com/facturacion",
+    "patrones": [
+      "farmacias del ahorro leon",
+      "del ahorro leon",
+      "fahorro leon"
+    ],
+    "camposRequeridos": [
+      "código de facturación",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 9:59:57 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820797323_hu0z",
+    "nombre": "Petro-7 Bajío / León",
+    "zona": "León y Bajío",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "PSE9406152J0",
+    "urlPortal": "https://www.petro-7.com.mx/facturacion/",
+    "patrones": [
+      "petro seven",
+      "petro-7 leon",
+      "petro 7"
+    ],
+    "camposRequeridos": [
+      "referencia de facturación",
+      "estación",
+      "monto"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 9:59:57 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791820797321_8f2b",
+    "nombre": "Autopista Salamanca - León / Libramiento Celaya",
+    "zona": "Salamanca - Irapuato - León y Celaya",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "LCE0409214L8",
+    "urlPortal": "https://facturacion.libramientocelaya.com.mx/",
+    "patrones": [
+      "salamanca leon",
+      "libramiento celaya",
+      "concesionaria celaya",
+      "caseta mendoza"
+    ],
+    "camposRequeridos": [
+      "folio",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 9:59:57 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791784819758_ns60",
+    "nombre": "Estacionamiento Plaza Mayor y Centro Max / Altacia",
+    "zona": "León, Gto (Plaza Mayor / Altacia / Centro Max)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "CMA9810145X1",
+    "urlPortal": "https://facturacion.plazamayor.com.mx/",
+    "patrones": [
+      "estacionamiento plaza mayor leon",
+      "estacionamiento altacia",
+      "operadora plazamayor"
+    ],
+    "camposRequeridos": [
+      "folio boleto",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 12:00:19 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791784819758_vhe1",
+    "nombre": "Transportes Tresguerras (Bajío / Celaya - León)",
+    "zona": "León y Corredor Industrial Bajío",
+    "categoria": "Paquetería y Transporte",
+    "rfcEmisor": "ATT9312217R6",
+    "urlPortal": "https://facturacion.tresguerras.com.mx/",
+    "patrones": [
+      "tresguerras leon",
+      "tres guerras",
+      "autotransportes tresguerras"
+    ],
+    "camposRequeridos": [
+      "guía rastreo",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 12:00:19 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791784819758_9amo",
+    "nombre": "Ma Come No Trattoria León (Zona Campestre)",
+    "zona": "León, Gto (Zona Campestre)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "MCN0102148L9",
+    "urlPortal": "https://facturacion.macomeno.com.mx/",
+    "patrones": [
+      "ma come no",
+      "ma come no trattoria",
+      "macomeno leon"
+    ],
+    "camposRequeridos": [
+      "folio consumo",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 12:00:19 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791784819758_1gus",
+    "nombre": "Farmacias Guadalajara León (Zona Metropolitana)",
+    "zona": "León, Silao y Guanajuato",
+    "categoria": "Tiendas y Farmacias",
+    "rfcEmisor": "FGU830930PD3",
+    "urlPortal": "https://facturacion.farmaciasguadalajara.com/",
+    "patrones": [
+      "farmacias guadalajara leon",
+      "farmacia guadalajara bajio",
+      "superfarmacia guadalajara"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "tienda",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 12:00:19 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791784819755_f7gu",
+    "nombre": "Fix Ferreterías León (Blvd. López Mateos / Centro)",
+    "zona": "León, Gto (López Mateos / Centro)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "FFE0010178M8",
+    "urlPortal": "https://facturacion.fixferreterias.com/",
+    "patrones": [
+      "fix ferreterias leon",
+      "fix ferreterias",
+      "indar leon"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-12",
+    "fechaHoraInstalacion": "12/10/2026, 12:00:19 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791700850574_o3bx",
+    "nombre": "The Home Depot León (Campestre y Blvd. Aeropuerto)",
+    "zona": "León, Gto (Campestre / Blvd. Aeropuerto)",
+    "categoria": "Materiales y Oficina",
+    "rfcEmisor": "THD000921IF4",
+    "urlPortal": "https://facturacion.homedepot.com.mx/",
+    "patrones": [
+      "home depot leon",
+      "the home depot aeropuerto",
+      "home depot campestre leon"
+    ],
+    "camposRequeridos": [
+      "número de ticket",
+      "tienda",
+      "caja",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:40:50 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791700850573_2zpu",
+    "nombre": "Calzado y Zapaterías Flexi (Matriz León, Gto)",
+    "zona": "León, Gto (Capital del Calzado)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "ZFL6505286NA",
+    "urlPortal": "https://facturacion.flexi.com.mx/",
+    "patrones": [
+      "flexi leon",
+      "zapaterias flexi",
+      "outlet flexi leon",
+      "calzado flexi"
+    ],
+    "camposRequeridos": [
+      "código de compra",
+      "sucursal",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:40:50 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791700850573_henh",
+    "nombre": "Gasolineras G500 León y Silao",
+    "zona": "León, Silao y Carr. Fed. 45",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "GOO1402283A4",
+    "urlPortal": "https://facturacion.g500network.com/",
+    "patrones": [
+      "g500 leon",
+      "gasolinera g500 bajio",
+      "estacion g500 silao"
+    ],
+    "camposRequeridos": [
+      "referencia",
+      "estación",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:40:50 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791700850573_445h",
+    "nombre": "Gasolineras Mobil León y Bajío (Grupo Islo / Combustibles Bajío)",
+    "zona": "León, Gto (Corredor Blvd. Aeropuerto / López Mateos)",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "CBL9804245Z2",
+    "urlPortal": "https://facturacion.mobil.com.mx/",
+    "patrones": [
+      "mobil leon",
+      "gasolinera mobil bajio",
+      "combustibles mobil leon"
+    ],
+    "camposRequeridos": [
+      "código web",
+      "estación",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:40:50 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791700850573_9zl7",
+    "nombre": "Costco Gas & Costco León (Campestre / Garza Sada)",
+    "zona": "León, Gto (Zona Campestre)",
+    "categoria": "Gasolineras y Combustibles",
+    "rfcEmisor": "CME910715UB9",
+    "urlPortal": "https://facturacion.costco.com.mx/",
+    "patrones": [
+      "costco leon",
+      "costco gas leon",
+      "gasolinas costco leon"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "transacción",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:40:50 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791698855765_e2d1",
+    "nombre": "H-E-B León (Cerro Gordo y Campestre)",
+    "zona": "León, Gto (Cerro Gordo / Campestre)",
+    "categoria": "Supermercados y Retail",
+    "rfcEmisor": "HEB960209489",
+    "urlPortal": "https://facturacion.heb.com.mx/",
+    "patrones": [
+      "heb leon",
+      "h-e-b leon",
+      "heb cerro gordo",
+      "heb campestre"
+    ],
+    "camposRequeridos": [
+      "ticket id",
+      "tienda",
+      "caja",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:07:35 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791698855765_8bxp",
+    "nombre": "Panteón Taurino León (Blvd. López Mateos / Calzada)",
+    "zona": "León, Gto (López Mateos / Calzada)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "PTA7206124K3",
+    "urlPortal": "https://facturacion.panteontaurino.com.mx/",
+    "patrones": [
+      "panteon taurino",
+      "el panteon taurino leon",
+      "taurino tradicional leon"
+    ],
+    "camposRequeridos": [
+      "folio de consumo",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:07:35 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791698855765_q5bq",
+    "nombre": "La Vaca Argentina León (Plaza Mayor / Campestre)",
+    "zona": "León, Gto (Plaza Mayor / Campestre)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "LVA0308159E1",
+    "urlPortal": "https://facturacion.lavacaargentina.com.mx/",
+    "patrones": [
+      "la vaca argentina",
+      "vaca argentina leon",
+      "vaca argentina campestre"
+    ],
+    "camposRequeridos": [
+      "ticket",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:07:35 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791698855765_d1bz",
+    "nombre": "Restaurante El Rincón Gaucho León (Calzada / Campestre)",
+    "zona": "León, Gto (Calzada / Campestre)",
+    "categoria": "Restaurantes y Cafeterías",
+    "rfcEmisor": "RGA9001185G2",
+    "urlPortal": "https://facturacion.elrincongaucho.com.mx/",
+    "patrones": [
+      "rincon gaucho",
+      "el rincon gaucho leon",
+      "rincon gaucho calzada",
+      "rincon gaucho campestre"
+    ],
+    "camposRequeridos": [
+      "folio ticket",
+      "sucursal",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:07:35 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
+    "id": "conn_1791698855765_uoxw",
+    "nombre": "Caseta Guanajuato - Silao (Puerto Interior / Gobierno de Gto)",
+    "zona": "Silao - Guanajuato Capital / Puerto Interior",
+    "categoria": "Casetas y Autopistas",
+    "rfcEmisor": "GEG850101FQ2",
+    "urlPortal": "https://facturacion.guanajuato.gob.mx/",
+    "patrones": [
+      "caseta guanajuato silao",
+      "autopista cuota guanajuato",
+      "gobierno del estado de guanajuato",
+      "cuota silao",
+      "puerto interior"
+    ],
+    "camposRequeridos": [
+      "folio caseta",
+      "carril",
+      "fecha",
+      "total"
+    ],
+    "fechaInstalacion": "2026-10-11",
+    "fechaHoraInstalacion": "11/10/2026, 12:07:35 a.m.",
+    "estado": "ACTIVO",
+    "modo": "PORTAL_RPA",
+    "origen": "AUTO_DISCOVERY"
+  },
+  {
     "id": "conn_1791667313973_n7xw",
     "nombre": "Primera Plus / Grupo Flecha Amarilla (Matriz León)",
     "zona": "León, Gto (Corporativo Matriz La Luz)",
