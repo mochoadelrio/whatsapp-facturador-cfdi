@@ -13,7 +13,7 @@ import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtener
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal, } from "../services/cfdiGenerator.js";
 import { procesarLoteCompletoAutonomo } from "../services/batchRouter.js";
 import { ejecutarDescubrimientoConectores, obtenerConectoresInstaladosHoy, iniciarSchedulerDescubrimientoConectores, } from "../services/connectorDiscovery.js";
-import { emitirFacturaIngreso } from "../services/finkokService.js";
+import { emitirFacturaIngreso, extraerPeticionFacturaTexto, } from "../services/finkokService.js";
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
 const QRErrorCorrectLevel = require("qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel");
@@ -1449,64 +1449,59 @@ _Ya puedes enviar fotos de tickets de este comercio para facturar en automático
         });
         return;
     }
-    // J. Comando /emitir o /facturar-cliente o /factura-ingreso o /emitir-demo
-    if (textoLimpio.toLowerCase().startsWith("/emitir") ||
-        textoLimpio.toLowerCase().startsWith("/facturar-cliente") ||
-        textoLimpio.toLowerCase().startsWith("/factura-ingreso") ||
-        textoLimpio.toLowerCase() === "/emitir-demo" ||
-        textoLimpio.toLowerCase() === "/facturar-demo") {
-        let receptorNombre = "INMOBILIARIA CVA";
-        let receptorRfc = "ICV060329BY0";
-        let receptorCp = "33826";
-        let receptorRegimen = "601";
-        let receptorUso = "G03";
-        let montoNum = 1500;
-        let conceptoDesc = "SERVICIOS PROFESIONALES DE FACTURACION CFDI 4.0";
-        // Extraer monto si viene en el texto
-        const matchMonto = textoLimpio.match(/\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/);
-        if (matchMonto && Number(matchMonto[1].replace(/,/g, "")) > 0) {
-            montoNum = Number(matchMonto[1].replace(/,/g, ""));
+    // J. Asistente Conversacional y Comandos Sencillos de Facturación de Ingresos (Finkok CFDI 4.0)
+    // Soporta: "factura para mi cliente", "emite una factura de ingresos", "hazme una factura", /emitir, etc.
+    const peticionIngreso = extraerPeticionFacturaTexto(textoLimpio);
+    if (peticionIngreso) {
+        if (peticionIngreso.necesitaDatos) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+🧾 *Asistente de Facturación de Ingresos (CFDI 4.0)*
+
+¡Con gusto! Para emitir tu factura de inmediato, puedes decírmelo con palabras sencillas como tú hablas:
+
+💬 *Ejemplos:*
+• _"Hazme una factura para mi cliente Juan Pérez de $1,800 por mantenimiento"_
+• _"Factura para mi cliente INMOBILIARIA CVA por $2,500 de consultoría"_
+• _"Emite una factura de ingresos a ICV060329BY0 por $3,000 por desarrollo web"_
+
+📎 *O con la Constancia Fiscal (CSF):*
+Sube una foto o PDF de la Constancia Fiscal de tu cliente y escribe en el texto el monto y concepto.
+
+⚡ _Si deseas generar una factura de prueba ahora mismo, escribe:_
+*hazme una factura demo*`,
+            });
+            return;
         }
-        // Extraer concepto si incluye "por <concepto>"
-        const matchConcepto = textoLimpio.match(/(?:por|concepto:?)\s+([^$\n]+)/i);
-        if (matchConcepto && matchConcepto[1].trim()) {
-            conceptoDesc = matchConcepto[1].trim();
-        }
-        // Extraer RFC si incluyó un RFC válido
-        const matchRfc = textoLimpio.match(/\b([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})\b/i);
-        if (matchRfc) {
-            receptorRfc = matchRfc[1].toUpperCase();
-        }
-        // Extraer nombre si incluye "a <cliente>"
-        const matchCliente = textoLimpio.match(/(?:a|para|cliente:?)\s+([A-Z0-9&Ñ\s]{3,35}?)(?=\s+\$|\s+por|\s*$)/i);
-        if (matchCliente && matchCliente[1].trim() && matchCliente[1].trim().length > 3) {
-            receptorNombre = matchCliente[1].trim().toUpperCase();
-        }
+        const { cliente, rfc, monto, concepto, esDemo } = peticionIngreso;
+        const subtotal = monto;
+        const iva = monto * 0.16;
+        const total = monto * 1.16;
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
 ⚡ *Iniciando Emisión y Timbrado CFDI 4.0 con Finkok...*
 
-• *Cliente:* ${receptorNombre} (\`${receptorRfc}\`)
-• *Concepto:* ${conceptoDesc}
-• *Subtotal:* \$${montoNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-• *IVA (16%):* \$${(montoNum * 0.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-• *Total a Facturar:* \$${(montoNum * 1.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Cliente:* ${cliente} (\`${rfc}\`)
+• *Concepto:* ${concepto}
+• *Subtotal:* \$${subtotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *IVA (16%):* \$${iva.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Total a Facturar:* \$${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
 
 Sellando con CSD y timbrando ante el SAT... ⏳`,
         });
         const resEmision = await emitirFacturaIngreso({
             receptor: {
-                rfc: receptorRfc,
-                nombre: receptorNombre,
-                codigoPostal: receptorCp,
-                regimenFiscal: receptorRegimen,
-                usoCfdi: receptorUso,
+                rfc,
+                nombre: cliente,
+                codigoPostal: "33826",
+                regimenFiscal: "601",
+                usoCfdi: "G03",
             },
             conceptos: [
                 {
-                    descripcion: conceptoDesc,
+                    descripcion: concepto,
                     cantidad: 1,
-                    valorUnitario: montoNum,
+                    valorUnitario: subtotal,
                     claveProdServ: "84111506",
                     claveUnidad: "E48",
                 },
@@ -1527,8 +1522,8 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
 📋 *Datos del Comprobante Fiscal:*
 • *Folio Fiscal (UUID):* \`${resEmision.uuid}\`
 • *Serie y Folio:* ${resEmision.serie} - ${resEmision.folio}
-• *Emisor:* ESCUELA KEMPER URGATE (EKU9003173C9)
-• *Receptor:* ${receptorNombre} (\`${receptorRfc}\`)
+• *Emisor:* \`${resEmision.emisorRfc}\`
+• *Receptor:* ${cliente} (\`${rfc}\`)
 • *Total:* \$${resEmision.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
 • *Fecha Timbrado:* ${resEmision.fechaTimbrado}
 

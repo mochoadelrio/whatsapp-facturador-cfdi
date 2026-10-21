@@ -56,21 +56,75 @@ const FINKOK_USERNAME = process.env.FINKOK_USERNAME || "m.ochoa.delrio@gmail.com
 const FINKOK_PASSWORD = process.env.FINKOK_PASSWORD || "Modr1988-+";
 const FINKOK_ENV = (process.env.FINKOK_ENV || "DEMO").toUpperCase();
 
-const SOAP_ENDPOINT =
-  FINKOK_ENV === "PROD" || FINKOK_ENV === "PRODUCCION"
+export interface EmisorConfig {
+  rfc: string;
+  nombre: string;
+  regimenFiscal: string;
+  lugarExpedicion: string;
+  cerPath: string;
+  keyPath: string;
+  csdPassword: string;
+  ambiente: "DEMO" | "PROD";
+}
+
+const CONFIG_PATH = path.resolve(process.cwd(), "data", "emisor_config.json");
+
+export function obtenerEmisorConfig(): EmisorConfig {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      const data = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+      const cerPath = path.resolve(process.cwd(), "certs", data.cerFile || `${data.rfc}.cer`);
+      const keyPath = path.resolve(process.cwd(), "certs", data.keyFile || `${data.rfc}.key`);
+      if (fs.existsSync(cerPath) && fs.existsSync(keyPath) && data.csdPassword) {
+        return {
+          rfc: data.rfc,
+          nombre: data.nombre,
+          regimenFiscal: data.regimenFiscal || "626",
+          lugarExpedicion: data.lugarExpedicion || "37545",
+          cerPath,
+          keyPath,
+          csdPassword: data.csdPassword,
+          ambiente: data.ambiente === "PROD" ? "PROD" : "DEMO",
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso al leer emisor_config.json:", err);
+  }
+
+  // Por defecto usar certificados de prueba
+  return {
+    rfc: "EKU9003173C9",
+    nombre: "ESCUELA KEMPER URGATE",
+    regimenFiscal: "601",
+    lugarExpedicion: "20928",
+    cerPath: path.resolve(process.cwd(), "certs", "EKU9003173C9.cer"),
+    keyPath: path.resolve(process.cwd(), "certs", "EKU9003173C9.key"),
+    csdPassword: "12345678a",
+    ambiente: FINKOK_ENV === "PROD" || FINKOK_ENV === "PRODUCCION" ? "PROD" : "DEMO",
+  };
+}
+
+export function guardarEmisorConfig(config: {
+  rfc: string;
+  nombre: string;
+  regimenFiscal: string;
+  lugarExpedicion: string;
+  cerFile: string;
+  keyFile: string;
+  csdPassword: string;
+  ambiente?: "DEMO" | "PROD";
+}): void {
+  const dir = path.dirname(CONFIG_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
+}
+
+function obtenerEndpointSoap(ambiente: "DEMO" | "PROD"): string {
+  return ambiente === "PROD"
     ? "https://facturacion.finkok.com/servicios/soap/stamp"
     : "https://demo-facturacion.finkok.com/servicios/soap/stamp";
-
-// Certificados de prueba (EKU9003173C9)
-const CER_PATH = path.resolve(process.cwd(), "certs", "EKU9003173C9.cer");
-const KEY_PATH = path.resolve(process.cwd(), "certs", "EKU9003173C9.key");
-const CSD_PASSWORD = "12345678a";
-const EMISOR_DEFAULT = {
-  rfc: "EKU9003173C9",
-  nombre: "ESCUELA KEMPER URGATE",
-  regimenFiscal: "601",
-  lugarExpedicion: "20928",
-};
+}
 
 /**
  * Limpia la Razón Social conforme a las reglas estrictas de CFDI 4.0:
@@ -106,18 +160,17 @@ export function limpiarRazonSocialCfdi40(nombre: string, rfc: string): string {
 /**
  * Carga el Certificado y Llave Privada en formato DER/PEM
  */
-function cargarCsd() {
-  if (!fs.existsSync(CER_PATH) || !fs.existsSync(KEY_PATH)) {
-    throw new Error(`Archivos CSD no encontrados en ${CER_PATH} o ${KEY_PATH}`);
+function cargarCsd(emisor: EmisorConfig) {
+  if (!fs.existsSync(emisor.cerPath) || !fs.existsSync(emisor.keyPath)) {
+    throw new Error(`Archivos CSD no encontrados en ${emisor.cerPath} o ${emisor.keyPath}`);
   }
-  const cerDer = fs.readFileSync(CER_PATH);
-  const keyDer = fs.readFileSync(KEY_PATH);
+  const cerDer = fs.readFileSync(emisor.cerPath);
+  const keyDer = fs.readFileSync(emisor.keyPath);
 
   const x509 = new crypto.X509Certificate(cerDer);
   const serialHex = x509.serialNumber;
   let noCertificado = Buffer.from(serialHex, "hex").toString("ascii");
   if (noCertificado.length !== 20) {
-    // Si la conversión no da 20 caracteres, usar el número de serie decimal formateado
     noCertificado = "30001000000500003416";
   }
 
@@ -125,7 +178,7 @@ function cargarCsd() {
     key: keyDer,
     format: "der",
     type: "pkcs8",
-    passphrase: CSD_PASSWORD,
+    passphrase: emisor.csdPassword,
   });
 
   const certificadoB64 = cerDer.toString("base64");
@@ -233,7 +286,8 @@ function generarCadenaOriginal40(params: {
  */
 function construirXmlSellado(
   solicitud: SolicitudEmision,
-  csd: ReturnType<typeof cargarCsd>
+  csd: ReturnType<typeof cargarCsd>,
+  emisor: EmisorConfig
 ) {
   const serie = solicitud.serie || "WA";
   const folio = solicitud.folio || Math.floor(10000 + Math.random() * 90000).toString();
@@ -289,8 +343,8 @@ function construirXmlSellado(
   const totalStr = totalNum.toFixed(2);
 
   const emisorNombreLimpio = limpiarRazonSocialCfdi40(
-    EMISOR_DEFAULT.nombre,
-    EMISOR_DEFAULT.rfc
+    emisor.nombre,
+    emisor.rfc
   );
   const receptorNombreLimpio = limpiarRazonSocialCfdi40(
     solicitud.receptor.nombre,
@@ -310,10 +364,10 @@ function construirXmlSellado(
     tipoDeComprobante: "I",
     exportacion: "01",
     metodoPago: solicitud.metodoPago || "PUE",
-    lugarExpedicion: EMISOR_DEFAULT.lugarExpedicion,
-    emisorRfc: EMISOR_DEFAULT.rfc,
+    lugarExpedicion: emisor.lugarExpedicion,
+    emisorRfc: emisor.rfc,
     emisorNombre: emisorNombreLimpio,
-    emisorRegimen: EMISOR_DEFAULT.regimenFiscal,
+    emisorRegimen: emisor.regimenFiscal,
     receptorRfc: solicitud.receptor.rfc.toUpperCase().trim(),
     receptorNombre: receptorNombreLimpio,
     receptorCp: solicitud.receptor.codigoPostal.trim(),
@@ -342,8 +396,8 @@ function construirXmlSellado(
     .join("\n");
 
   const xmlSinTimbrar = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="4.0" Serie="${serie}" Folio="${folio}" Fecha="${fechaIso}" Sello="${selloB64}" FormaPago="${solicitud.formaPago || "03"}" NoCertificado="${csd.noCertificado}" Certificado="${csd.certificadoB64}" SubTotal="${subtotalStr}" Moneda="MXN" Total="${totalStr}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${solicitud.metodoPago || "PUE"}" LugarExpedicion="${EMISOR_DEFAULT.lugarExpedicion}" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd">
-  <cfdi:Emisor Rfc="${EMISOR_DEFAULT.rfc}" Nombre="${emisorNombreLimpio}" RegimenFiscal="${EMISOR_DEFAULT.regimenFiscal}"/>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="4.0" Serie="${serie}" Folio="${folio}" Fecha="${fechaIso}" Sello="${selloB64}" FormaPago="${solicitud.formaPago || "03"}" NoCertificado="${csd.noCertificado}" Certificado="${csd.certificadoB64}" SubTotal="${subtotalStr}" Moneda="MXN" Total="${totalStr}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${solicitud.metodoPago || "PUE"}" LugarExpedicion="${emisor.lugarExpedicion}" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd">
+  <cfdi:Emisor Rfc="${emisor.rfc}" Nombre="${emisorNombreLimpio}" RegimenFiscal="${emisor.regimenFiscal}"/>
   <cfdi:Receptor Rfc="${solicitud.receptor.rfc.toUpperCase().trim()}" Nombre="${receptorNombreLimpio}" DomicilioFiscalReceptor="${solicitud.receptor.codigoPostal.trim()}" RegimenFiscalReceptor="${solicitud.receptor.regimenFiscal.trim()}" UsoCFDI="${solicitud.receptor.usoCfdi || "G03"}"/>
   <cfdi:Conceptos>
 ${conceptosXml}
@@ -370,7 +424,7 @@ ${conceptosXml}
 /**
  * Consume el Web Service SOAP de Finkok para timbrar el XML
  */
-async function timbrarXmlSoap(xmlSinTimbrar: string): Promise<{
+async function timbrarXmlSoap(xmlSinTimbrar: string, endpointSoap: string): Promise<{
   exito: boolean;
   uuid?: string;
   xmlTimbrado?: string;
@@ -393,7 +447,7 @@ async function timbrarXmlSoap(xmlSinTimbrar: string): Promise<{
    </soapenv:Body>
 </soapenv:Envelope>`;
 
-  const resp = await fetch(SOAP_ENDPOINT, {
+  const resp = await fetch(endpointSoap, {
     method: "POST",
     headers: {
       "Content-Type": "text/xml; charset=utf-8",
@@ -465,7 +519,12 @@ async function generarPdfFacturaIngreso(params: {
   fechaTimbrado: string;
   selloSat: string;
   noCertificadoSat: string;
-  emisor: typeof EMISOR_DEFAULT;
+  emisor: {
+    rfc: string;
+    nombre: string;
+    regimenFiscal: string;
+    lugarExpedicion: string;
+  };
   receptor: ReceptorFactura;
   conceptos: ConceptoFactura[];
   subtotal: number;
@@ -612,11 +671,13 @@ export async function emitirFacturaIngreso(
   solicitud: SolicitudEmision
 ): Promise<ResultadoEmision> {
   try {
-    const csd = cargarCsd();
-    const buildResult = construirXmlSellado(solicitud, csd);
+    const emisor = obtenerEmisorConfig();
+    const csd = cargarCsd(emisor);
+    const buildResult = construirXmlSellado(solicitud, csd, emisor);
+    const soapEndpoint = obtenerEndpointSoap(emisor.ambiente);
 
-    console.log(`📡 [Finkok] Enviando CFDI 4.0 a timbrar (${SOAP_ENDPOINT})...`);
-    const timbrado = await timbrarXmlSoap(buildResult.xmlSinTimbrar);
+    console.log(`📡 [Finkok] Enviando CFDI 4.0 a timbrar (${soapEndpoint})... Emisor: ${emisor.rfc}`);
+    const timbrado = await timbrarXmlSoap(buildResult.xmlSinTimbrar, soapEndpoint);
 
     if (!timbrado.exito || !timbrado.uuid || !timbrado.xmlTimbrado) {
       return {
@@ -626,7 +687,7 @@ export async function emitirFacturaIngreso(
         subtotal: buildResult.subtotal,
         iva: buildResult.iva,
         total: buildResult.total,
-        emisorRfc: EMISOR_DEFAULT.rfc,
+        emisorRfc: emisor.rfc,
         receptorRfc: solicitud.receptor.rfc,
       };
     }
@@ -649,7 +710,12 @@ export async function emitirFacturaIngreso(
       fechaTimbrado: timbrado.fechaTimbrado || new Date().toISOString(),
       selloSat: timbrado.selloSat || "SELLO_SAT_DEMO",
       noCertificadoSat: timbrado.noCertificadoSat || "30001000000500003456",
-      emisor: EMISOR_DEFAULT,
+      emisor: {
+        rfc: emisor.rfc,
+        nombre: emisor.nombre,
+        regimenFiscal: emisor.regimenFiscal,
+        lugarExpedicion: emisor.lugarExpedicion,
+      },
       receptor: solicitud.receptor,
       conceptos: solicitud.conceptos,
       subtotal: buildResult.subtotal,
@@ -670,7 +736,7 @@ export async function emitirFacturaIngreso(
       subtotal: buildResult.subtotal,
       iva: buildResult.iva,
       total: buildResult.total,
-      emisorRfc: EMISOR_DEFAULT.rfc,
+      emisorRfc: emisor.rfc,
       receptorRfc: solicitud.receptor.rfc,
       xmlTimbrado: timbrado.xmlTimbrado,
       xmlPath,
@@ -686,8 +752,135 @@ export async function emitirFacturaIngreso(
       subtotal: 0,
       iva: 0,
       total: 0,
-      emisorRfc: EMISOR_DEFAULT.rfc,
+      emisorRfc: "ERROR",
       receptorRfc: solicitud.receptor.rfc,
     };
   }
+}
+
+/**
+ * Analiza texto libre en lenguaje natural de WhatsApp y extrae la intención y parámetros de facturación.
+ * Soporta frases cotidianas: "factura para mi cliente", "emite una factura de ingresos", "hazme una factura", etc.
+ */
+export function extraerPeticionFacturaTexto(texto: string): {
+  tieneIntencion: boolean;
+  esDemo: boolean;
+  necesitaDatos: boolean;
+  cliente: string;
+  rfc: string;
+  monto: number;
+  concepto: string;
+} | null {
+  const t = texto.toLowerCase().trim();
+
+  // 1. Detectar intención
+  const triggers = [
+    "/emitir",
+    "/facturar",
+    "/factura-ingreso",
+    "/facturar-cliente",
+    "factura para mi cliente",
+    "factura a mi cliente",
+    "emite una factura de ingresos",
+    "emite una factura",
+    "emite factura de ingresos",
+    "emite factura",
+    "hazme una factura",
+    "hazme factura",
+    "creame una factura",
+    "crear factura",
+    "generame una factura",
+    "generar factura",
+    "factura de ingresos",
+    "factura de ingreso",
+    "factura de venta",
+    "nueva factura",
+    "quiero facturar",
+    "facturarle a",
+    "facturar a",
+    "emitir factura",
+  ];
+
+  const tieneIntencion = triggers.some((tr) => t.includes(tr));
+  if (!tieneIntencion) return null;
+
+  const esDemo =
+    t.includes("demo") ||
+    t.includes("prueba") ||
+    t === "/emitir-demo" ||
+    t === "/facturar-demo";
+
+  // Limpiar prefijos de comando para analizar el contenido real
+  let s = texto.trim();
+  const prefixes = [
+    /^hazme\s+una?\s+factura\s+(?:de\s+ingresos?\s+)?(?:para\s+mi\s+cliente|a\s+mi\s+cliente|para|a)?/i,
+    /^emite\s+una?\s+factura\s+(?:de\s+ingresos?\s+)?(?:para\s+mi\s+cliente|a\s+mi\s+cliente|para|a)?/i,
+    /^factura\s+(?:de\s+ingresos?\s+)?(?:para\s+mi\s+cliente|a\s+mi\s+cliente|para|a)?/i,
+    /^nueva\s+factura\s+(?:para|a)?/i,
+    /^\/emitir\s+(?:para|a)?/i,
+    /^\/facturar\s+(?:para|a)?/i,
+  ];
+  for (const p of prefixes) {
+    if (p.test(s)) {
+      s = s.replace(p, "").trim();
+      break;
+    }
+  }
+
+  // 2. Extraer RFC si viene
+  let rfc: string | null = null;
+  const matchRfc = s.match(/\b([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})\b/i);
+  if (matchRfc) {
+    rfc = matchRfc[1].toUpperCase();
+  }
+
+  // 3. Extraer Monto
+  let monto: number | null = null;
+  const sSinRfc = rfc ? s.replace(rfc, "RFC_TOKEN") : s;
+  const matchMonto = sSinRfc.match(
+    /(?:\$|\bde\s+\$|\bpor\s+\$|\bde\s+|\bpor\s+)\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i
+  );
+  if (matchMonto) {
+    const val = Number(matchMonto[1].replace(/,/g, ""));
+    if (val > 0) monto = val;
+  }
+
+  // 4. Extraer Cliente
+  let cliente: string | null = null;
+  const clienteChunk = sSinRfc
+    .split(/(?:\s+(?:de|por)\s+\$|\s+\$|\s+por\s+[0-9]|\s+de\s+[0-9])/i)[0]
+    .trim();
+  if (
+    clienteChunk &&
+    clienteChunk.length > 2 &&
+    !clienteChunk.match(/^(?:demo|prueba|ingresos?|mi\s+cliente|venta)$/i)
+  ) {
+    cliente = clienteChunk.replace(/^(?:para|a|cliente:?)\s+/i, "").trim().toUpperCase();
+  } else if (rfc) {
+    cliente = rfc;
+  }
+
+  // 5. Extraer Concepto
+  let concepto: string | null = null;
+  const matchConcepto = sSinRfc.match(/(?:por concepto de|por|concepto:?)\s+([^$\n]+)/i);
+  if (matchConcepto && matchConcepto[1].trim()) {
+    let raw = matchConcepto[1].trim();
+    raw = raw.replace(
+      /^(?:\$?[0-9,.]+\s*(?:pesos|mxn|\+?\s*iva)?\s*(?:de\s+|por\s+)?)/i,
+      ""
+    );
+    if (raw.trim().length > 1) concepto = raw.trim().toUpperCase();
+  }
+
+  const necesitaDatos = !esDemo && (monto === null || (!cliente && !rfc));
+
+  return {
+    tieneIntencion: true,
+    esDemo,
+    necesitaDatos,
+    cliente: cliente || "INMOBILIARIA CVA",
+    rfc: rfc || "ICV060329BY0",
+    monto: monto || 1500,
+    concepto: concepto || "SERVICIOS PROFESIONALES DE FACTURACION CFDI 4.0",
+  };
 }
