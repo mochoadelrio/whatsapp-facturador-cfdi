@@ -13,6 +13,7 @@ import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtener
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal, } from "../services/cfdiGenerator.js";
 import { procesarLoteCompletoAutonomo } from "../services/batchRouter.js";
 import { ejecutarDescubrimientoConectores, obtenerConectoresInstaladosHoy, iniciarSchedulerDescubrimientoConectores, } from "../services/connectorDiscovery.js";
+import { emitirFacturaIngreso } from "../services/finkokService.js";
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
 const QRErrorCorrectLevel = require("qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel");
@@ -625,6 +626,10 @@ Ya estoy 100% en línea listo para recibir tickets y comandos desde tu WhatsApp.
 💳 *Paquetes y Pagos SPEI Banxico:*
 • \`/planes\` o \`/paquetes\` — Muestra los paquetes (20, 40, 80, 100 tickets) y tu CLABE de Mercado Pago W.
 • *Enviar captura de transferencia* — Valida el CEP en Banxico y activa el plan o recarga en automático.
+
+🧾 *Emisión de Facturas de Ingreso (CFDI 4.0 - PAC Finkok):*
+• \`/emitir-demo\` — Emite una factura de prueba y te entrega el PDF y XML de inmediato.
+• \`/emitir a <Cliente> $<Monto> por <Concepto>\` — Factura una venta a un cliente (ej. \`/emitir a ICV060329BY0 $2500 por Consultoría\`).
 
 🏢 *Datos Fiscales:*
 • \`/perfil\` — Muestra los datos fiscales registrados.
@@ -1444,7 +1449,111 @@ _Ya puedes enviar fotos de tickets de este comercio para facturar en automático
         });
         return;
     }
-    // F. Comando /admin o /ayuda-admin (Centro de Control Administrativo)
+    // J. Comando /emitir o /facturar-cliente o /factura-ingreso o /emitir-demo
+    if (textoLimpio.toLowerCase().startsWith("/emitir") ||
+        textoLimpio.toLowerCase().startsWith("/facturar-cliente") ||
+        textoLimpio.toLowerCase().startsWith("/factura-ingreso") ||
+        textoLimpio.toLowerCase() === "/emitir-demo" ||
+        textoLimpio.toLowerCase() === "/facturar-demo") {
+        let receptorNombre = "INMOBILIARIA CVA";
+        let receptorRfc = "ICV060329BY0";
+        let receptorCp = "33826";
+        let receptorRegimen = "601";
+        let receptorUso = "G03";
+        let montoNum = 1500;
+        let conceptoDesc = "SERVICIOS PROFESIONALES DE FACTURACION CFDI 4.0";
+        // Extraer monto si viene en el texto
+        const matchMonto = textoLimpio.match(/\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/);
+        if (matchMonto && Number(matchMonto[1].replace(/,/g, "")) > 0) {
+            montoNum = Number(matchMonto[1].replace(/,/g, ""));
+        }
+        // Extraer concepto si incluye "por <concepto>"
+        const matchConcepto = textoLimpio.match(/(?:por|concepto:?)\s+([^$\n]+)/i);
+        if (matchConcepto && matchConcepto[1].trim()) {
+            conceptoDesc = matchConcepto[1].trim();
+        }
+        // Extraer RFC si incluyó un RFC válido
+        const matchRfc = textoLimpio.match(/\b([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})\b/i);
+        if (matchRfc) {
+            receptorRfc = matchRfc[1].toUpperCase();
+        }
+        // Extraer nombre si incluye "a <cliente>"
+        const matchCliente = textoLimpio.match(/(?:a|para|cliente:?)\s+([A-Z0-9&Ñ\s]{3,35}?)(?=\s+\$|\s+por|\s*$)/i);
+        if (matchCliente && matchCliente[1].trim() && matchCliente[1].trim().length > 3) {
+            receptorNombre = matchCliente[1].trim().toUpperCase();
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+⚡ *Iniciando Emisión y Timbrado CFDI 4.0 con Finkok...*
+
+• *Cliente:* ${receptorNombre} (\`${receptorRfc}\`)
+• *Concepto:* ${conceptoDesc}
+• *Subtotal:* \$${montoNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *IVA (16%):* \$${(montoNum * 0.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Total a Facturar:* \$${(montoNum * 1.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+
+Sellando con CSD y timbrando ante el SAT... ⏳`,
+        });
+        const resEmision = await emitirFacturaIngreso({
+            receptor: {
+                rfc: receptorRfc,
+                nombre: receptorNombre,
+                codigoPostal: receptorCp,
+                regimenFiscal: receptorRegimen,
+                usoCfdi: receptorUso,
+            },
+            conceptos: [
+                {
+                    descripcion: conceptoDesc,
+                    cantidad: 1,
+                    valorUnitario: montoNum,
+                    claveProdServ: "84111506",
+                    claveUnidad: "E48",
+                },
+            ],
+            formaPago: "03",
+            metodoPago: "PUE",
+        });
+        if (!resEmision.exito || !resEmision.uuid) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n❌ *Aviso del PAC Finkok / SAT al timbrar:*\n${resEmision.error || "No se pudo timbrar el comprobante."}`,
+            });
+            return;
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🎉 *¡Factura de Ingreso Emitida y Timbrada Exitosamente!*
+
+📋 *Datos del Comprobante Fiscal:*
+• *Folio Fiscal (UUID):* \`${resEmision.uuid}\`
+• *Serie y Folio:* ${resEmision.serie} - ${resEmision.folio}
+• *Emisor:* ESCUELA KEMPER URGATE (EKU9003173C9)
+• *Receptor:* ${receptorNombre} (\`${receptorRfc}\`)
+• *Total:* \$${resEmision.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Fecha Timbrado:* ${resEmision.fechaTimbrado}
+
+Te adjunto enseguida tus archivos oficiales (PDF con QR del SAT y XML timbrado):`,
+        });
+        // Enviar PDF
+        if (resEmision.pdfBuffer) {
+            await enviarMensajeBot(sock, replyJid, {
+                document: resEmision.pdfBuffer,
+                mimetype: "application/pdf",
+                fileName: `Factura_${resEmision.uuid.slice(0, 8)}.pdf`,
+                caption: `📕 Factura PDF (CFDI 4.0 con QR oficial SAT - \$${resEmision.total.toFixed(2)} MXN)`,
+            });
+        }
+        // Enviar XML
+        if (resEmision.xmlBuffer) {
+            await enviarMensajeBot(sock, replyJid, {
+                document: resEmision.xmlBuffer,
+                mimetype: "text/xml",
+                fileName: `Factura_${resEmision.uuid.slice(0, 8)}.xml`,
+                caption: `📄 XML Timbrado SAT (TimbreFiscalDigital UUID: ${resEmision.uuid.slice(0, 8)}...)`,
+            });
+        }
+        return;
+    }
     if (textoLimpio.toLowerCase() === "/admin" ||
         textoLimpio.toLowerCase() === "/ayuda-admin" ||
         textoLimpio.toLowerCase() === "admin") {
@@ -1517,6 +1626,10 @@ ${extraAdmin}
 💳 *Paquetes y Pagos SPEI Banxico:*
 • \`/planes\` o \`/paquetes\` — Muestra los paquetes (20, 40, 80, 100 tickets) y tu CLABE de Mercado Pago W.
 • *Enviar captura de transferencia* — Valida el CEP en Banxico y activa el plan o recarga en automático.
+
+🧾 *Emisión de Facturas de Ingreso (CFDI 4.0 - PAC Finkok):*
+• \`/emitir-demo\` — Emite una factura de prueba y te entrega el PDF y XML de inmediato.
+• \`/emitir a <Cliente> $<Monto> por <Concepto>\` — Factura una venta a un cliente (ej. \`/emitir a ICV060329BY0 $2500 por Consultoría\`).
 
 🏢 *Datos Fiscales:*
 • \`/perfil\` — Muestra los datos fiscales registrados.
