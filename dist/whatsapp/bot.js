@@ -6,7 +6,8 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, } from "../storage/profiles.js";
+import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, } from "../storage/profiles.js";
+import { validarEInstalarCsd, registrarRfcEnFinkok, consultarEstatusRfcFinkok, } from "../services/finkokRegistrationService.js";
 import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtenerTicketsFallidos, buscarTicketPorId, } from "../storage/ticketAudit.js";
@@ -1739,6 +1740,156 @@ ${formatearResumenPlan(act)}`,
         }
         return;
     }
+    // M. Comando para configurar y validar contraseña de CSD (/csd <clave> o /clave-csd <clave>)
+    if (textoLimpio.toLowerCase().startsWith("/csd") ||
+        textoLimpio.toLowerCase().startsWith("/clave-csd") ||
+        textoLimpio.toLowerCase().startsWith("/sellos")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        const password = partes.slice(1).join(" ").trim();
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        if (!password) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+🔐 *Activación de Sellos Digitales (CSD) para Facturación*
+
+Uso: \`/csd <tu_contraseña>\`
+_Ejemplo: \`/csd 12345678a\`_
+
+*Pasos requeridos:*
+1️⃣ Adjunta por este chat tu archivo \`.cer\` y \`.key\` (o el \`.zip\` descargado del SAT).
+2️⃣ Escribe \`/csd <tu_contraseña>\` para validarlos criptográficamente y registrar tu RFC en Finkok PAC.`,
+            });
+            return;
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n🔍 Validando correspondencia de llaves RSA, vigencia SAT y registrando RFC en Finkok PAC... ⏳`,
+        });
+        const tempCsdDir = path.resolve(process.cwd(), "data", "temp_csd");
+        const tempZip = path.join(tempCsdDir, `${perfil.rfc}.zip`);
+        const tempCer = path.join(tempCsdDir, `${perfil.rfc}.cer`);
+        const tempKey = path.join(tempCsdDir, `${perfil.rfc}.key`);
+        let cerBuffer;
+        let keyBuffer;
+        let zipBuffer;
+        if (fs.existsSync(tempZip)) {
+            zipBuffer = fs.readFileSync(tempZip);
+        }
+        else {
+            if (fs.existsSync(tempCer))
+                cerBuffer = fs.readFileSync(tempCer);
+            if (fs.existsSync(tempKey))
+                keyBuffer = fs.readFileSync(tempKey);
+            // Si no están en temp, revisar si ya existen en certs/
+            const certsDir = path.resolve(process.cwd(), "certs");
+            const cCer = path.join(certsDir, `${perfil.rfc}.cer`);
+            const cKey = path.join(certsDir, `${perfil.rfc}.key`);
+            if (!cerBuffer && fs.existsSync(cCer))
+                cerBuffer = fs.readFileSync(cCer);
+            if (!keyBuffer && fs.existsSync(cKey))
+                keyBuffer = fs.readFileSync(cKey);
+        }
+        if (!zipBuffer && (!cerBuffer || !keyBuffer)) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Faltan archivos de Sellos Digitales*
+
+No he recibido tus archivos de CSD (.cer y .key).
+Por favor adjunta primero tus archivos o el .zip que te entregó el SAT y luego escribe \`/csd <tu_contraseña>\`.`,
+            });
+            return;
+        }
+        const resultadoCsd = await validarEInstalarCsd({
+            rfc: perfil.rfc,
+            password,
+            cerBuffer,
+            keyBuffer,
+            zipBuffer,
+        });
+        if (!resultadoCsd.valido) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+❌ *Error al activar Sellos Digitales (CSD):*
+${resultadoCsd.error}
+
+Por favor verifica tu contraseña o archivos y vuelve a intentar.`,
+            });
+            return;
+        }
+        // Guardar en el perfil del cliente
+        guardarCsdCliente(perfilKey, {
+            cerFile: resultadoCsd.cerFile,
+            keyFile: resultadoCsd.keyFile,
+            csdPassword: password,
+            noCertificado: resultadoCsd.noCertificado,
+            fechaVencimientoCsd: resultadoCsd.fechaFin,
+        });
+        // Limpiar archivos temporales
+        try {
+            if (fs.existsSync(tempZip))
+                fs.unlinkSync(tempZip);
+            if (fs.existsSync(tempCer))
+                fs.unlinkSync(tempCer);
+            if (fs.existsSync(tempKey))
+                fs.unlinkSync(tempKey);
+        }
+        catch { }
+        const pacMsg = resultadoCsd.finkokRegistro?.exito
+            ? `✅ *Estatus PAC Finkok:* Registrado y Autorizado en Finkok para timbrado oficial.`
+            : `⚠️ *Aviso Finkok:* ${resultadoCsd.finkokRegistro?.mensaje || "En proceso de validación"}`;
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🎉 *¡Sellos Digitales (CSD) Activados Exitosamente!*
+
+📋 *Detalle del Certificado SAT:*
+• *RFC:* \`${perfil.rfc}\`
+• *Razón Social:* ${perfil.razonSocial}
+• *No. Certificado:* \`${resultadoCsd.noCertificado}\`
+• *Vigencia:* Hasta el ${resultadoCsd.fechaFin} (*${resultadoCsd.diasVigenciaRestantes} días restantes*)
+• ${pacMsg}
+
+🚀 *¡Ya puedes emitir facturas oficiales CFDI 4.0 a tus clientes!*
+Solo escribe en el chat con palabras cotidianas:
+_"Hazme una factura para mi cliente Juan Pérez de $1,800 por mantenimiento"_`,
+        });
+        return;
+    }
+    // N. Comando para consultar estatus de CSD (/estatus-csd o /mis-sellos)
+    if (textoLimpio.toLowerCase() === "/estatus-csd" ||
+        textoLimpio.toLowerCase() === "/mis-sellos" ||
+        textoLimpio.toLowerCase() === "/sellos-status") {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        const csd = perfil.csd;
+        const certsDir = path.resolve(process.cwd(), "certs");
+        const tieneCer = !!(csd?.cerFile && fs.existsSync(path.join(certsDir, csd.cerFile)));
+        const tieneKey = !!(csd?.keyFile && fs.existsSync(path.join(certsDir, csd.keyFile)));
+        const tienePass = !!csd?.csdPassword;
+        let finkokStatusText = "Consultando...";
+        const finkokStatus = await consultarEstatusRfcFinkok(perfil.rfc);
+        if (finkokStatus.registrado) {
+            finkokStatusText = finkokStatus.activo
+                ? "✅ Activo y Autorizado para timbrar"
+                : `⚠️ Registrado con estatus: ${finkokStatus.status}`;
+        }
+        else {
+            finkokStatusText = "❌ No registrado aún en Finkok";
+        }
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🔐 *Estatus de Bóveda CSD (Sellos Digitales SAT):*
+• *Cliente:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Certificado (.cer):* ${tieneCer ? `✅ ${csd?.cerFile}` : "❌ No instalado"}
+• *Llave Privada (.key):* ${tieneKey ? `✅ ${csd?.keyFile}` : "❌ No instalada"}
+• *Contraseña CSD:* ${tienePass ? "🔒 Configurada y Cifrada" : "❌ No configurada"}
+• *No. Certificado:* ${csd?.noCertificado ? `\`${csd.noCertificado}\`` : "N/D"}
+• *Vigencia CSD:* ${csd?.fechaVencimientoCsd || "N/D"}
+• *Estatus en PAC Finkok:* ${finkokStatusText}
+
+${tieneCer && tieneKey && tienePass
+                ? "✨ *Tus sellos están activos y listos para emitir CFDI 4.0.*"
+                : "⚠️ *Para activar tus sellos:* Envía tus archivos .cer y .key y escribe `/csd <tu_contraseña>`."}`,
+        });
+        return;
+    }
     if (textoLimpio.toLowerCase() === "/admin" ||
         textoLimpio.toLowerCase() === "/ayuda-admin" ||
         textoLimpio.toLowerCase() === "admin") {
@@ -2355,6 +2506,71 @@ Escribe */plantilla* para ver tu configuración actual.`,
                 });
                 return;
             }
+            // Interceptar carga de archivos de Sellos Digitales (.cer, .key, .zip)
+            const fnLower = (fileName || "").toLowerCase();
+            const isCer = fnLower.endsWith(".cer");
+            const isKey = fnLower.endsWith(".key");
+            const isZip = fnLower.endsWith(".zip") ||
+                mimeType.includes("zip") ||
+                mimeType.includes("compressed");
+            if (isCer || isKey || isZip) {
+                const { perfil } = obtenerPerfilFiscal(perfilKey);
+                const tempCsdDir = path.resolve(process.cwd(), "data", "temp_csd");
+                if (!fs.existsSync(tempCsdDir))
+                    fs.mkdirSync(tempCsdDir, { recursive: true });
+                if (isZip) {
+                    const zipPath = path.join(tempCsdDir, `${perfil.rfc}.zip`);
+                    fs.writeFileSync(zipPath, buffer);
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+📦 *Archivo ZIP de Sellos Digitales (CSD) Recibido*
+
+• *Cliente:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Archivo:* \`${fileName || `${perfil.rfc}.zip`}\`
+
+Para validar tu llave privada ante el SAT y darte de alta en Finkok PAC, escribe tu contraseña con el comando:
+👉 */csd <tu_contraseña>*
+_Ejemplo: \`/csd MiClaveSecreta123\`_`,
+                    });
+                    return;
+                }
+                if (isCer) {
+                    const cerPath = path.join(tempCsdDir, `${perfil.rfc}.cer`);
+                    fs.writeFileSync(cerPath, buffer);
+                    const keyPath = path.join(tempCsdDir, `${perfil.rfc}.key`);
+                    const yaTieneKey = fs.existsSync(keyPath);
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+✅ *Certificado Público (.cer) Recibido*
+
+• *Cliente:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Archivo:* \`${fileName || `${perfil.rfc}.cer`}\`
+
+${yaTieneKey
+                            ? `🔑 Ya tenemos tu archivo .key registrado.\nPara activarlos, escribe tu contraseña con:\n👉 */csd <tu_contraseña>*`
+                            : `Siguiente paso: Ahora por favor adjunta tu archivo de llave privada \`.key\`.`}`,
+                    });
+                    return;
+                }
+                if (isKey) {
+                    const keyPath = path.join(tempCsdDir, `${perfil.rfc}.key`);
+                    fs.writeFileSync(keyPath, buffer);
+                    const cerPath = path.join(tempCsdDir, `${perfil.rfc}.cer`);
+                    const yaTieneCer = fs.existsSync(cerPath);
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+🔑 *Llave Privada (.key) Recibida*
+
+• *Cliente:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Archivo:* \`${fileName || `${perfil.rfc}.key`}\`
+
+${yaTieneCer
+                            ? `✅ Ya tenemos tu archivo .cer y .key listos.\nPor último, escribe tu contraseña de los sellos con:\n👉 */csd <tu_contraseña>*`
+                            : `Siguiente paso: Ahora por favor adjunta tu archivo de certificado público \`.cer\`.`}`,
+                    });
+                    return;
+                }
+            }
             // Guardar copia local de respaldo inmediatamente para que el ticket nunca se pierda
             try {
                 const backupDir = path.resolve(process.cwd(), "data/tickets_recibidos");
@@ -2428,6 +2644,8 @@ Escribe */plantilla* para ver tu configuración actual.`,
                 guardarPerfilFiscal(perfilKey, nuevoPerfil);
                 guardarPerfilFiscal(remoteJid, nuevoPerfil);
                 console.log("💾 Perfil fiscal guardado para", perfilKey, nuevoPerfil);
+                // Pre-registrar el RFC en Finkok en segundo plano
+                registrarRfcEnFinkok(nuevoPerfil.rfc).catch((e) => console.warn("⚠️ Aviso al pre-registrar en Finkok:", e));
                 await enviarMensajeBot(sock, replyJid, {
                     text: `${BOT_SIGNATURE}
 🎉 *¡Bienvenido a KlientIA Facturación!*
@@ -2453,7 +2671,11 @@ Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
 • *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
 • *Concepto:* \`Factura ${nuevoPerfil.rfc}\`
 
-📲 *Para activar tu cuenta hoy mismo:* Realiza la transferencia del paquete elegido y envíame por aquí la captura o PDF de tu comprobante bancario. Validaremos el CEP en Banxico y se habilitarán tus folios por 30 días automáticamente.`,
+📲 *Para activar tu suscripción:* Realiza la transferencia del paquete elegido y envíame la captura de tu comprobante bancario.
+
+🔑 *Para emitir facturas a tus clientes (CFDI 4.0 con tu RFC):*
+Envía por este chat tus sellos digitales del SAT (archivos \`.cer\` y \`.key\` o tu archivo \`.zip\`) y escribe tu contraseña con:
+👉 */csd <tu_contraseña>*`,
                 });
                 return;
             }

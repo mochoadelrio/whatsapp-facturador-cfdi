@@ -878,3 +878,34 @@ export function recargarTimbresIngreso(busqueda, cantidad) {
     }
     return perfilActualizado;
 }
+/**
+ * Guarda y activa la Bóveda CSD del cliente para emisión de facturas oficiales.
+ */
+export function guardarCsdCliente(jid, csd) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const rfc = base.rfc.toUpperCase();
+    const actualizado = {
+        ...base,
+        csd,
+    };
+    perfiles[jid] = actualizado;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === rfc) {
+            perfiles[key] = {
+                ...normalizarPerfilConPlan(perfiles[key]),
+                csd,
+            };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return actualizado;
+}
