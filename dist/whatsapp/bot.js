@@ -8,7 +8,7 @@ import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
 import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, } from "../storage/profiles.js";
 import { validarEInstalarCsd, registrarRfcEnFinkok, consultarEstatusRfcFinkok, } from "../services/finkokRegistrationService.js";
-import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, } from "../services/banxicoValidator.js";
+import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, verificarCepRepetido, registrarCepProcesado, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtenerTicketsFallidos, buscarTicketPorId, } from "../storage/ticketAudit.js";
 import { generarPdfCfdi40, generarXmlCfdi40, generarUuidFiscal, } from "../services/cfdiGenerator.js";
@@ -1890,6 +1890,123 @@ ${tieneCer && tieneKey && tienePass
         });
         return;
     }
+    // O. Selección de paquete previo al pago si el usuario responde con el número de paquete (1 a 7)
+    const { perfil: pCheck } = obtenerPerfilFiscal(perfilKey);
+    const tClean = textoLimpio.trim();
+    if (pCheck.estadoPlan === "PENDIENTE_PAGO" && /^[1-7]$/.test(tClean)) {
+        const paquetesMenu = {
+            "1": {
+                nombre: "Plan Gastos Básico",
+                precio: 179,
+                detalle: "20 tickets de gastos por 30 días",
+            },
+            "2": {
+                nombre: "Plan Gastos Pro",
+                precio: 299,
+                detalle: "40 tickets de gastos por 30 días",
+            },
+            "3": {
+                nombre: "Plan Gastos Negocio",
+                precio: 499,
+                detalle: "80 tickets de gastos por 30 días",
+            },
+            "4": {
+                nombre: "Plan Ingresos Básico",
+                precio: 199,
+                detalle: "30 timbres de ingresos por 30 días",
+            },
+            "5": {
+                nombre: "Plan Ingresos Pro",
+                precio: 349,
+                detalle: "80 timbres de ingresos por 30 días",
+            },
+            "6": {
+                nombre: "Plan Ingresos Negocio",
+                precio: 599,
+                detalle: "200 timbres de ingresos por 30 días",
+            },
+            "7": {
+                nombre: "Plan Dúo Pyme",
+                precio: 399,
+                detalle: "40 tickets gastos + 50 timbres ingresos por 30 días",
+            },
+        };
+        const paq = paquetesMenu[tClean];
+        guardarPerfilFiscal(perfilKey, {
+            ...pCheck,
+            paqueteNombre: paq.nombre,
+            precioMensual: paq.precio,
+        });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+✅ *Paquete Seleccionado: ${paq.nombre}*
+• *Detalle:* ${paq.detalle}
+• *Monto exacto a transferir:* *\$${paq.precio}.00 MXN*
+
+🏦 *Datos para Transferencia SPEI:*
+• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
+• *Concepto:* \`Factura ${pCheck.rfc}\`
+
+📸 En cuanto realices tu transferencia, envía aquí la captura o PDF de tu comprobante para validar el CEP en Banxico y activar tus folios de inmediato.`,
+        });
+        return;
+    }
+    // P. Selección interactiva de tema visual de factura (1: Azul, 2: Verde, 3: Púrpura, 4: Grafito)
+    const themeMap = {
+        "1": { color: "#0284c7", nombre: "Azul Corporativo" },
+        "2": { color: "#16a34a", nombre: "Verde Esmeralda" },
+        "3": { color: "#7c3aed", nombre: "Púrpura Ejecutivo" },
+        "4": { color: "#334155", nombre: "Grafito Minimalista" },
+        "azul": { color: "#0284c7", nombre: "Azul Corporativo" },
+        "verde": { color: "#16a34a", nombre: "Verde Esmeralda" },
+        "morado": { color: "#7c3aed", nombre: "Púrpura Ejecutivo" },
+        "purpura": { color: "#7c3aed", nombre: "Púrpura Ejecutivo" },
+        "grafito": { color: "#334155", nombre: "Grafito Minimalista" },
+        "negro": { color: "#0f172a", nombre: "Carbón Elegante" },
+    };
+    if (pCheck.estadoPlan === "ACTIVO" && themeMap[tClean.toLowerCase()]) {
+        const theme = themeMap[tClean.toLowerCase()];
+        actualizarPersonalizacionCliente(perfilKey, { colorTema: theme.color });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🎨 *Estilo visual configurado:* *${theme.nombre}* (\`${theme.color}\`)
+
+🖼️ *PASO 2/2: Envía una imagen con tu logotipo comercial*
+(O escribe *"omitir"* si prefieres que tu factura aparezca solo con tu Razón Social en texto).`,
+        });
+        return;
+    }
+    // Q. Omitir logotipo
+    if (textoLimpio.toLowerCase() === "omitir" ||
+        textoLimpio.toLowerCase() === "sin logo" ||
+        textoLimpio.toLowerCase() === "omitir logo") {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        const tieneCsd = perfil.csd?.cerFile && perfil.csd?.keyFile && perfil.csd?.csdPassword;
+        if (tieneCsd) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✨ *¡Configuración completa!*
+
+Tu factura ha sido configurada con estilo estándar. Tus sellos CSD ya están activos y tu cuenta está 100% lista para facturar.
+
+🚀 *Para emitir una factura en cualquier momento, solo escribe:*
+_"Factura para mi cliente Juan Pérez de $1,800 por mantenimiento"_`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✨ *Estilo visual guardado exitosamente.*
+
+🔑 *ÚLTIMO PASO: Carga de Sellos Digitales (CSD)*
+Para que el SAT y Finkok timbren con tu propio RFC, adjunta por este chat tus sellos digitales (.cer y .key o tu archivo .zip) y escribe:
+👉 */csd <tu_contraseña>*`,
+            });
+        }
+        return;
+    }
     if (textoLimpio.toLowerCase() === "/admin" ||
         textoLimpio.toLowerCase() === "/ayuda-admin" ||
         textoLimpio.toLowerCase() === "admin") {
@@ -2657,13 +2774,20 @@ Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
 • *Régimen Fiscal SAT:* ${nuevoPerfil.regimenFiscal}
 • *Uso de CFDI:* ${nuevoPerfil.usoCfdi}
 
-📦 *Elige el paquete mensual que deseas activar (Vigencia de 30 días):*
-1️⃣ *Plan Básico (20 tickets):* \$179 MXN
-2️⃣ *Plan Pro (40 tickets):* \$299 MXN ⭐ *(Recomendado)*
-3️⃣ *Plan Negocio (80 tickets):* \$499 MXN
-4️⃣ *Plan Empresa (100 tickets):* \$599 MXN
+📦 *Elige tu Paquete Mensual (Vigencia de 30 días):*
 
-➕ _Nota: Si superas los tickets de tu paquete durante el mes, cada ticket adicional tiene un costo de \$5.00 MXN (mediante recarga previa)._
+📥 *MÓDULO GASTOS (Recuperación de Tickets con RPA):*
+1️⃣ *Plan Gastos Básico (20 tickets):* \$179 MXN
+2️⃣ *Plan Gastos Pro (40 tickets):* \$299 MXN ⭐ *(Recomendado)*
+3️⃣ *Plan Gastos Negocio (80 tickets):* \$499 MXN
+
+📤 *MÓDULO INGRESOS (Facturas a tus Clientes CFDI 4.0):*
+4️⃣ *Plan Ingresos Básico (30 timbres):* \$199 MXN
+5️⃣ *Plan Ingresos Pro (80 timbres):* \$349 MXN ⭐
+6️⃣ *Plan Ingresos Negocio (200 timbres):* \$599 MXN
+
+⚡ *PLAN DÚO (Gastos + Ingresos Todo Incluido):*
+7️⃣ *Plan Dúo Pyme:* \$399 MXN (40 tickets gastos + 50 timbres ingresos) ⭐
 
 🏦 *Datos para Transferencia SPEI:*
 • *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
@@ -2671,17 +2795,26 @@ Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
 • *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
 • *Concepto:* \`Factura ${nuevoPerfil.rfc}\`
 
-📲 *Para activar tu suscripción:* Realiza la transferencia del paquete elegido y envíame la captura de tu comprobante bancario.
-
-🔑 *Para emitir facturas a tus clientes (CFDI 4.0 con tu RFC):*
-Envía por este chat tus sellos digitales del SAT (archivos \`.cer\` y \`.key\` o tu archivo \`.zip\`) y escribe tu contraseña con:
-👉 */csd <tu_contraseña>*`,
+📲 *Para continuar:* Responde con el número de tu plan (ej. *7* o *2*) o realiza tu transferencia y envía aquí tu comprobante bancario.`,
                 });
                 return;
             }
             if (analisis.tipo === "comprobante_pago") {
                 const comp = analisis.comprobante;
                 const { perfil } = obtenerPerfilFiscal(perfilKey);
+                // 1. Antifraude estricto: Verificar si la clave de rastreo ya fue acreditada previamente
+                const rep = verificarCepRepetido(comp.claveRastreo || "");
+                if (rep.repetido) {
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+❌ *Comprobante Ya Acreditado / No Válido*
+
+Esta transferencia SPEI con Clave de Rastreo \`${comp.claveRastreo}\` ya fue aplicada en nuestro sistema el día *${rep.fechaRegistro?.slice(0, 10)}* por \$${rep.monto?.toFixed(2)} MXN para el RFC \`${rep.rfc}\`.
+
+Por políticas de seguridad antifraude, una misma transferencia bancaria no puede reutilizarse. Si realizaste un nuevo pago, por favor envía la captura de la nueva transferencia.`,
+                    });
+                    return;
+                }
                 await enviarMensajeBot(sock, replyJid, {
                     text: `${BOT_SIGNATURE}\n🔍 *Comprobante bancario detectado (\$${Number(comp.monto).toFixed(2)} MXN).* Validando transferencia SPEI y CEP ante el Banco de México (Banxico)... ⏳`,
                 });
@@ -2705,6 +2838,8 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                     return;
                 }
                 const monto = Number(comp.monto) || 0;
+                // Registrar comprobante procesado en base de datos antifraude
+                registrarCepProcesado(validacion.claveRastreo || "COMPROBANTE-APP", perfil.rfc, monto);
                 if (validacion.cepPdfBuffer) {
                     await enviarMensajeBot(sock, replyJid, {
                         document: validacion.cepPdfBuffer,
@@ -2718,7 +2853,8 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                 if (esMontoFoliosExtras && monto < 150) {
                     const recarga = recargarTicketsExtra(perfilKey, monto, validacion.claveRastreo);
                     if (recarga) {
-                        const foliosDisponibles = Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) - (recarga.perfil.ticketsUsadosMes ?? 0));
+                        const foliosDisponibles = Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) -
+                            (recarga.perfil.ticketsUsadosMes ?? 0));
                         await enviarMensajeBot(sock, replyJid, {
                             text: `${BOT_SIGNATURE}
 ✅ *Estatus del Pago: LIQUIDADO Y VERIFICADO EN BANXICO*
@@ -2739,16 +2875,50 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                         return;
                     }
                 }
-                // 2. Renovación o Activación de Plan Mensual (20, 40, 80, 100 tickets)
-                let ticketsActivar = 40;
-                if (monto >= 550)
+                // 2. Determinar paquete contratado según el monto transferido
+                let ticketsActivar = 0;
+                let timbresIngresosActivar = 0;
+                let nombrePaqueteActivar = "";
+                if (monto >= 550) {
                     ticketsActivar = 100;
-                else if (monto >= 450)
+                    timbresIngresosActivar = 200;
+                    nombrePaqueteActivar = "Plan Empresa (100 tickets + 200 timbres)";
+                }
+                else if (monto >= 450) {
                     ticketsActivar = 80;
-                else if (monto >= 250)
+                    timbresIngresosActivar = 0;
+                    nombrePaqueteActivar = "Plan Gastos Negocio (80 tickets)";
+                }
+                else if (monto >= 380) {
                     ticketsActivar = 40;
-                else if (monto >= 150)
+                    timbresIngresosActivar = 50;
+                    nombrePaqueteActivar = "Plan Dúo Pyme (40 tickets + 50 timbres)";
+                }
+                else if (monto >= 320) {
+                    ticketsActivar = 0;
+                    timbresIngresosActivar = 80;
+                    nombrePaqueteActivar = "Plan Ingresos Pro (80 timbres)";
+                }
+                else if (monto >= 250) {
+                    ticketsActivar = 40;
+                    timbresIngresosActivar = 0;
+                    nombrePaqueteActivar = "Plan Gastos Pro (40 tickets)";
+                }
+                else if (monto >= 190) {
+                    ticketsActivar = 0;
+                    timbresIngresosActivar = 30;
+                    nombrePaqueteActivar = "Plan Ingresos Básico (30 timbres)";
+                }
+                else if (monto >= 150) {
                     ticketsActivar = 20;
+                    timbresIngresosActivar = 0;
+                    nombrePaqueteActivar = "Plan Gastos Básico (20 tickets)";
+                }
+                else {
+                    ticketsActivar = 20;
+                    timbresIngresosActivar = 0;
+                    nombrePaqueteActivar = "Plan Gastos Inicial (20 tickets)";
+                }
                 const hoyStr = new Date().toISOString().slice(0, 10);
                 const fechaFinActual = perfil.fechaFinPlan;
                 let diasRestantes = 0;
@@ -2760,7 +2930,9 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                 const restantesActuales = Math.max(0, (perfil.ticketsIncluidos ?? 40) - (perfil.ticketsUsadosMes ?? 0));
                 const deseaInicioInmediato = /iniciar\s*hoy|hoy|inmediat|empezar\s*hoy|ahora/i.test(textoLimpio);
                 // Caso A: Renovación de cliente sin folios que confirmó iniciar hoy mismo
-                if (diasRestantes > 0 && restantesActuales === 0 && deseaInicioInmediato) {
+                if (diasRestantes > 0 &&
+                    restantesActuales === 0 &&
+                    deseaInicioInmediato) {
                     const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, true);
                     await enviarMensajeBot(sock, replyJid, {
                         text: `${BOT_SIGNATURE}
@@ -2770,21 +2942,23 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
 • *Monto acreditado:* \$${monto.toFixed(2)} MXN
 • *Clave de Rastreo:* \`${validacion.claveRastreo}\`
 • *Cliente:* ${renovacion?.perfil.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
-• *Paquete:* *${renovacion?.perfil.paqueteNombre}*
+• *Paquete:* *${nombrePaqueteActivar}*
 • *Folios liberados:* *${ticketsActivar} tickets*
+• *Timbres ingresos:* *${timbresIngresosActivar} timbres*
 
 📅 *Vigencia de 30 días:*
-• *Inicio:* *${renovacion?.fechaInicio} (Hoy)* — _Iniciado hoy por previa confirmación al estar agotados tus folios_
+• *Inicio:* *${renovacion?.fechaInicio} (Hoy)*
 • *Vencimiento:* *${renovacion?.fechaFin}*
 
-🚀 *¡Tu facturación está habilitada!* Envía tus fotos de tickets para emitir tus facturas de inmediato.`,
+🚀 *¡Tu facturación está habilitada!*`,
                     });
                     return;
                 }
-                // Caso B: Renovación anticipada (la suscripción inicia al final de la actual, no hoy)
+                // Caso B: Renovación anticipada
                 if (diasRestantes > 0) {
                     const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, false);
-                    const foliosTotales = Math.max(0, (renovacion?.perfil.ticketsIncluidos ?? 40) - (renovacion?.perfil.ticketsUsadosMes ?? 0));
+                    const foliosTotales = Math.max(0, (renovacion?.perfil.ticketsIncluidos ?? 40) -
+                        (renovacion?.perfil.ticketsUsadosMes ?? 0));
                     let msgRenovacion = `${BOT_SIGNATURE}
 🎉 *¡Pago Verificado y Renovación Programada Exitosamente!*
 
@@ -2792,23 +2966,51 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
 • *Monto acreditado:* \$${monto.toFixed(2)} MXN
 • *Clave de Rastreo:* \`${validacion.claveRastreo}\`
 • *Cliente:* ${renovacion?.perfil.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
-• *Paquete:* *${renovacion?.perfil.paqueteNombre}*
-• *Folios liberados:* *+${ticketsActivar} tickets* (Total disponibles: *${foliosTotales} tickets*)
+• *Paquete:* *${nombrePaqueteActivar}*
+• *Folios liberados:* *+${ticketsActivar} tickets* (Total: *${foliosTotales} tickets*)
+• *Timbres ingresos:* *+${timbresIngresosActivar} timbres*
 
 📅 *Regla de Vigencia:*
 • *Suscripción actual:* Sigue vigente hasta el *${fechaFinActual}*
 • *Nueva suscripción de 30 días:* Iniciará el *${fechaFinActual}* y vencerá el *${renovacion?.fechaFin}*`;
-                    if (restantesActuales === 0) {
-                        msgRenovacion += `\n\n💡 *Opción de Inicio Inmediato:* Como tus folios del periodo previo estaban en 0, si prefieres no esperar al ${fechaFinActual} y deseas que tus 30 días arranquen **a partir de hoy**, responde a este mensaje con: *"INICIAR HOY"*.`;
-                    }
-                    else {
-                        msgRenovacion += `\n\n✨ Disfrutas de tus nuevos folios desde ahora y tu vigencia de 30 días se añade al término de tu periodo actual garantizando tu cobertura.`;
-                    }
                     await enviarMensajeBot(sock, replyJid, { text: msgRenovacion });
                     return;
                 }
                 // Caso C: Plan nuevo o reactivación de plan vencido
-                const perfilActivado = activarPlanCliente(perfil.rfc || perfilKey, ticketsActivar, validacion.claveRastreo, 30);
+                const perfilActivado = activarPlanCliente(perfil.rfc || perfilKey, ticketsActivar, validacion.claveRastreo, 30, {
+                    timbresIngresos: timbresIngresosActivar,
+                    paqueteNombre: nombrePaqueteActivar,
+                    precio: monto,
+                });
+                // Si el paquete contratado incluye emisión de facturas de ingresos (o Dúo):
+                // Guiar inmediatamente al cliente al PASO 1 de Personalización de Factura
+                if (timbresIngresosActivar > 0) {
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+🎉 *¡Pago Verificado y Plan Activado por 30 Días!*
+
+• *Estatus del Pago:* ✅ LIQUIDADO ANTE BANXICO (${validacion.estado})
+• *Monto acreditado:* \$${monto.toFixed(2)} MXN
+• *Clave de Rastreo:* \`${validacion.claveRastreo}\`
+• *Cliente:* ${perfilActivado?.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Paquete Activo:* *${nombrePaqueteActivar}*
+• *Tickets de Gastos:* ${ticketsActivar} tickets
+• *Timbres de Ingresos:* ${timbresIngresosActivar} timbres
+• *Vigencia (30 días):* Hasta el ${perfilActivado?.fechaFinPlan}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 *PASO 1/2: Personaliza el estilo de tu factura PDF*
+Elige el color de acento respondiendo con el número:
+1️⃣ *Azul Corporativo* (Clásico y confiable)
+2️⃣ *Verde Esmeralda* (Moderno y fiscal)
+3️⃣ *Púrpura Ejecutivo* (Servicios y consultoría)
+4️⃣ *Grafito Minimalista* (Sobrio y elegante)
+
+_Responde con el número de tu preferencia (ej. 1 o 2)._`,
+                    });
+                    return;
+                }
+                // Si es solo paquete de Gastos (Tickets):
                 await enviarMensajeBot(sock, replyJid, {
                     text: `${BOT_SIGNATURE}
 🎉 *¡Pago Verificado y Plan Activado por 30 Días!*
@@ -2817,12 +3019,11 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
 • *Monto acreditado:* \$${monto.toFixed(2)} MXN
 • *Clave de Rastreo:* \`${validacion.claveRastreo}\`
 • *Cliente:* ${perfilActivado?.razonSocial || perfil.razonSocial} (\`${perfil.rfc}\`)
-• *Paquete Activo:* *${perfilActivado?.paqueteNombre || `Plan (${ticketsActivar} tickets)`}*
-• *Folios disponibles:* *${ticketsActivar} tickets*
-• *Inicio de vigencia:* ${perfilActivado?.fechaInicioPlan}
-• *Vencimiento (30 días):* ${perfilActivado?.fechaFinPlan}
+• *Paquete Activo:* *${nombrePaqueteActivar}*
+• *Tickets disponibles:* *${ticketsActivar} tickets*
+• *Vigencia (30 días):* Hasta el ${perfilActivado?.fechaFinPlan}
 
-🚀 *¡Tu facturación autónoma está habilitada!* Envía ahora mismo la foto de tus tickets de compra o casetas.`,
+📸 *¡Tu cuenta de gastos está 100% activa!* Envía ahora mismo la foto de cualquier ticket de compra o caseta.`,
                 });
                 return;
             }

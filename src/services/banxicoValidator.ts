@@ -24,6 +24,63 @@ export const DATOS_BANCARIOS_OFICIALES = {
   codigoBanxicoReceptor: "90722", // Mercado Pago W en Banxico SPEI
 };
 
+const CEPS_FILE = path.resolve(process.cwd(), "data", "ceps_procesados.json");
+
+/**
+ * Antifraude: Verifica si la clave de rastreo SPEI ya fue utilizada previamente en el sistema.
+ */
+export function verificarCepRepetido(claveRastreo: string): {
+  repetido: boolean;
+  fechaRegistro?: string;
+  rfc?: string;
+  monto?: number;
+} {
+  if (!claveRastreo || claveRastreo === "COMPROBANTE-APP")
+    return { repetido: false };
+  try {
+    if (fs.existsSync(CEPS_FILE)) {
+      const ceps = JSON.parse(fs.readFileSync(CEPS_FILE, "utf-8"));
+      const reg = ceps[claveRastreo.trim().toUpperCase()];
+      if (reg) {
+        return {
+          repetido: true,
+          fechaRegistro: reg.fecha,
+          rfc: reg.rfc,
+          monto: reg.monto,
+        };
+      }
+    }
+  } catch {}
+  return { repetido: false };
+}
+
+/**
+ * Registra una clave de rastreo SPEI validada como consumida para evitar duplicados.
+ */
+export function registrarCepProcesado(
+  claveRastreo: string,
+  rfc: string,
+  monto: number
+): void {
+  if (!claveRastreo || claveRastreo === "COMPROBANTE-APP") return;
+  try {
+    const dir = path.dirname(CEPS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    let ceps: Record<string, any> = {};
+    if (fs.existsSync(CEPS_FILE)) {
+      ceps = JSON.parse(fs.readFileSync(CEPS_FILE, "utf-8"));
+    }
+    ceps[claveRastreo.trim().toUpperCase()] = {
+      rfc: rfc.toUpperCase(),
+      monto,
+      fecha: new Date().toISOString(),
+    };
+    fs.writeFileSync(CEPS_FILE, JSON.stringify(ceps, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("⚠️ Aviso al guardar CEP procesado:", err);
+  }
+}
+
 /**
  * Consulta y valida el Comprobante Electrónico de Pago (CEP) directamente en el portal oficial de Banxico.
  */

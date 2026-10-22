@@ -250,7 +250,12 @@ export function activarPlanCliente(
   busqueda: string,
   tickets: number,
   claveCep?: string,
-  diasVigencia: number = 30
+  diasVigencia: number = 30,
+  opcionesExtra?: {
+    timbresIngresos?: number;
+    paqueteNombre?: string;
+    precio?: number;
+  }
 ): DatosFiscales | null {
   asegurarDirectorio();
   let perfiles: Record<string, DatosFiscales> = {};
@@ -265,8 +270,10 @@ export function activarPlanCliente(
   const hoyStr = new Date().toISOString().slice(0, 10);
   const finStr = sumarDias(hoyStr, diasVigencia);
   const infoPaquete = (PAQUETES as any)[tickets] || {
-    nombre: `Plan Personalizado (${tickets} tickets)`,
-    precio: tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5,
+    nombre: opcionesExtra?.paqueteNombre || `Plan Personalizado (${tickets} tickets)`,
+    precio:
+      opcionesExtra?.precio ||
+      (tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5),
   };
 
   let matchRfc: string | null = null;
@@ -292,12 +299,19 @@ export function activarPlanCliente(
         ...perfiles[key],
         ticketsIncluidos: tickets,
         ticketsUsadosMes: 0,
-        precioMensual: infoPaquete.precio,
-        paqueteNombre: infoPaquete.nombre,
+        timbresIngresosIncluidos:
+          opcionesExtra?.timbresIngresos !== undefined
+            ? opcionesExtra.timbresIngresos
+            : (perfiles[key].timbresIngresosIncluidos ?? 50),
+        timbresIngresosUsadosMes: 0,
+        precioMensual: opcionesExtra?.precio || infoPaquete.precio,
+        paqueteNombre: opcionesExtra?.paqueteNombre || infoPaquete.nombre,
         fechaInicioPlan: hoyStr,
         fechaFinPlan: finStr,
         estadoPlan: "ACTIVO",
         ultimoCepValidado: claveCep || perfiles[key].ultimoCepValidado,
+        avisoBajoSaldoEnviado: false,
+        avisoVencimientoEnviadoParaFecha: undefined,
       };
       perfilActualizado = perfiles[key];
     }
