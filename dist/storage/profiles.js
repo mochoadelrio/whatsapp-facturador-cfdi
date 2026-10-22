@@ -53,7 +53,7 @@ export function normalizarPerfilConPlan(perfil) {
         timbresIngresosIncluidos: perfil.timbresIngresosIncluidos ?? 50,
         timbresIngresosUsadosMes: perfil.timbresIngresosUsadosMes ?? 0,
         timbresIngresosExtraDisponibles: perfil.timbresIngresosExtraDisponibles ?? 0,
-        costoTimbreExtra: perfil.costoTimbreExtra ?? 3.5,
+        costoTimbreExtra: perfil.costoTimbreExtra ?? 5,
         personalizacion: {
             serie: perfil.personalizacion?.serie || "A",
             ultimoFolio: perfil.personalizacion?.ultimoFolio ?? 100,
@@ -356,7 +356,119 @@ export function recargarTicketsExtra(busqueda, monto, claveCep) {
     fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
     return perfilActualizado ? { perfil: perfilActualizado, ticketsAgregados } : null;
 }
-export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInmediato = false) {
+/**
+ * Registra formalmente una solicitud de recarga de folios extras (mínimo 10 folios a $5.00 MXN c/u).
+ */
+export function registrarSolicitudRecarga(jid, cantidad, tipo = "FOLIOS") {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const rfc = base.rfc.toUpperCase();
+    const monto = cantidad * 5;
+    const solicitud = {
+        tipo,
+        cantidad,
+        monto,
+        fecha: new Date().toISOString(),
+    };
+    const actualizado = {
+        ...base,
+        solicitudRecarga: solicitud,
+    };
+    perfiles[jid] = actualizado;
+    for (const k of Object.keys(perfiles)) {
+        if (perfiles[k]?.rfc?.toUpperCase() === rfc) {
+            perfiles[k] = { ...normalizarPerfilConPlan(perfiles[k]), solicitudRecarga: solicitud };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return { perfil: actualizado, cantidad, monto };
+}
+/**
+ * Acredita folios adicionales ($5.00 MXN c/u, mínimo 10 folios) tras pago liquidado y verificado en Banxico.
+ */
+export function recargarFoliosExtras(busqueda, monto, tipoPreferido = "AUTO", claveCep) {
+    const foliosAgregados = Math.floor(monto / 5);
+    if (foliosAgregados <= 0)
+        return null;
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+    }
+    catch {
+        perfiles = {};
+    }
+    const query = busqueda.trim().toUpperCase();
+    let matchRfc = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase().includes(query) ||
+            p.razonSocial?.toUpperCase().includes(query) ||
+            (p.telefono && p.telefono.includes(query)) ||
+            key.toUpperCase().includes(query) ||
+            key.includes(busqueda.trim())) {
+            matchRfc = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!matchRfc)
+        return null;
+    const base = normalizarPerfilConPlan(Object.values(perfiles).find((p) => p.rfc?.toUpperCase() === matchRfc) || PERFIL_DEFAULT);
+    let tipoRecarga = "GASTOS";
+    if (tipoPreferido === "INGRESOS") {
+        tipoRecarga = "INGRESOS";
+    }
+    else if (tipoPreferido === "GASTOS") {
+        tipoRecarga = "GASTOS";
+    }
+    else if (base.solicitudRecarga?.tipo === "INGRESOS") {
+        tipoRecarga = "INGRESOS";
+    }
+    else if (base.solicitudRecarga?.tipo === "GASTOS") {
+        tipoRecarga = "GASTOS";
+    }
+    else if ((base.timbresIngresosIncluidos ?? 0) > 0 && (base.ticketsIncluidos ?? 0) === 0) {
+        tipoRecarga = "INGRESOS";
+    }
+    else {
+        tipoRecarga = "GASTOS";
+    }
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+            const prev = normalizarPerfilConPlan(perfiles[key]);
+            if (tipoRecarga === "INGRESOS") {
+                perfiles[key] = {
+                    ...prev,
+                    timbresIngresosExtraDisponibles: (prev.timbresIngresosExtraDisponibles ?? 0) + foliosAgregados,
+                    estadoPlan: "ACTIVO",
+                    ultimoCepValidado: claveCep || prev.ultimoCepValidado,
+                    solicitudRecarga: undefined,
+                };
+            }
+            else {
+                perfiles[key] = {
+                    ...prev,
+                    ticketsIncluidos: (prev.ticketsIncluidos || 40) + foliosAgregados,
+                    estadoPlan: "ACTIVO",
+                    avisoBajoSaldoEnviado: false,
+                    ultimoCepValidado: claveCep || prev.ultimoCepValidado,
+                    solicitudRecarga: undefined,
+                };
+            }
+            perfilActualizado = perfiles[key];
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return perfilActualizado ? { perfil: perfilActualizado, foliosAgregados, tipoRecarga, monto } : null;
+}
+export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInmediato = false, opcionesExtra) {
     asegurarDirectorio();
     let perfiles = {};
     try {
@@ -385,8 +497,9 @@ export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInme
     const base = normalizarPerfilConPlan(prevEntry);
     const hoyStr = new Date().toISOString().slice(0, 10);
     const infoPaquete = PAQUETES[tickets] || {
-        nombre: `Plan Personalizado (${tickets} tickets)`,
-        precio: tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5,
+        nombre: opcionesExtra?.paqueteNombre || `Plan Personalizado (${tickets} tickets)`,
+        precio: opcionesExtra?.precio ||
+            (tickets === 20 ? 179 : tickets === 40 ? 299 : tickets === 80 ? 499 : tickets === 100 ? 599 : tickets * 5),
     };
     let modo = "EXTENSION_CONCATENADA";
     let fechaInicio = hoyStr;
@@ -419,10 +532,14 @@ export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInme
         if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
             perfiles[key] = {
                 ...perfiles[key],
-                paqueteNombre: infoPaquete.nombre,
-                precioMensual: infoPaquete.precio,
+                paqueteNombre: opcionesExtra?.paqueteNombre || infoPaquete.nombre,
+                precioMensual: opcionesExtra?.precio || infoPaquete.precio,
                 ticketsIncluidos,
                 ticketsUsadosMes,
+                timbresIngresosIncluidos: opcionesExtra?.timbresIngresos !== undefined
+                    ? opcionesExtra.timbresIngresos
+                    : (perfiles[key].timbresIngresosIncluidos ?? 50),
+                timbresIngresosUsadosMes: 0,
                 fechaInicioPlan: fechaInicio,
                 fechaFinPlan: fechaFin,
                 estadoPlan: "ACTIVO",

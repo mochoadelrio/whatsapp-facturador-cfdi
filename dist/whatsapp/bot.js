@@ -6,7 +6,7 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, } from "../storage/profiles.js";
+import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, registrarSolicitudRecarga, recargarFoliosExtras, } from "../storage/profiles.js";
 import { validarEInstalarCsd, registrarRfcEnFinkok, consultarEstatusRfcFinkok, } from "../services/finkokRegistrationService.js";
 import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, verificarCepRepetido, registrarCepProcesado, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
@@ -1500,8 +1500,13 @@ Realiza tu transferencia SPEI y envía aquí el comprobante para activarla de in
                 text: `${BOT_SIGNATURE}
 ⚠️ *Timbres de Ingresos Agotados*
 
-Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas incluidas este mes.
-Para emitir más facturas a tus clientes, solicita una recarga de timbres adicionales (\$${perfil.costoTimbreExtra ?? 3.5} MXN c/u) o escribe */saldo*.`,
+Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas de tu paquete mensual.
+
+💳 *¿Deseas adquirir timbres adicionales?*
+• *Costo:* \$5.00 MXN por cada timbre extra
+• *Recarga mínima:* 10 timbres (\$50.00 MXN)
+
+Escribe cuántos timbres necesitas (ej. *10*, *20*, *50* o */recargar 20*) para enviarte los datos de pago y activártelos de inmediato.`,
             });
             return;
         }
@@ -2006,6 +2011,86 @@ Para que el SAT y Finkok timbren con tu propio RFC, adjunta por este chat tus se
             });
         }
         return;
+    }
+    // R. Solicitud interactiva de recarga de folios extras ($5.00 MXN c/u, mínimo 10)
+    const regexRecarga = /^(?:\/recargar|\/comprar-folios|recargar|comprar\s+folios|quiero\s+folios|necesito\s+folios)(?:\s+(\d+))?/i;
+    const matchRecarga = textoLimpio.match(regexRecarga);
+    if (matchRecarga ||
+        (textoLimpio.toLowerCase().startsWith("/recarga") &&
+            !textoLimpio.toLowerCase().startsWith("/recargar-ingresos") &&
+            !textoLimpio.toLowerCase().startsWith("/recargar-timbres"))) {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        let cant = matchRecarga && matchRecarga[1] ? parseInt(matchRecarga[1], 10) : 0;
+        if (!cant || isNaN(cant)) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+💳 *Recarga de Folios Adicionales (Gastos e Ingresos)*
+
+• *Costo:* \$5.00 MXN por cada folio adicional
+• *Recarga mínima:* 10 folios (\$50.00 MXN)
+
+¿Cuántos folios adicionales deseas adquirir?
+Responde con la cantidad que necesitas:
+_Ejemplo: escribe "10", "20" o "50"_`,
+            });
+            return;
+        }
+        if (cant < 10) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ La recarga mínima es de *10 folios* (\$50.00 MXN). Por favor indica 10 o más.`,
+            });
+            return;
+        }
+        const { monto } = registrarSolicitudRecarga(perfilKey, cant, (perfil.timbresIngresosIncluidos ?? 0) > 0 ? "INGRESOS" : "GASTOS");
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+✅ *Solicitud de Recarga Confirmada:*
+• *Cantidad:* ${cant} folios adicionales
+• *Costo unitario:* \$5.00 MXN
+• *Total a transferir:* *\$${monto}.00 MXN*
+
+🏦 *Datos para Transferencia SPEI:*
+• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
+• *Concepto:* \`Recarga ${perfil.rfc}\`
+
+📸 En cuanto realices tu transferencia, envía aquí la captura o PDF de tu comprobante. Validaremos el CEP en Banxico y tus ${cant} folios se liberarán de inmediato.`,
+        });
+        return;
+    }
+    // Si el cliente responde con un número (>= 10) para recargar folios agotados
+    if (/^\d+$/.test(tClean)) {
+        const cantNum = parseInt(tClean, 10);
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        const ticketsRestantes = Math.max(0, (perfil.ticketsIncluidos ?? 40) - (perfil.ticketsUsadosMes ?? 0));
+        const timbresRestantes = Math.max(0, (perfil.timbresIngresosIncluidos ?? 50) +
+            (perfil.timbresIngresosExtraDisponibles ?? 0) -
+            (perfil.timbresIngresosUsadosMes ?? 0));
+        if (cantNum >= 10 &&
+            (ticketsRestantes === 0 ||
+                timbresRestantes === 0 ||
+                perfil.solicitudRecarga !== undefined)) {
+            const { monto } = registrarSolicitudRecarga(perfilKey, cantNum, timbresRestantes === 0 && (perfil.timbresIngresosIncluidos ?? 0) > 0
+                ? "INGRESOS"
+                : "GASTOS");
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *Solicitud de Recarga Confirmada:*
+• *Cantidad:* ${cantNum} folios adicionales
+• *Costo unitario:* \$5.00 MXN
+• *Total a transferir:* *\$${monto}.00 MXN*
+
+🏦 *Datos para Transferencia SPEI:*
+• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
+• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
+• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
+• *Concepto:* \`Recarga ${perfil.rfc}\`
+
+📸 En cuanto realices tu transferencia, envía aquí tu comprobante bancario para validar el CEP en Banxico y activar tus folios.`,
+            });
+            return;
+        }
     }
     if (textoLimpio.toLowerCase() === "/admin" ||
         textoLimpio.toLowerCase() === "/ayuda-admin" ||
@@ -2848,13 +2933,20 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                         caption: `${BOT_SIGNATURE}\n🏦 *Comprobante Electrónico de Pago (CEP) Oficial - Banxico*`,
                     });
                 }
-                // 1. Recarga de folios extras ($5.00 MXN c/u, transferencias menores a $150 o múltiplos de 5)
-                const esMontoFoliosExtras = (monto >= 5 && monto < 150) || /extra|folio/i.test(textoLimpio);
+                // 1. Recarga de folios extras ($5.00 MXN c/u, mínimo 10 folios = $50)
+                const esMontoFoliosExtras = (monto >= 50 && monto < 150) ||
+                    perfil.solicitudRecarga !== undefined ||
+                    (monto % 5 === 0 && monto < 150) ||
+                    /extra|folio|recarga/i.test(textoLimpio);
                 if (esMontoFoliosExtras && monto < 150) {
-                    const recarga = recargarTicketsExtra(perfilKey, monto, validacion.claveRastreo);
+                    const recarga = recargarFoliosExtras(perfilKey, monto, perfil.solicitudRecarga?.tipo === "INGRESOS" ? "INGRESOS" : "AUTO", validacion.claveRastreo);
                     if (recarga) {
-                        const foliosDisponibles = Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) -
-                            (recarga.perfil.ticketsUsadosMes ?? 0));
+                        const foliosDisponibles = recarga.tipoRecarga === "INGRESOS"
+                            ? Math.max(0, ((recarga.perfil.timbresIngresosIncluidos ?? 50) +
+                                (recarga.perfil.timbresIngresosExtraDisponibles ?? 0)) -
+                                (recarga.perfil.timbresIngresosUsadosMes ?? 0))
+                            : Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) -
+                                (recarga.perfil.ticketsUsadosMes ?? 0));
                         await enviarMensajeBot(sock, replyJid, {
                             text: `${BOT_SIGNATURE}
 ✅ *Estatus del Pago: LIQUIDADO Y VERIFICADO EN BANXICO*
@@ -2863,14 +2955,14 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
 • *Monto acreditado:* \$${monto.toFixed(2)} MXN
 • *Clave de Rastreo:* \`${validacion.claveRastreo}\`
 • *Concepto:* Recarga de folios adicionales (\$5.00 MXN c/u)
-• *Folios liberados:* *+${recarga.ticketsAgregados} tickets*
+• *Folios liberados:* *+${recarga.foliosAgregados} folios de ${recarga.tipoRecarga.toLowerCase()}*
 
 📊 *Balance de Cuenta Actualizado:*
 • *Cliente:* ${recarga.perfil.razonSocial} (\`${recarga.perfil.rfc}\`)
-• *Folios disponibles para usar:* *${foliosDisponibles} tickets*
+• *Folios disponibles para usar:* *${foliosDisponibles} folios*
 • *Vigencia de tu suscripción:* Hasta el ${recarga.perfil.fechaFinPlan || "N/A"} (se mantiene sin alteraciones)
 
-📸 *¡Folios liberados exitosamente!* Ya puedes continuar enviando las fotos de tus tickets de compra.`,
+✨ *¡Folios liberados exitosamente!* Ya puedes continuar facturando.`,
                         });
                         return;
                     }
@@ -2933,7 +3025,11 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                 if (diasRestantes > 0 &&
                     restantesActuales === 0 &&
                     deseaInicioInmediato) {
-                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, true);
+                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, true, {
+                        timbresIngresos: timbresIngresosActivar,
+                        paqueteNombre: nombrePaqueteActivar,
+                        precio: monto,
+                    });
                     await enviarMensajeBot(sock, replyJid, {
                         text: `${BOT_SIGNATURE}
 🎉 *¡Pago Verificado y Plan Renovado con Inicio Inmediato!*
@@ -2956,7 +3052,11 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                 }
                 // Caso B: Renovación anticipada
                 if (diasRestantes > 0) {
-                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, false);
+                    const renovacion = renovarPlanCliente(perfilKey, ticketsActivar, validacion.claveRastreo, false, {
+                        timbresIngresos: timbresIngresosActivar,
+                        paqueteNombre: nombrePaqueteActivar,
+                        precio: monto,
+                    });
                     const foliosTotales = Math.max(0, (renovacion?.perfil.ticketsIncluidos ?? 40) -
                         (renovacion?.perfil.ticketsUsadosMes ?? 0));
                     let msgRenovacion = `${BOT_SIGNATURE}
@@ -3035,22 +3135,19 @@ _Responde con el número de tu preferencia (ej. 1 o 2)._`,
                 if (!estadoPlan.puedeFacturar) {
                     await enviarMensajeBot(sock, replyJid, {
                         text: `${BOT_SIGNATURE}
-⚠️ *No es posible procesar este ticket en este momento:*
+⚠️ *Folios de Tickets Agotados*
 
 ${estadoPlan.mensaje}
 
-🏦 *Datos para activar o recargar tus folios:*
-• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
-• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
-• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
-• *Concepto:* \`Factura ${perfil.rfc}\`
+💳 *¿Deseas adquirir folios adicionales?*
+• *Costo:* \$5.00 MXN por cada ticket extra
+• *Recarga mínima:* 10 tickets (\$50.00 MXN)
 
-📦 *Paquetes (30 días):*
+Escribe cuántos tickets adicionales necesitas (ej. *10*, *20*, *50* o */recargar 20*) para enviarte los datos de pago y activártelos de inmediato.
+
+📦 *O renueva tu plan mensual de 30 días:*
 • 20 tickets: \$179 MXN | 40 tickets: \$299 MXN
-• 80 tickets: \$499 MXN | 100 tickets: \$599 MXN
-• Ticket adicional (recarga): \$5.00 MXN c/u
-
-📲 _Envía por aquí la captura de tu transferencia SPEI y tu cuenta se habilitará automáticamente._`,
+• 80 tickets: \$499 MXN | 100 tickets: \$599 MXN`,
                     });
                     return;
                 }

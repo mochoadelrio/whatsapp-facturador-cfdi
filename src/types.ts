@@ -38,7 +38,7 @@ export interface DatosFiscales {
   timbresIngresosIncluidos?: number; // Ej. 50 timbres/mes
   timbresIngresosUsadosMes?: number; // Contador de emitidas
   timbresIngresosExtraDisponibles?: number; // Bolsa prepagada acumulada
-  costoTimbreExtra?: number; // Ej. $3.50 MXN
+  costoTimbreExtra?: number; // $5.00 MXN por timbre adicional
 
   // 3. Personalización de Factura (PDF/Branding de cada cliente)
   personalizacion?: PersonalizacionFactura;
@@ -46,12 +46,18 @@ export interface DatosFiscales {
   // 4. Bóveda CSD del Emisor
   csd?: BovedaCsd;
 
-  // Control Administrativo
+  // Control Administrativo y Recargas
   ultimoCepValidado?: string; // Clave de rastreo Banxico
   avisoBajoSaldoEnviado?: boolean; // Alerta de 5 folios restantes enviada
   avisoVencimientoEnviadoParaFecha?: string; // Fecha de fin para la que ya se envió el aviso de 2 días
   renovacionPendienteConfirmacion?: boolean; // Si renovó con 0 folios y puede optar por inicio inmediato
   numerosAdicionales?: string[]; // Otros WhatsApps autorizados para este RFC
+  solicitudRecarga?: {
+    tipo: "GASTOS" | "INGRESOS" | "FOLIOS";
+    cantidad: number;
+    monto: number;
+    fecha: string;
+  };
 }
 
 export interface DatosComprobantePago {
