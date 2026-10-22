@@ -17,11 +17,11 @@ const PERFIL_DEFAULT = {
     precioMensual: 299,
     ticketsIncluidos: 40,
     costoTicketExtra: 5,
-    ticketsUsadosMes: 16,
+    ticketsUsadosMes: 33,
     fechaInicioPlan: "2026-09-30",
     fechaFinPlan: "2026-10-30",
     estadoPlan: "ACTIVO",
-    periodoMes: "2026-09",
+    periodoMes: "2026-10",
 };
 function asegurarDirectorio() {
     if (!fs.existsSync(DATA_DIR)) {
@@ -29,20 +29,20 @@ function asegurarDirectorio() {
     }
     if (!fs.existsSync(PROFILES_FILE) || fs.readFileSync(PROFILES_FILE, "utf-8").trim() === "{}" || !fs.readFileSync(PROFILES_FILE, "utf-8").trim()) {
         const defaultData = {
-            "5214773929593@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
-            "16922322174194@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
-            "5214775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
-            "524775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 },
-            "140974432981152@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 19 }
+            "5214773929593@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 33 },
+            "16922322174194@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 33 },
+            "5214775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 33 },
+            "524775907888@s.whatsapp.net": { ...PERFIL_DEFAULT, ticketsUsadosMes: 33 },
+            "140974432981152@lid": { ...PERFIL_DEFAULT, ticketsUsadosMes: 33 }
         };
         fs.writeFileSync(PROFILES_FILE, JSON.stringify(defaultData, null, 2), "utf-8");
     }
 }
 export function normalizarPerfilConPlan(perfil) {
     const esCristhian = perfil.rfc?.toUpperCase() === "VAMC9112056Q2";
-    const usadosRaw = Number(perfil.ticketsUsadosMes ?? (esCristhian ? 16 : 0));
-    // Si era el valor viejo por defecto (1) de Cristhian sin fechaInicioPlan, sincronizar a 16
-    const ticketsUsadosMes = esCristhian && !perfil.fechaInicioPlan && usadosRaw <= 1 ? 16 : usadosRaw;
+    const usadosRaw = Number(perfil.ticketsUsadosMes ?? (esCristhian ? 33 : 0));
+    // Si era el valor viejo por defecto (1) de Cristhian sin fechaInicioPlan, sincronizar a 33
+    const ticketsUsadosMes = esCristhian && !perfil.fechaInicioPlan && usadosRaw <= 1 ? 33 : usadosRaw;
     return {
         ...perfil,
         paqueteNombre: perfil.paqueteNombre || `Plan Pro (${perfil.ticketsIncluidos ?? 40} tickets)`,

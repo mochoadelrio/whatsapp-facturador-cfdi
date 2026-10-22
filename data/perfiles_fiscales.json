@@ -11,13 +11,24 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   },
   "16922322174194@lid": {
     "rfc": "VAMC9112056Q2",
@@ -31,13 +42,24 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   },
   "5214775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -51,13 +73,24 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   },
   "524775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -71,13 +104,24 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   },
   "140974432981152@lid": {
     "rfc": "VAMC9112056Q2",
@@ -91,13 +135,24 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   },
   "2027996352627@lid": {
     "rfc": "VAMC9112056Q2",
@@ -111,12 +166,23 @@
     "precioMensual": 299,
     "ticketsIncluidos": 40,
     "costoTicketExtra": 5,
-    "ticketsUsadosMes": 29,
+    "ticketsUsadosMes": 33,
     "fechaInicioPlan": "2026-09-30",
     "fechaFinPlan": "2026-10-30",
     "estadoPlan": "ACTIVO",
     "periodoMes": "2026-10",
     "avisoBajoSaldoEnviado": false,
-    "renovacionPendienteConfirmacion": false
+    "renovacionPendienteConfirmacion": false,
+    "timbresIngresosIncluidos": 50,
+    "timbresIngresosUsadosMes": 0,
+    "timbresIngresosExtraDisponibles": 0,
+    "costoTimbreExtra": 5,
+    "personalizacion": {
+      "serie": "A",
+      "ultimoFolio": 100,
+      "colorTema": "#0284c7",
+      "pieDePagina": "Gracias por su preferencia"
+    },
+    "ultimoCepValidado": "CEP_TEST_RECARGA"
   }
 }
