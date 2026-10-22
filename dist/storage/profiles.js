@@ -50,6 +50,17 @@ export function normalizarPerfilConPlan(perfil) {
         ticketsIncluidos: perfil.ticketsIncluidos ?? 40,
         costoTicketExtra: perfil.costoTicketExtra ?? 5,
         ticketsUsadosMes,
+        timbresIngresosIncluidos: perfil.timbresIngresosIncluidos ?? 50,
+        timbresIngresosUsadosMes: perfil.timbresIngresosUsadosMes ?? 0,
+        timbresIngresosExtraDisponibles: perfil.timbresIngresosExtraDisponibles ?? 0,
+        costoTimbreExtra: perfil.costoTimbreExtra ?? 3.5,
+        personalizacion: {
+            serie: perfil.personalizacion?.serie || "A",
+            ultimoFolio: perfil.personalizacion?.ultimoFolio ?? 100,
+            colorTema: perfil.personalizacion?.colorTema || "#0284c7",
+            logoPath: perfil.personalizacion?.logoPath,
+            pieDePagina: perfil.personalizacion?.pieDePagina || "Gracias por su preferencia",
+        },
         fechaInicioPlan: perfil.fechaInicioPlan || (esCristhian ? "2026-09-30" : undefined),
         fechaFinPlan: perfil.fechaFinPlan || (esCristhian ? "2026-10-30" : undefined),
         estadoPlan: perfil.estadoPlan || "ACTIVO",
@@ -524,27 +535,43 @@ export function verificarEstadoPlan(perfil) {
 }
 export function formatearResumenPlan(perfil) {
     const p = normalizarPerfilConPlan(perfil);
-    const usados = p.ticketsUsadosMes ?? 0;
-    const incluidos = p.ticketsIncluidos ?? 40;
+    const ticketsUsados = p.ticketsUsadosMes ?? 0;
+    const ticketsIncluidos = p.ticketsIncluidos ?? 40;
+    const ticketsRestantes = Math.max(0, ticketsIncluidos - ticketsUsados);
+    const timbresUsados = p.timbresIngresosUsadosMes ?? 0;
+    const timbresIncluidos = p.timbresIngresosIncluidos ?? 50;
+    const timbresExtras = p.timbresIngresosExtraDisponibles ?? 0;
+    const timbresRestantes = Math.max(0, (timbresIncluidos + timbresExtras) - timbresUsados);
     const precioBase = p.precioMensual ?? 299;
-    const costoExtra = p.costoTicketExtra ?? 5;
-    const nombrePaquete = p.paqueteNombre || `Plan (${incluidos} tickets)`;
-    const restantes = Math.max(0, incluidos - usados);
+    const nombrePaquete = p.paqueteNombre || `Plan Profesional (\$${precioBase} MXN)`;
     const hoy = new Date().toISOString().slice(0, 10);
     let textoVigencia = "";
     if (p.fechaFinPlan) {
         const msHoy = new Date(hoy).getTime();
         const msFin = new Date(p.fechaFinPlan).getTime();
         const dias = Math.max(0, Math.ceil((msFin - msHoy) / (1000 * 60 * 60 * 24)));
-        textoVigencia = `\n• *Vigencia de 30 días:* Hasta el ${p.fechaFinPlan} (${dias} día(s) restante(s))`;
+        textoVigencia = `\n📅 *Vigencia de 30 días:* Hasta el ${p.fechaFinPlan} (${dias} día(s) restante(s))`;
     }
     if (p.estadoPlan === "PENDIENTE_PAGO") {
-        return `📦 *Estado de Cuenta:* ⚠️ *Pendiente de Activación / Pago*\n• *Paquete seleccionado:* ${nombrePaquete} (\$${precioBase} MXN)\n• *Para activar:* Realiza tu transferencia SPEI a Mercado Pago W y envía aquí la captura.`;
+        return `📦 *Estado de Cuenta:* ⚠️ *Pendiente de Activación / Pago*\n• *Paquete:* ${nombrePaquete}\n• *Para activar:* Realiza tu transferencia SPEI y envía aquí el comprobante.`;
     }
-    if (restantes === 0) {
-        return `📊 *${nombrePaquete} (\$${precioBase} MXN):*\n• *Tickets facturados:* ${usados} de ${incluidos} (0 disponibles) ⚠️ *FOLIOS AGOTADOS*${textoVigencia}\n• *Recarga de folios:* Cada ticket adicional cuesta \$${costoExtra}.00 MXN. Realiza tu transferencia de recarga para continuar.`;
-    }
-    return `📊 *${nombrePaquete} (\$${precioBase} MXN):*\n• *Tickets facturados:* ${usados} de ${incluidos} (*${restantes} disponibles*)${textoVigencia}\n• *Tickets adicionales:* \$${costoExtra}.00 MXN c/u (con recarga prepagada).`;
+    const serie = p.personalizacion?.serie || "A";
+    const folioActual = p.personalizacion?.ultimoFolio ?? 100;
+    const sigFolio = folioActual + 1;
+    const colorTema = p.personalizacion?.colorTema || "#0284c7";
+    const tieneLogo = p.personalizacion?.logoPath ? "✅ Cargado" : "⚙️ Estándar";
+    return `📊 *${nombrePaquete}*${textoVigencia}
+
+📥 *Módulo Gastos (Tickets Deducibles con RPA):*
+• *Tickets usados este mes:* ${ticketsUsados} de ${ticketsIncluidos} (*${ticketsRestantes} disponibles*)
+• *Costo ticket extra:* \$${p.costoTicketExtra ?? 5}.00 MXN
+
+📤 *Módulo Ingresos (Facturas Emitidas a Clientes CFDI 4.0):*
+• *Timbres emitidos este mes:* ${timbresUsados} de ${timbresIncluidos} ${timbresExtras > 0 ? `(+${timbresExtras} extras)` : ""}
+• *Timbres disponibles:* *${timbresRestantes}* ${timbresRestantes === 0 ? "⚠️ *AGOTADOS*" : "disponibles"}
+• *Serie y Próximo Folio:* Serie *${serie}* (próximo: *${serie}-${sigFolio}*)
+• *Personalización PDF:* Color \`${colorTema}\` | Logo: ${tieneLogo}
+• *Costo timbre extra:* \$${p.costoTimbreExtra ?? 3.50} MXN`;
 }
 export function obtenerListaClientesUnicos() {
     asegurarDirectorio();
@@ -575,6 +602,10 @@ export function obtenerListaClientesUnicos() {
             const incluidos = p.ticketsIncluidos ?? 40;
             const usados = p.ticketsUsadosMes ?? 0;
             const restantes = Math.max(0, incluidos - usados);
+            const timbresIncluidos = p.timbresIngresosIncluidos ?? 50;
+            const timbresUsados = p.timbresIngresosUsadosMes ?? 0;
+            const timbresExtras = p.timbresIngresosExtraDisponibles ?? 0;
+            const timbresRestantes = Math.max(0, (timbresIncluidos + timbresExtras) - timbresUsados);
             let dias = 30;
             let estado = p.estadoPlan || "ACTIVO";
             if (p.fechaFinPlan) {
@@ -583,7 +614,7 @@ export function obtenerListaClientesUnicos() {
                 if (dias < 0) {
                     estado = "VENCIDO";
                 }
-                else if (restantes === 0) {
+                else if (restantes === 0 && timbresRestantes === 0) {
                     estado = "AGOTADO";
                 }
             }
@@ -591,6 +622,7 @@ export function obtenerListaClientesUnicos() {
                 ...p,
                 estadoPlan: estado,
                 ticketsRestantes: restantes,
+                timbresRestantes,
                 diasRestantes: Math.max(0, dias),
                 jids,
             });
@@ -670,4 +702,179 @@ export function eliminarClientePorRfc(rfc) {
         fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
     }
     return eliminado;
+}
+/**
+ * Registra el consumo de un timbre fiscal de ingreso emitido a un cliente
+ * e incrementa el último folio consecutivo en su personalización.
+ */
+export function registrarConsumoTimbreIngreso(jid, rfcObjetivo) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const rfc = (rfcObjetivo || base.rfc).toUpperCase();
+    const mesActual = obtenerMesActual();
+    const nuevoConteo = (base.timbresIngresosUsadosMes ?? 0) + 1;
+    const nuevoFolio = (base.personalizacion?.ultimoFolio ?? 100) + 1;
+    const nuevaPersonalizacion = {
+        ...base.personalizacion,
+        ultimoFolio: nuevoFolio,
+    };
+    const actualizado = {
+        ...base,
+        timbresIngresosUsadosMes: nuevoConteo,
+        periodoMes: mesActual,
+        personalizacion: nuevaPersonalizacion,
+    };
+    perfiles[jid] = actualizado;
+    // Sincronizar el contador y folio para todas las llaves que pertenezcan al mismo RFC
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === rfc) {
+            perfiles[key] = {
+                ...normalizarPerfilConPlan(perfiles[key]),
+                timbresIngresosUsadosMes: nuevoConteo,
+                periodoMes: mesActual,
+                personalizacion: nuevaPersonalizacion,
+            };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return actualizado;
+}
+/**
+ * Consulta la serie y el próximo folio consecutivo sin incrementar en disco.
+ */
+export function obtenerProximoFolioIngreso(jid) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const serie = base.personalizacion?.serie || "A";
+    const folioActual = base.personalizacion?.ultimoFolio ?? 100;
+    return { serie, folio: folioActual + 1 };
+}
+/**
+ * Obtiene el siguiente folio consecutivo para la serie de facturación del cliente
+ * e incrementa el contador automáticamente.
+ */
+export function obtenerSiguienteFolioIngreso(jid) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const rfc = base.rfc.toUpperCase();
+    const serie = base.personalizacion?.serie || "A";
+    const folioActual = base.personalizacion?.ultimoFolio ?? 100;
+    const siguienteFolio = folioActual + 1;
+    // Actualizar en todos los perfiles asociados a este RFC
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === rfc) {
+            const p = normalizarPerfilConPlan(perfiles[key]);
+            perfiles[key] = {
+                ...p,
+                personalizacion: {
+                    ...p.personalizacion,
+                    serie,
+                    ultimoFolio: siguienteFolio,
+                },
+            };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return { serie, folio: siguienteFolio };
+}
+/**
+ * Actualiza la personalización visual (logo, colorTema, serie, pie de página) del cliente.
+ */
+export function actualizarPersonalizacionCliente(jid, cambios) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        perfiles = {};
+    }
+    const base = normalizarPerfilConPlan(perfiles[jid] || PERFIL_DEFAULT);
+    const rfc = base.rfc.toUpperCase();
+    const personalizacionNueva = {
+        ...base.personalizacion,
+        ...cambios,
+    };
+    const actualizado = {
+        ...base,
+        personalizacion: personalizacionNueva,
+    };
+    perfiles[jid] = actualizado;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === rfc) {
+            perfiles[key] = {
+                ...normalizarPerfilConPlan(perfiles[key]),
+                personalizacion: personalizacionNueva,
+            };
+        }
+    }
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    return actualizado;
+}
+/**
+ * Recarga timbres de ingreso a un cliente (por RFC o teléfono).
+ */
+export function recargarTimbresIngreso(busqueda, cantidad) {
+    asegurarDirectorio();
+    let perfiles = {};
+    try {
+        const raw = fs.readFileSync(PROFILES_FILE, "utf-8");
+        perfiles = JSON.parse(raw);
+    }
+    catch {
+        return null;
+    }
+    const query = busqueda.trim().toUpperCase();
+    let rfcEncontrado = null;
+    for (const [key, p] of Object.entries(perfiles)) {
+        if (p.rfc?.toUpperCase() === query ||
+            key.includes(query) ||
+            p.telefono?.includes(query)) {
+            rfcEncontrado = p.rfc.toUpperCase();
+            break;
+        }
+    }
+    if (!rfcEncontrado)
+        return null;
+    let perfilActualizado = null;
+    for (const key of Object.keys(perfiles)) {
+        if (perfiles[key]?.rfc?.toUpperCase() === rfcEncontrado) {
+            const p = normalizarPerfilConPlan(perfiles[key]);
+            const prevExtras = p.timbresIngresosExtraDisponibles ?? 0;
+            perfiles[key] = {
+                ...p,
+                timbresIngresosExtraDisponibles: prevExtras + cantidad,
+            };
+            perfilActualizado = perfiles[key];
+        }
+    }
+    if (perfilActualizado) {
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+    }
+    return perfilActualizado;
 }

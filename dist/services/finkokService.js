@@ -328,69 +328,100 @@ async function timbrarXmlSoap(xmlSinTimbrar, endpointSoap) {
 }
 /**
  * Genera la representación impresa en PDF con PDFKit y Código QR CBB del SAT
+ * con soporte para personalización multi-tenant (Logotipo, Color de Marca y Pie de Página).
  */
 async function generarPdfFacturaIngreso(params) {
     const qrUrl = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${params.uuid}&re=${params.emisor.rfc}&rr=${params.receptor.rfc}&tt=${params.total.toFixed(2)}&fe=${params.selloSat.slice(-8)}`;
     const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 120 });
     const qrBuffer = Buffer.from(qrDataUrl.split(",")[1], "base64");
+    const colorTema = params.emisor.colorTema && /^#[0-9A-Fa-f]{6}$/.test(params.emisor.colorTema)
+        ? params.emisor.colorTema
+        : "#0284c7";
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: "LETTER", margin: 40 });
         const chunks = [];
         doc.on("data", (chunk) => chunks.push(chunk));
         doc.on("end", () => resolve(Buffer.concat(chunks)));
         doc.on("error", reject);
-        // Encabezado
+        // 1. Encabezado y Logotipo
+        const tieneLogo = !!(params.emisor.logoPath && fs.existsSync(params.emisor.logoPath));
+        let emisorX = 40;
+        let emisorY = 40;
+        const emisorWidth = tieneLogo ? 220 : 330;
+        if (tieneLogo) {
+            try {
+                doc.image(params.emisor.logoPath, 40, 40, { fit: [105, 52] });
+                emisorX = 155;
+            }
+            catch (err) {
+                console.warn("⚠️ No se pudo renderizar el logotipo en PDF:", err);
+            }
+        }
+        // Datos del CFDI (Derecha)
         doc
-            .fontSize(16)
+            .fontSize(14)
             .fillColor("#0f172a")
-            .text("FACTURA ELECTRÓNICA (CFDI 4.0)", { align: "right" });
+            .text("FACTURA ELECTRÓNICA (CFDI 4.0)", 370, 40, {
+            align: "right",
+            width: 202,
+        });
         doc
-            .fontSize(9)
+            .fontSize(8)
             .fillColor("#475569")
-            .text(`Folio Fiscal (UUID): ${params.uuid}`, { align: "right" })
-            .text(`Serie y Folio: ${params.serie} - ${params.folio}`, { align: "right" })
-            .text(`Fecha Timbrado: ${params.fechaTimbrado}`, { align: "right" });
-        doc.moveDown(0.5);
-        // Datos del Emisor
+            .text(`Folio Fiscal: ${params.uuid}`, 370, 56, {
+            align: "right",
+            width: 202,
+        })
+            .text(`Serie y Folio: ${params.serie} - ${params.folio}`, 370, 68, {
+            align: "right",
+            width: 202,
+        })
+            .text(`Fecha Timbrado: ${params.fechaTimbrado}`, 370, 80, {
+            align: "right",
+            width: 202,
+        });
+        // Datos del Emisor (Izquierda / Centro)
         doc
-            .fontSize(13)
-            .fillColor("#0284c7")
-            .text(params.emisor.nombre, 40, 50);
+            .fontSize(12)
+            .fillColor(colorTema)
+            .text(params.emisor.nombre, emisorX, emisorY, { width: emisorWidth });
         doc
-            .fontSize(9)
+            .fontSize(8.5)
             .fillColor("#334155")
-            .text(`RFC: ${params.emisor.rfc}   |   Régimen Fiscal: ${params.emisor.regimenFiscal}`)
-            .text(`Lugar de Expedición: ${params.emisor.lugarExpedicion}   |   Efecto: I - Ingreso   |   Moneda: MXN`);
-        doc.moveDown(1);
-        // Caja del Receptor
-        const topReceptor = doc.y;
+            .text(`RFC: ${params.emisor.rfc}`, emisorX, doc.y + 2, {
+            width: emisorWidth,
+        })
+            .text(`Régimen Fiscal: ${params.emisor.regimenFiscal}   |   C.P.: ${params.emisor.lugarExpedicion}`, emisorX, doc.y + 2, { width: emisorWidth })
+            .text(`Efecto: I - Ingreso   |   Moneda: MXN`, emisorX, doc.y + 2, { width: emisorWidth });
+        // 2. Caja del Receptor
+        const topReceptor = Math.max(doc.y + 14, 110);
         doc
-            .rect(40, topReceptor, 532, 60)
+            .rect(40, topReceptor, 532, 58)
             .fillAndStroke("#f8fafc", "#cbd5e1");
         doc
-            .fillColor("#0f172a")
-            .fontSize(10)
-            .text("DATOS DEL CLIENTE / RECEPTOR", 50, topReceptor + 8);
+            .fillColor(colorTema)
+            .fontSize(9.5)
+            .text("DATOS DEL CLIENTE / RECEPTOR", 50, topReceptor + 7);
         doc
-            .fontSize(9)
+            .fontSize(8.5)
             .fillColor("#334155")
-            .text(`Razón Social: ${params.receptor.nombre.toUpperCase()}`, 50, topReceptor + 22)
-            .text(`RFC: ${params.receptor.rfc.toUpperCase()}   |   C.P.: ${params.receptor.codigoPostal}   |   Régimen: ${params.receptor.regimenFiscal}   |   Uso CFDI: ${params.receptor.usoCfdi || "G03"}`, 50, topReceptor + 36);
-        doc.y = topReceptor + 75;
-        // Tabla de Conceptos
+            .text(`Razón Social: ${params.receptor.nombre.toUpperCase()}`, 50, topReceptor + 21)
+            .text(`RFC: ${params.receptor.rfc.toUpperCase()}   |   C.P.: ${params.receptor.codigoPostal}   |   Régimen: ${params.receptor.regimenFiscal}   |   Uso CFDI: ${params.receptor.usoCfdi || "G03"}`, 50, topReceptor + 35);
+        // 3. Tabla de Conceptos
+        const tableTop = topReceptor + 68;
         doc
-            .rect(40, doc.y, 532, 20)
-            .fill("#0284c7");
-        const tableY = doc.y + 5;
+            .rect(40, tableTop, 532, 18)
+            .fill(colorTema);
+        const tableY = tableTop + 4;
         doc
             .fillColor("#ffffff")
-            .fontSize(9)
+            .fontSize(8.5)
             .text("CANT.", 50, tableY)
             .text("CLAVE", 90, tableY)
             .text("DESCRIPCIÓN DEL CONCEPTO", 150, tableY)
             .text("P. UNITARIO", 410, tableY, { width: 70, align: "right" })
             .text("IMPORTE", 490, tableY, { width: 70, align: "right" });
-        doc.y = tableY + 20;
+        doc.y = tableTop + 24;
         doc.fillColor("#1e293b");
         for (const c of params.conceptos) {
             const cant = c.cantidad || 1;
@@ -407,21 +438,32 @@ async function generarPdfFacturaIngreso(params) {
             doc.y = currY + 18;
         }
         doc.moveDown(0.8);
-        // Totales
+        // 4. Totales y Método de Pago
         const totalesY = doc.y;
         doc
-            .fontSize(9)
+            .fontSize(8.5)
+            .fillColor("#334155")
+            .text(`Forma de Pago: ${params.formaPago}   |   Método de Pago: ${params.metodoPago}`, 40, totalesY)
             .text("Subtotal:", 380, totalesY)
-            .text(`$${params.subtotal.toFixed(2)} MXN`, 470, totalesY, { width: 90, align: "right" })
+            .text(`$${params.subtotal.toFixed(2)} MXN`, 470, totalesY, {
+            width: 90,
+            align: "right",
+        })
             .text("IVA Trasladado (16%):", 380, totalesY + 15)
-            .text(`$${params.iva.toFixed(2)} MXN`, 470, totalesY + 15, { width: 90, align: "right" })
+            .text(`$${params.iva.toFixed(2)} MXN`, 470, totalesY + 15, {
+            width: 90,
+            align: "right",
+        })
             .fontSize(11)
-            .fillColor("#0284c7")
+            .fillColor(colorTema)
             .text("TOTAL:", 380, totalesY + 32)
-            .text(`$${params.total.toFixed(2)} MXN`, 470, totalesY + 32, { width: 90, align: "right" });
+            .text(`$${params.total.toFixed(2)} MXN`, 470, totalesY + 32, {
+            width: 90,
+            align: "right",
+        });
         doc.fillColor("#334155");
-        // QR y Cadenas Fiscales
-        const bottomY = totalesY + 65;
+        // 5. QR y Cadenas Fiscales del SAT
+        const bottomY = totalesY + 62;
         doc.image(qrBuffer, 40, bottomY, { width: 95 });
         doc
             .fontSize(7.5)
@@ -432,6 +474,13 @@ async function generarPdfFacturaIngreso(params) {
             .text("SELLO DIGITAL DEL SAT:", 145, bottomY + 35)
             .fillColor("#64748b")
             .text(params.selloSat, 145, bottomY + 45, { width: 425 });
+        // 6. Pie de Página Personalizado
+        const pie = params.emisor.pieDePagina ||
+            "Este documento es una representación impresa de un CFDI versión 4.0";
+        doc
+            .fontSize(8)
+            .fillColor("#64748b")
+            .text(pie, 40, 735, { align: "center", width: 532 });
         doc.end();
     });
 }
@@ -440,7 +489,22 @@ async function generarPdfFacturaIngreso(params) {
  */
 export async function emitirFacturaIngreso(solicitud) {
     try {
-        const emisor = obtenerEmisorConfig();
+        const configBase = obtenerEmisorConfig();
+        const emisor = {
+            ...configBase,
+            ...(solicitud.emisorOverride || {}),
+            colorTema: solicitud.personalizacion?.colorTema ||
+                solicitud.emisorOverride?.colorTema ||
+                configBase.colorTema ||
+                "#0284c7",
+            logoPath: solicitud.personalizacion?.logoPath ||
+                solicitud.emisorOverride?.logoPath ||
+                configBase.logoPath,
+            pieDePagina: solicitud.personalizacion?.pieDePagina ||
+                solicitud.emisorOverride?.pieDePagina ||
+                configBase.pieDePagina ||
+                "Gracias por su preferencia",
+        };
         const csd = cargarCsd(emisor);
         const buildResult = construirXmlSellado(solicitud, csd, emisor);
         const soapEndpoint = obtenerEndpointSoap(emisor.ambiente);
@@ -478,6 +542,9 @@ export async function emitirFacturaIngreso(solicitud) {
                 nombre: emisor.nombre,
                 regimenFiscal: emisor.regimenFiscal,
                 lugarExpedicion: emisor.lugarExpedicion,
+                colorTema: emisor.colorTema,
+                logoPath: emisor.logoPath,
+                pieDePagina: emisor.pieDePagina,
             },
             receptor: solicitud.receptor,
             conceptos: solicitud.conceptos,

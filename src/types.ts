@@ -1,3 +1,19 @@
+export interface PersonalizacionFactura {
+  serie?: string; // Default "A"
+  ultimoFolio?: number; // Consecutivo numérico
+  colorTema?: string; // Hex color ej. "#0284c7"
+  logoPath?: string; // Ruta al logo en PNG/JPG
+  pieDePagina?: string; // Mensaje comercial o bancario opcional
+}
+
+export interface BovedaCsd {
+  cerFile?: string; // Nombre del archivo .cer en certs/
+  keyFile?: string; // Nombre del archivo .key en certs/
+  csdPassword?: string;
+  fechaVencimientoCsd?: string;
+  noCertificado?: string;
+}
+
 export interface DatosFiscales {
   rfc: string;
   razonSocial: string;
@@ -7,18 +23,35 @@ export interface DatosFiscales {
   email: string;
   telefono?: string;
   precioMensual?: number; // $179, $299, $499, $599 MXN
-  ticketsIncluidos?: number; // 20, 40, 80, 100 tickets/mes
-  costoTicketExtra?: number; // $5 MXN por ticket adicional
-  ticketsUsadosMes?: number; // Contador del mes actual
+  paqueteNombre?: string; // "Básico (20)", "Pro (40)", "Negocio (80)", "Empresa (100)"
   periodoMes?: string; // Ej. "2026-10"
   estadoPlan?: "ACTIVO" | "PENDIENTE_PAGO" | "VENCIDO" | "AGOTADO";
   fechaInicioPlan?: string; // YYYY-MM-DD
   fechaFinPlan?: string; // YYYY-MM-DD
-  paqueteNombre?: string; // "Básico (20)", "Pro (40)", "Negocio (80)", "Empresa (100)"
+
+  // 1. Bolsa de Gastos (Tickets deducibles con RPA)
+  ticketsIncluidos?: number; // Ej. 40 tickets/mes
+  ticketsUsadosMes?: number; // Contador del mes
+  costoTicketExtra?: number; // $5 MXN por ticket adicional
+
+  // 2. Bolsa de Ingresos (Facturación emitida a clientes con PAC Finkok)
+  timbresIngresosIncluidos?: number; // Ej. 50 timbres/mes
+  timbresIngresosUsadosMes?: number; // Contador de emitidas
+  timbresIngresosExtraDisponibles?: number; // Bolsa prepagada acumulada
+  costoTimbreExtra?: number; // Ej. $3.50 MXN
+
+  // 3. Personalización de Factura (PDF/Branding de cada cliente)
+  personalizacion?: PersonalizacionFactura;
+
+  // 4. Bóveda CSD del Emisor
+  csd?: BovedaCsd;
+
+  // Control Administrativo
   ultimoCepValidado?: string; // Clave de rastreo Banxico
   avisoBajoSaldoEnviado?: boolean; // Alerta de 5 folios restantes enviada
   avisoVencimientoEnviadoParaFecha?: string; // Fecha de fin para la que ya se envió el aviso de 2 días
   renovacionPendienteConfirmacion?: boolean; // Si renovó con 0 folios y puede optar por inicio inmediato
+  numerosAdicionales?: string[]; // Otros WhatsApps autorizados para este RFC
 }
 
 export interface DatosComprobantePago {

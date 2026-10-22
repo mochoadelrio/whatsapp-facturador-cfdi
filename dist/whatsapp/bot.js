@@ -6,7 +6,7 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, } from "../storage/profiles.js";
+import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, recargarTicketsExtra, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, } from "../storage/profiles.js";
 import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
 import { registrarTicketAudit, actualizarTicketAudit, obtenerResumenHoy, obtenerTicketsFallidos, buscarTicketPorId, } from "../storage/ticketAudit.js";
@@ -1477,10 +1477,41 @@ Sube una foto o PDF de la Constancia Fiscal de tu cliente y escribe en el texto 
         const subtotal = monto;
         const iva = monto * 0.16;
         const total = monto * 1.16;
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        // 1. Validar estado y vigencia de la suscripción
+        if (perfil.estadoPlan === "PENDIENTE_PAGO") {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Plan Pendiente de Activación / Pago*
+
+Tu cuenta aún no está activa para emitir comprobantes fiscales.
+Realiza tu transferencia SPEI y envía aquí el comprobante para activarla de inmediato.`,
+            });
+            return;
+        }
+        // 2. Validar bolsa de timbres de ingreso
+        const timbresIncluidos = perfil.timbresIngresosIncluidos ?? 50;
+        const timbresUsados = perfil.timbresIngresosUsadosMes ?? 0;
+        const timbresExtras = perfil.timbresIngresosExtraDisponibles ?? 0;
+        const timbresDisponibles = timbresIncluidos + timbresExtras - timbresUsados;
+        if (timbresDisponibles <= 0) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Timbres de Ingresos Agotados*
+
+Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas incluidas este mes.
+Para emitir más facturas a tus clientes, solicita una recarga de timbres adicionales (\$${perfil.costoTimbreExtra ?? 3.5} MXN c/u) o escribe */saldo*.`,
+            });
+            return;
+        }
+        // 3. Obtener serie y próximo folio
+        const { serie, folio } = obtenerProximoFolioIngreso(perfilKey);
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
 ⚡ *Iniciando Emisión y Timbrado CFDI 4.0 con Finkok...*
 
+• *Emisor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Serie y Folio:* ${serie}-${folio}
 • *Cliente:* ${cliente} (\`${rfc}\`)
 • *Concepto:* ${concepto}
 • *Subtotal:* \$${subtotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
@@ -1489,6 +1520,24 @@ Sube una foto o PDF de la Constancia Fiscal de tu cliente y escribe en el texto 
 
 Sellando con CSD y timbrando ante el SAT... ⏳`,
         });
+        // Configurar emisor si el cliente tiene sus propios CSD cargados
+        let emisorOverride = undefined;
+        if (perfil.csd?.cerFile && perfil.csd?.keyFile && perfil.csd?.csdPassword) {
+            const cerPath = path.resolve(process.cwd(), "certs", perfil.csd.cerFile);
+            const keyPath = path.resolve(process.cwd(), "certs", perfil.csd.keyFile);
+            if (fs.existsSync(cerPath) && fs.existsSync(keyPath)) {
+                emisorOverride = {
+                    rfc: perfil.rfc,
+                    nombre: perfil.razonSocial,
+                    regimenFiscal: perfil.regimenFiscal,
+                    lugarExpedicion: perfil.codigoPostal,
+                    cerPath,
+                    keyPath,
+                    csdPassword: perfil.csd.csdPassword,
+                    ambiente: "PROD",
+                };
+            }
+        }
         const resEmision = await emitirFacturaIngreso({
             receptor: {
                 rfc,
@@ -1508,6 +1557,10 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
             ],
             formaPago: "03",
             metodoPago: "PUE",
+            serie,
+            folio: String(folio),
+            personalizacion: perfil.personalizacion,
+            emisorOverride,
         });
         if (!resEmision.exito || !resEmision.uuid) {
             await enviarMensajeBot(sock, replyJid, {
@@ -1515,6 +1568,11 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
             });
             return;
         }
+        // Registrar consumo del timbre y avanzar el consecutivo
+        const perfilActualizado = registrarConsumoTimbreIngreso(perfilKey, perfil.rfc);
+        const timbresRestantes = Math.max(0, (perfilActualizado.timbresIngresosIncluidos ?? 50) +
+            (perfilActualizado.timbresIngresosExtraDisponibles ?? 0) -
+            (perfilActualizado.timbresIngresosUsadosMes ?? 0));
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
 🎉 *¡Factura de Ingreso Emitida y Timbrada Exitosamente!*
@@ -1526,6 +1584,7 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
 • *Receptor:* ${cliente} (\`${rfc}\`)
 • *Total:* \$${resEmision.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
 • *Fecha Timbrado:* ${resEmision.fechaTimbrado}
+• *Timbres disponibles restantes:* *${timbresRestantes}*
 
 Te adjunto enseguida tus archivos oficiales (PDF con QR del SAT y XML timbrado):`,
         });
@@ -1545,6 +1604,137 @@ Te adjunto enseguida tus archivos oficiales (PDF con QR del SAT y XML timbrado):
                 mimetype: "text/xml",
                 fileName: `Factura_${resEmision.uuid.slice(0, 8)}.xml`,
                 caption: `📄 XML Timbrado SAT (TimbreFiscalDigital UUID: ${resEmision.uuid.slice(0, 8)}...)`,
+            });
+        }
+        return;
+    }
+    // K. Comandos de Personalización Multi-Tenant de Facturas (Plantilla, Color, Serie, Folio, Pie)
+    if (textoLimpio.toLowerCase() === "/plantilla" ||
+        textoLimpio.toLowerCase() === "/mi-factura" ||
+        textoLimpio.toLowerCase() === "/formato") {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        const pz = perfil.personalizacion || {};
+        const sigFolio = (pz.ultimoFolio ?? 100) + 1;
+        const tieneLogo = pz.logoPath && fs.existsSync(pz.logoPath)
+            ? "✅ Logotipo cargado"
+            : "⚙️ Estándar (sin imagen)";
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+🎨 *Plantilla de Facturación PDF (CFDI 4.0):*
+• *Emisor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Serie actual:* *${pz.serie || "A"}*
+• *Próximo folio a emitir:* *${pz.serie || "A"}-${sigFolio}*
+• *Color de acento:* \`${pz.colorTema || "#0284c7"}\`
+• *Logotipo:* ${tieneLogo}
+• *Pie de página:* _"${pz.pieDePagina || "Gracias por su preferencia"}"_
+
+🛠️ *Comandos para personalizar:*
+• \`/color <#hex>\` — Cambia el color del encabezado y tablas (ej. \`/color #16a34a\`)
+• \`/serie <letra>\` — Cambia la serie (ej. \`/serie F\`)
+• \`/folio <numero>\` — Establece el folio base (ej. \`/folio 100\`)
+• \`/pie <mensaje>\` — Texto legal o bancario al pie de página
+• _Envía una imagen con el texto_ \`/logo\` _para guardar tu logotipo._`,
+        });
+        return;
+    }
+    if (textoLimpio.toLowerCase().startsWith("/color")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        const hex = partes[1];
+        if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+🎨 *Personalizar Color de Plantilla de Factura*
+
+Usa: \`/color <#codigoHex>\`
+_Ejemplos recomendados:_
+• \`/color #0284c7\` (Azul Océano)
+• \`/color #16a34a\` (Verde Esmeralda)
+• \`/color #7c3aed\` (Púrpura Ejecutivo)
+• \`/color #b91c1c\` (Rojo Carmesí)
+• \`/color #0f172a\` (Gris Carbón Elegante)`,
+            });
+            return;
+        }
+        actualizarPersonalizacionCliente(perfilKey, {
+            colorTema: hex.toLowerCase(),
+        });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n🎨 *Color de factura actualizado a:* \`${hex.toLowerCase()}\`\n\nTus próximas facturas en PDF tendrán este acento en encabezados, tablas y totales.`,
+        });
+        return;
+    }
+    if (textoLimpio.toLowerCase().startsWith("/serie")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        const nuevaSerie = (partes[1] || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (!nuevaSerie || nuevaSerie.length > 5) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso correcto:* \`/serie <LETRAS>\` (Ej. \`/serie A\`, \`/serie F\`, \`/serie FAC\`)`,
+            });
+            return;
+        }
+        actualizarPersonalizacionCliente(perfilKey, { serie: nuevaSerie });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n📝 *Serie de facturación actualizada a:* *${nuevaSerie}*`,
+        });
+        return;
+    }
+    if (textoLimpio.toLowerCase().startsWith("/folio")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        const nuevoFolio = parseInt(partes[1], 10);
+        if (isNaN(nuevoFolio) || nuevoFolio < 0) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso correcto:* \`/folio <numero>\` (Ej. \`/folio 100\`, \`/folio 1500\`)`,
+            });
+            return;
+        }
+        actualizarPersonalizacionCliente(perfilKey, { ultimoFolio: nuevoFolio });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n🔢 *Consecutivo de folio actualizado:*\nEl próximo comprobante que emitas llevará el folio *${nuevoFolio + 1}*.`,
+        });
+        return;
+    }
+    if (textoLimpio.toLowerCase().startsWith("/pie ")) {
+        const nuevoPie = textoLimpio.slice(5).trim();
+        actualizarPersonalizacionCliente(perfilKey, { pieDePagina: nuevoPie });
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}\n📄 *Pie de página personalizado guardado:*\n_"${nuevoPie}"_\n\nAparecerá al pie de tus facturas PDF.`,
+        });
+        return;
+    }
+    // L. Comando de Administrador: Recarga de Timbres de Ingreso
+    if (textoLimpio.toLowerCase().startsWith("/recargar-ingresos") ||
+        textoLimpio.toLowerCase().startsWith("/recargar-timbres")) {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 3 || isNaN(Number(partes[2]))) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso:* \`/recargar-ingresos <RFC o Celular> <cantidad>\`\nEjemplo: \`/recargar-ingresos VAMC9112056Q2 50\``,
+            });
+            return;
+        }
+        const target = partes[1];
+        const cant = parseInt(partes[2], 10);
+        const act = recargarTimbresIngreso(target, cant);
+        if (act) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *Recarga de Timbres de Ingreso Exitosa:*
+• *Cliente:* ${act.razonSocial} (\`${act.rfc}\`)
+• *Timbres extras acreditados:* +${cant}
+• *Bolsa de timbres extras:* ${act.timbresIngresosExtraDisponibles} timbres
+• *Timbres usados del mes:* ${act.timbresIngresosUsadosMes} de ${act.timbresIngresosIncluidos}
+
+${formatearResumenPlan(act)}`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente con el parámetro *"${target}"*.`,
             });
         }
         return;
@@ -2142,6 +2332,29 @@ Conforme a tu confirmación:
                 imageMsg?.mimetype ||
                 (tieneDocumento ? "application/pdf" : "image/jpeg");
             console.log(`🤖 Archivo descargado (${buffer.length} bytes, ${mimeType}, fileName: ${fileName}). Analizando...`);
+            // Interceptar carga de logotipo para facturas PDF
+            if (tieneImagen &&
+                (textoLimpio.toLowerCase().includes("/logo") ||
+                    textoLimpio.toLowerCase() === "logo")) {
+                const { perfil } = obtenerPerfilFiscal(perfilKey);
+                const logoDir = path.resolve(process.cwd(), "assets", "logos");
+                if (!fs.existsSync(logoDir))
+                    fs.mkdirSync(logoDir, { recursive: true });
+                const logoPath = path.join(logoDir, `${perfil.rfc}.png`);
+                fs.writeFileSync(logoPath, buffer);
+                actualizarPersonalizacionCliente(perfilKey, { logoPath });
+                await enviarMensajeBot(sock, replyJid, {
+                    text: `${BOT_SIGNATURE}
+🖼️ *¡Logotipo comercial configurado con éxito!*
+
+• *Cliente:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Archivo guardado:* \`${path.basename(logoPath)}\`
+
+A partir de ahora, tu logotipo aparecerá automáticamente en el encabezado de todas tus facturas de ingresos en PDF.
+Escribe */plantilla* para ver tu configuración actual.`,
+                });
+                return;
+            }
             // Guardar copia local de respaldo inmediatamente para que el ticket nunca se pierda
             try {
                 const backupDir = path.resolve(process.cwd(), "data/tickets_recibidos");
