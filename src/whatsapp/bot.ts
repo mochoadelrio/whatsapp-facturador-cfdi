@@ -77,6 +77,7 @@ import {
   emitirFacturaIngreso,
   extraerPeticionFacturaTexto,
 } from "../services/finkokService.js";
+import { kontaiaClient } from "../services/kontaiaClient.js";
 
 const require = createRequire(import.meta.url);
 const QRCodeVendor = require("qrcode-terminal/vendor/QRCode");
@@ -1784,73 +1785,196 @@ Escribe cuántos timbres necesitas (ej. *10*, *20*, *50* o */recargar 20*) para 
       return;
     }
 
-    // 3. Obtener serie y próximo folio
-    const { serie, folio } = obtenerProximoFolioIngreso(perfilKey);
+    // 3. Consultar perfil emisor en KontaIA
+    const perfilKontaia = await kontaiaClient.obtenerPerfilEmisor(perfil.rfc);
+
+    // Si KontaIA está conectado y el cliente no tiene CSD cargados (y no es demo ni RFC de pruebas)
+    if (perfilKontaia && !perfilKontaia.tiene_csd && !esDemo && perfil.rfc !== "EKU9003173C9") {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+🔐 *Sellos Digitales (CSD) Pendientes en KontaIA*
+
+Para que tus facturas tengan validez legal y fiscal ante el SAT con tu RFC (*${perfil.rfc}*), es necesario que resguardes tus archivos de Certificado de Sello Digital (*.cer*, *.key* y contraseña) en tu panel web de **KontaIA**.
+
+⚙️ *¿Cómo activarlos?*
+1. Entra a tu panel en **KontaIA** > *Configuración* > *Bóveda de Sellos CSD*.
+2. Sube tus archivos \`.cer\`, \`.key\` e ingresa tu contraseña de sellos.
+3. ¡Listo! Vuelve a pedirme tu factura por aquí y se emitirá en segundos.`,
+      });
+      return;
+    }
+
+    // 4. Resolver Receptor desde KontaIA o parámetros
+    let receptorRfc = rfc;
+    let receptorNombre = cliente;
+    let receptorCp = "37230";
+    let receptorRegimen = "601";
+    let receptorUso = "G03";
+
+    if (perfilKontaia) {
+      try {
+        const clienteKontaia = await kontaiaClient.buscarCliente(perfil.rfc, cliente || rfc);
+        if (clienteKontaia) {
+          receptorRfc = clienteKontaia.rfc;
+          receptorNombre = clienteKontaia.razon_social;
+          receptorCp = clienteKontaia.codigo_postal;
+          receptorRegimen = clienteKontaia.regimen_fiscal;
+          receptorUso = clienteKontaia.uso_cfdi || "G03";
+        }
+      } catch (e) {}
+    }
+
+    // 5. Resolver Concepto/Producto desde Catálogo de KontaIA
+    let prodClave = "84111506";
+    let prodUnidad = "E48";
+    let prodNombreUnidad = "Servicio";
+    let prodDescripcion = concepto;
+    let prodValorUnitario = subtotal;
+
+    if (perfilKontaia) {
+      try {
+        const prodKontaia = await kontaiaClient.buscarProducto(perfil.rfc, concepto);
+        if (prodKontaia) {
+          prodClave = prodKontaia.clave_prod_serv;
+          prodUnidad = prodKontaia.clave_unidad || "E48";
+          prodNombreUnidad = prodKontaia.unidad || "Servicio";
+          if ((!monto || monto <= 0) && prodKontaia.precio_unitario > 0) {
+            prodValorUnitario = prodKontaia.precio_unitario;
+          }
+        }
+      } catch (e) {}
+    }
+
+    const serieFinal = (perfilKontaia?.serie_predeterminada) || "A";
+    const folioFinal = String(perfilKontaia?.siguiente_folio || 1);
 
     await enviarMensajeBot(sock, replyJid, {
       text: `${BOT_SIGNATURE}
-⚡ *Iniciando Emisión y Timbrado CFDI 4.0 con Finkok...*
+⚡ *Iniciando Emisión y Timbrado CFDI 4.0 con KontaIA...*
 
-• *Emisor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
-• *Serie y Folio:* ${serie}-${folio}
-• *Cliente:* ${cliente} (\`${rfc}\`)
-• *Concepto:* ${concepto}
-• *Subtotal:* \$${subtotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-• *IVA (16%):* \$${iva.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-• *Total a Facturar:* \$${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Emisor:* ${perfilKontaia?.razon_social || perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Serie y Folio:* ${serieFinal}-${folioFinal}
+• *Cliente:* ${receptorNombre} (\`${receptorRfc}\`)
+• *Concepto:* ${prodDescripcion} (${prodClave})
+• *Subtotal:* \$${prodValorUnitario.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *IVA (16%):* \$${(prodValorUnitario * 0.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Total a Facturar:* \$${(prodValorUnitario * 1.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
 
-Sellando con CSD y timbrando ante el SAT... ⏳`,
+Sellando con tus sellos CSD y timbrando ante el SAT... ⏳`,
     });
 
-    // Configurar emisor si el cliente tiene sus propios CSD cargados
-    let emisorOverride: any = undefined;
-    if (perfil.csd?.cerFile && perfil.csd?.keyFile && perfil.csd?.csdPassword) {
-      const cerPath = path.resolve(process.cwd(), "certs", perfil.csd.cerFile);
-      const keyPath = path.resolve(process.cwd(), "certs", perfil.csd.keyFile);
-      if (fs.existsSync(cerPath) && fs.existsSync(keyPath)) {
-        emisorOverride = {
+    let resUuid = "";
+    let resSerie = serieFinal;
+    let resFolio = folioFinal;
+    let resFecha = new Date().toISOString();
+    let resTotal = prodValorUnitario * 1.16;
+    let pdfBuffer: Buffer | null = null;
+    let xmlBuffer: Buffer | null = null;
+
+    // Intentar timbrado vía motor de KontaIA
+    let emisionExitosa = false;
+    let errorDetalle = "";
+
+    try {
+      const resK = await kontaiaClient.emitirYTimbrar({
+        tenant_id: perfil.rfc,
+        serie: serieFinal,
+        folio: folioFinal,
+        forma_pago: "03",
+        metodo_pago: "PUE",
+        lugar_expedicion: perfil.codigoPostal || "37236",
+        emisor: {
           rfc: perfil.rfc,
-          nombre: perfil.razonSocial,
-          regimenFiscal: perfil.regimenFiscal,
-          lugarExpedicion: perfil.codigoPostal,
-          cerPath,
-          keyPath,
-          csdPassword: perfil.csd.csdPassword,
-          ambiente: "PROD",
-        };
+          nombre: perfilKontaia?.razon_social || perfil.razonSocial,
+          regimen_fiscal: perfilKontaia?.regimen_fiscal || perfil.regimenFiscal || "601",
+        },
+        receptor: {
+          rfc: receptorRfc,
+          nombre: receptorNombre,
+          domicilio_fiscal_receptor: receptorCp,
+          domicilio_fiscal_codigo_postal: receptorCp,
+          regimen_fiscal_receptor: receptorRegimen,
+          regimen_fiscal: receptorRegimen,
+          uso_cfdi: receptorUso,
+        },
+        conceptos: [
+          {
+            clave_prod_serv: prodClave,
+            clave_unidad: prodUnidad,
+            unidad: prodNombreUnidad,
+            cantidad: 1,
+            descripcion: prodDescripcion,
+            valor_unitario: prodValorUnitario,
+            objeto_imp: "02",
+          },
+        ],
+        generar_pdf: true,
+      });
+
+      if (resK.estatus === "TIMBRADO_EXITOSO" && resK.uuid) {
+        emisionExitosa = true;
+        resUuid = resK.uuid;
+        resFecha = resK.fecha_timbrado || resFecha;
+        resTotal = resK.total || resTotal;
+        if (resK.pdf_base64) {
+          pdfBuffer = Buffer.from(resK.pdf_base64, "base64");
+        } else {
+          pdfBuffer = await kontaiaClient.descargarPdfBuffer(resK.uuid);
+        }
+        if (resK.xml_timbrado) {
+          xmlBuffer = Buffer.from(resK.xml_timbrado, "utf-8");
+        } else {
+          xmlBuffer = await kontaiaClient.descargarXmlBuffer(resK.uuid);
+        }
+      } else {
+        errorDetalle = resK.mensaje || (resK.errores && resK.errores.join(", ")) || "Rechazado por validación del SAT";
       }
+    } catch (errK: any) {
+      console.warn("[Bot] KontaIA emisión falló, intentando fallback:", errK.message);
+      errorDetalle = errK.message || "Error al conectar con KontaIA.";
     }
 
-    const resEmision = await emitirFacturaIngreso({
-      receptor: {
-        rfc,
-        nombre: cliente,
-        codigoPostal: "33826",
-        regimenFiscal: "601",
-        usoCfdi: "G03",
-      },
-      conceptos: [
-        {
-          descripcion: concepto,
-          cantidad: 1,
-          valorUnitario: subtotal,
-          claveProdServ: "84111506",
-          claveUnidad: "E48",
+    // Si falló KontaIA, intentar con motor fallback local
+    if (!emisionExitosa) {
+      const resEmision = await emitirFacturaIngreso({
+        receptor: {
+          rfc: receptorRfc,
+          nombre: receptorNombre,
+          codigoPostal: receptorCp,
+          regimenFiscal: receptorRegimen,
+          usoCfdi: receptorUso,
         },
-      ],
-      formaPago: "03",
-      metodoPago: "PUE",
-      serie,
-      folio: String(folio),
-      personalizacion: perfil.personalizacion,
-      emisorOverride,
-    });
-
-    if (!resEmision.exito || !resEmision.uuid) {
-      await enviarMensajeBot(sock, replyJid, {
-        text: `${BOT_SIGNATURE}\n❌ *Aviso del PAC Finkok / SAT al timbrar:*\n${resEmision.error || "No se pudo timbrar el comprobante."}`,
+        conceptos: [
+          {
+            descripcion: prodDescripcion,
+            cantidad: 1,
+            valorUnitario: prodValorUnitario,
+            claveProdServ: prodClave,
+            claveUnidad: prodUnidad,
+          },
+        ],
+        formaPago: "03",
+        metodoPago: "PUE",
+        serie: serieFinal,
+        folio: folioFinal,
+        personalizacion: perfil.personalizacion,
       });
-      return;
+
+      if (resEmision.exito && resEmision.uuid) {
+        emisionExitosa = true;
+        resUuid = resEmision.uuid;
+        resSerie = resEmision.serie || serieFinal;
+        resFolio = resEmision.folio || folioFinal;
+        resFecha = resEmision.fechaTimbrado || resFecha;
+        resTotal = resEmision.total || resTotal;
+        pdfBuffer = resEmision.pdfBuffer || null;
+        xmlBuffer = resEmision.xmlBuffer || null;
+      } else {
+        await enviarMensajeBot(sock, replyJid, {
+          text: `${BOT_SIGNATURE}\n❌ *Aviso del SAT / PAC al timbrar:*\n${resEmision.error || errorDetalle || "No se pudo timbrar el comprobante."}`,
+        });
+        return;
+      }
     }
 
     // Registrar consumo del timbre y avanzar el consecutivo
@@ -1870,41 +1994,83 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
 🎉 *¡Factura de Ingreso Emitida y Timbrada Exitosamente!*
 
 📋 *Datos del Comprobante Fiscal:*
-• *Folio Fiscal (UUID):* \`${resEmision.uuid}\`
-• *Serie y Folio:* ${resEmision.serie} - ${resEmision.folio}
-• *Emisor:* \`${resEmision.emisorRfc}\`
-• *Receptor:* ${cliente} (\`${rfc}\`)
-• *Total:* \$${resEmision.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-• *Fecha Timbrado:* ${resEmision.fechaTimbrado}
+• *Folio Fiscal (UUID):* \`${resUuid}\`
+• *Serie y Folio:* ${resSerie}-${resFolio}
+• *Emisor:* \`${perfil.rfc}\`
+• *Receptor:* ${receptorNombre} (\`${receptorRfc}\`)
+• *Total:* \$${resTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
+• *Fecha Timbrado:* ${resFecha}
 • *Timbres disponibles restantes:* *${timbresRestantes}*
 
 Te adjunto enseguida tus archivos oficiales (PDF con QR del SAT y XML timbrado):`,
     });
 
     // Enviar PDF
-    if (resEmision.pdfBuffer) {
+    if (pdfBuffer) {
       await enviarMensajeBot(sock, replyJid, {
-        document: resEmision.pdfBuffer,
+        document: pdfBuffer,
         mimetype: "application/pdf",
-        fileName: `Factura_${resEmision.uuid.slice(0, 8)}.pdf`,
-        caption: `📕 Factura PDF (CFDI 4.0 con QR oficial SAT - \$${resEmision.total.toFixed(2)} MXN)`,
+        fileName: `Factura_${resUuid.slice(0, 8)}.pdf`,
+        caption: `📕 Factura PDF (CFDI 4.0 con QR oficial SAT - \$${resTotal.toFixed(2)} MXN)`,
       });
     }
 
     // Enviar XML
-    if (resEmision.xmlBuffer) {
+    if (xmlBuffer) {
       await enviarMensajeBot(sock, replyJid, {
-        document: resEmision.xmlBuffer,
+        document: xmlBuffer,
         mimetype: "text/xml",
-        fileName: `Factura_${resEmision.uuid.slice(0, 8)}.xml`,
-        caption: `📄 XML Timbrado SAT (TimbreFiscalDigital UUID: ${resEmision.uuid.slice(0, 8)}...)`,
+        fileName: `Factura_${resUuid.slice(0, 8)}.xml`,
+        caption: `📄 XML Timbrado SAT (TimbreFiscalDigital UUID: ${resUuid.slice(0, 8)}...)`,
       });
     }
 
     return;
   }
 
-  // K. Comandos de Personalización Multi-Tenant de Facturas (Plantilla, Color, Serie, Folio, Pie)
+  // K. Consulta de Estado en KontaIA (Configuración de Sellos CSD, Catálogos, Folios)
+  if (
+    textoLimpio.toLowerCase() === "/kontaia" ||
+    textoLimpio.toLowerCase() === "/mi-cuenta" ||
+    textoLimpio.toLowerCase() === "/estado-kontaia"
+  ) {
+    const { perfil } = obtenerPerfilFiscal(perfilKey);
+    const pK = await kontaiaClient.obtenerPerfilEmisor(perfil.rfc);
+
+    if (pK) {
+      const csdTexto = pK.tiene_csd
+        ? `✅ Activos (Serie: \`${pK.csd_serie || "N/A"}\` | Vence: ${pK.csd_valido_hasta ? pK.csd_valido_hasta.split("T")[0] : "Vigente"})`
+        : `⚠️ No cargados (Sube tus CSD en KontaIA Web)`;
+      const logoTexto = pK.tiene_logo ? "✅ Logotipo cargado" : "⚙️ Predeterminado sin imagen";
+
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+🏢 *Estado de tu Cuenta en KontaIA:*
+• *Empresa:* ${pK.razon_social} (\`${pK.rfc}\`)
+• *Régimen Fiscal:* ${pK.regimen_fiscal}
+• *Bóveda CSD (Sellos SAT):* ${csdTexto}
+• *Serie y Próximo Folio:* *${pK.serie_predeterminada}-${pK.siguiente_folio}*
+• *Clientes en Catálogo:* *${pK.total_clientes} clientes*
+• *Productos/Servicios SAT:* *${pK.total_productos} productos*
+• *Logotipo Oficial:* ${logoTexto}
+
+💡 *KontaIA es tu panel central:* Cualquier producto, cliente o sello que cargues en tu panel web de KontaIA estará disponible inmediatamente para facturar por aquí con un mensaje.`,
+      });
+    } else {
+      await enviarMensajeBot(sock, replyJid, {
+        text: `${BOT_SIGNATURE}
+🏢 *Estado de tu Cuenta en KontaIA:*
+• *Empresa:* ${perfil.razonSocial} (\`${perfil.rfc}\`)
+• *Estado:* Vinculado con RFC.
+• *Plan:* ${perfil.paqueteNombre || "Estándar"} (${perfil.estadoPlan || "ACTIVO"})
+
+💡 Para gestionar tus sellos CSD y catálogos de facturación, ingresa a tu panel web en **KontaIA**.`,
+      });
+    }
+    return;
+  }
+
+  // L. Comandos de Personalización Multi-Tenant de Facturas (Plantilla, Color, Serie, Folio, Pie)
   if (
     textoLimpio.toLowerCase() === "/plantilla" ||
     textoLimpio.toLowerCase() === "/mi-factura" ||
@@ -2773,6 +2939,7 @@ ${extraAdmin}
 📤 *Emisión de Facturas de Ingreso (CFDI 4.0):*
 • \`/emitir a <Cliente> $<Monto> por <Concepto>\` — Emite factura a un cliente (ej. \`/emitir a ABC010101XYZ $1500 por Honorarios\`).
 • \`/emitir-demo\` — Emite una factura de prueba y te entrega el PDF y XML al instante.
+• \`/kontaia\` — Consulta el estado de tus sellos CSD y catálogos en KontaIA.
 • \`/csd <contraseña>\` — Valida y activa tus sellos CSD para emitir facturas.
 
 🏢 *Configuración y Cuenta:*
