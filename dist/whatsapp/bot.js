@@ -2336,23 +2336,25 @@ _Ejemplo: escribe "10", "20" o "50"_`,
 • \`/hoy\` o \`/resumen\` — Tickets recibidos, facturas generadas, fallos y balance por cliente.
 • \`/status\` o \`/ping\` — Diagnóstico de conexión, RAM y tiempo activo del bot.
 • \`/clientes\` — Lista completa de clientes, folios usados y totales.
+• \`/consultar <RFC o Celular>\` — Ficha técnica completa de un cliente.
 • \`/saldo <RFC>\` — Consumo y vigencia de un cliente específico.
 
-🔌 *2. Conectores y Expansión Continua:*
+💳 *2. Asignación y Control de Folios:*
+• \`/asignar <RFC o Celular> <gastos|ingresos> <cantidad>\` — Asigna folios directamente (ej. \`/asignar VAMC9112056Q2 ingresos 50\`).
+• \`/quitar <RFC o Celular> <gastos|ingresos> <cantidad>\` — Descuenta folios a un cliente.
+• \`/activar-plan <RFC> <20|40|80|100>\` — Habilita 30 días y folios.
+• \`/ajustar-tickets <RFC> <cantidad>\` — Modifica manualmente los tickets usados.
+
+🔌 *3. Conectores y Expansión Continua:*
 • \`/conectores\` — Conectores nuevos descubiertos hoy y total activos.
 • \`/buscar-conectores\` — Busca e instala 5 nuevos conectores en ese momento.
 • \`/instalar-conector <comercio>\` — Instala un comercio específico en caliente.
 
-🚨 *3. Diagnóstico y Resolución en Vivo:*
+🚨 *4. Diagnóstico y Soporte:*
 • \`/fallos\` o \`/errores\` — Ver tickets pendientes o con error y el motivo exacto.
-• \`/reintentar <ID>\` — Re-analiza con IA y timbra el ticket respaldado en disco de inmediato.
-• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emite un CFDI 4.0 oficial de respaldo al cliente.
-• \`/reenviar <RFC>\` — Reenvía la última factura generada al WhatsApp del cliente.
-
-💳 *4. Planes y Usuarios:*
-• \`/activar-plan <RFC> <20|40|80|100>\` — Habilita 30 días y folios.
-• \`/ajustar-tickets <RFC> <cantidad>\` — Modifica manualmente los tickets usados.
-• \`/autorizar <10 dígitos>\` — Da de alta el celular de un nuevo cliente.`,
+• \`/reintentar <ID>\` — Re-analiza con IA y timbra el ticket respaldado en disco.
+• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emite un CFDI 4.0 oficial de respaldo.
+• \`/reenviar <RFC>\` — Reenvía la última factura generada al cliente.`,
         });
         return;
     }
@@ -2364,45 +2366,38 @@ _Ejemplo: escribe "10", "20" o "50"_`,
         let extraAdmin = "";
         if (isAdmin) {
             extraAdmin = `\n👑 *Herramientas de Administrador:*
+• \`/asignar <RFC> <gastos|ingresos> <cantidad>\` — Asignar folios a un cliente.
+• \`/quitar <RFC> <gastos|ingresos> <cantidad>\` — Descontar folios a un cliente.
+• \`/consultar <RFC o Celular>\` — Ficha completa del cliente.
 • \`/hoy\` — Balance de tickets y facturas del día.
 • \`/conectores\` — Conectores nuevos descubiertos hoy.
-• \`/buscar-conectores\` — Buscar e instalar 5 nuevos ahora.
-• \`/instalar-conector <nombre>\` — Instalar comercio específico.
 • \`/fallos\` — Ver tickets con errores y su motivo.
-• \`/reintentar <ID>\` — Re-facturar ticket respaldado.
-• \`/forzar-factura <RFC> <Monto> <Concepto>\` — Emitir CFDI 4.0 manual.
-• \`/reenviar <RFC>\` — Reenviar factura al cliente.
-• \`/admin\` — Guía completa de comandos de administrador.\n`;
+• \`/admin\` — Guía completa de administración.\n`;
         }
         await enviarMensajeBot(sock, replyJid, {
             text: `${BOT_SIGNATURE}
-📖 *Listado Completo de Comandos:*
+📖 *Listado Completo de Comandos Disponibles:*
 ${extraAdmin}
-⚡ *Diagnóstico del Bot:*
-• \`/status\` o \`/ping\` — Verifica conexión, memoria y conectores activos.
+📥 *Facturación de Gastos (Tickets):*
+• *Enviar foto de ticket* — Factura tu compra o caseta de forma 100% automática.
+• \`/recargar <cantidad>\` — Solicita recarga de folios extras a \$5 MXN c/u (mínimo 10).
+• \`/saldo\` — Consulta tus tickets disponibles y fecha de vencimiento.
 
-📊 *Control de Clientes, Planes y Folios:*
-• \`/clientes\` o \`/reporte\` — Lista de clientes, folios usados y vigencia.
-• \`/saldo <RFC o Teléfono>\` — Consulta los tickets y vigencia de un cliente (ej. \`/saldo VAMC9112056Q2\`).
-• \`/ajustar-tickets <RFC> <cantidad>\` — Fija manualmente los tickets usados de un cliente.
-• \`/activar-plan <RFC> <20|40|80|100>\` — Activa un plan por 30 días manualmente.
-• \`/autorizar <10 dígitos>\` — Registra el celular de un nuevo cliente.
+👥 *Choferes y Empleados (Subcuentas):*
+• \`/autorizar <celular> [nombre]\` — Da de alta a un trabajador para enviar tickets a tu RFC.
+• \`/mis-choferes\` — Ver la lista de trabajadores autorizados.
+• \`/quitar-chofer <celular>\` — Dar de baja a un trabajador.
 
-💳 *Paquetes y Pagos SPEI Banxico:*
-• \`/planes\` o \`/paquetes\` — Muestra los paquetes (20, 40, 80, 100 tickets) y tu CLABE de Mercado Pago W.
-• *Enviar captura de transferencia* — Valida el CEP en Banxico y activa el plan o recarga en automático.
+📤 *Emisión de Facturas de Ingreso (CFDI 4.0):*
+• \`/emitir a <Cliente> $<Monto> por <Concepto>\` — Emite factura a un cliente (ej. \`/emitir a ABC010101XYZ $1500 por Honorarios\`).
+• \`/emitir-demo\` — Emite una factura de prueba y te entrega el PDF y XML al instante.
+• \`/csd <contraseña>\` — Valida y activa tus sellos CSD para emitir facturas.
 
-🧾 *Emisión de Facturas de Ingreso (CFDI 4.0 - PAC Finkok):*
-• \`/emitir-demo\` — Emite una factura de prueba y te entrega el PDF y XML de inmediato.
-• \`/emitir a <Cliente> $<Monto> por <Concepto>\` — Factura una venta a un cliente (ej. \`/emitir a ICV060329BY0 $2500 por Consultoría\`).
-
-🏢 *Datos Fiscales:*
-• \`/perfil\` — Muestra los datos fiscales registrados.
-• *Enviar Constancia SAT (PDF o foto)* — Da de alta al cliente y le envía los paquetes a elegir.
-
-✨ *Marca y Ayuda:*
-• \`/logo\` — Envía el logotipo oficial de KlientIA.
-• \`/ayuda\` — Guía para tomar fotos de tickets exitosamente.`,
+🏢 *Configuración y Cuenta:*
+• \`/perfil\` — Muestra tus datos fiscales registrados.
+• *Enviar Constancia SAT (CSF)* — Registra o actualiza tus datos fiscales.
+• \`/planes\` — Muestra los paquetes mensuales y datos para pago SPEI.
+• \`/ayuda\` — Guía rápida de uso del bot.`,
         });
         return;
     }
