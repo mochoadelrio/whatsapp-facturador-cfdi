@@ -76,6 +76,7 @@ export function normalizarPerfilConPlan(perfil: DatosFiscales): DatosFiscales {
     avisoBajoSaldoEnviado: perfil.avisoBajoSaldoEnviado ?? false,
     avisoVencimientoEnviadoParaFecha: perfil.avisoVencimientoEnviadoParaFecha,
     renovacionPendienteConfirmacion: perfil.renovacionPendienteConfirmacion ?? false,
+    subcuentasAutorizadas: perfil.subcuentasAutorizadas || [],
   };
 }
 
@@ -744,6 +745,21 @@ export function verificarEstadoPlan(perfil: DatosFiscales): {
     };
   }
 
+  if (p.estadoPlan === "PRUEBA_GRATIS") {
+    if (restantes <= 0) {
+      return {
+        puedeFacturar: false,
+        motivo: "AGOTADO",
+        mensaje: "Has utilizado tus 3 tickets de prueba gratuita de bienvenida. ¡Esperamos que hayas disfrutado la rapidez del servicio! Para continuar facturando todos tus gastos del mes, activa tu plan desde $179 MXN.",
+        ticketsRestantes: 0,
+      };
+    }
+    return {
+      puedeFacturar: true,
+      ticketsRestantes: restantes,
+    };
+  }
+
   if (p.fechaFinPlan) {
     const hoy = new Date().toISOString().slice(0, 10);
     const msHoy = new Date(hoy).getTime();
@@ -817,13 +833,25 @@ export function formatearResumenPlan(perfil: DatosFiscales): string {
     return `📦 *Estado de Cuenta:* ⚠️ *Pendiente de Activación / Pago*\n• *Paquete:* ${nombrePaquete}\n• *Para activar:* Realiza tu transferencia SPEI y envía aquí el comprobante.`;
   }
 
+  if (p.estadoPlan === "PRUEBA_GRATIS") {
+    return `🎁 *Prueba Gratuita de Bienvenida KlientIA:*
+• *Tickets usados:* ${ticketsUsados} de ${ticketsIncluidos} (*${ticketsRestantes} disponibles*)
+• *Estado:* ${ticketsRestantes > 0 ? "✅ Activa" : "⚠️ Folios de cortesía agotados"}
+
+${ticketsRestantes > 0 ? `✨ _Te quedan ${ticketsRestantes} tickets de prueba gratis para emitir tus facturas oficiales sin costo._` : "📦 _Para continuar facturando sin límites todos tus gastos del mes, contrata tu plan mensual desde $179 MXN._"}`;
+  }
+
   const bloques: string[] = [`📊 *${nombrePaquete}*${textoVigencia}`];
 
   // Módulo de Gastos (Tickets)
   if ((p.ticketsIncluidos ?? 0) > 0 || (p.ticketsUsadosMes ?? 0) > 0) {
-    bloques.push(`📥 *Módulo Gastos (Tickets Deducibles con RPA):*
+    let gastosTxt = `📥 *Módulo Gastos (Tickets Deducibles con RPA):*
 • *Tickets usados este mes:* ${ticketsUsados} de ${ticketsIncluidos} (*${ticketsRestantes} disponibles*)
-• *Costo ticket extra:* \$${p.costoTicketExtra ?? 5}.00 MXN`);
+• *Costo ticket extra:* \$${p.costoTicketExtra ?? 5}.00 MXN`;
+    if (p.subcuentasAutorizadas && p.subcuentasAutorizadas.length > 0) {
+      gastosTxt += `\n• *Choferes/Empleados autorizados:* ${p.subcuentasAutorizadas.length} activo(s)`;
+    }
+    bloques.push(gastosTxt);
   }
 
   // Módulo de Ingresos (Facturas CFDI 4.0) SOLO si tiene timbres de ingresos asignados expresamente
@@ -1244,6 +1272,400 @@ export function guardarCsdCliente(jid: string, csd: BovedaCsd): DatosFiscales {
 
   fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
   return actualizado;
+}
+
+/**
+ * Asigna directamente folios de gastos o timbres de ingresos a un cliente (por RFC o Teléfono/JID).
+ */
+export function asignarFoliosAdmin(
+  busqueda: string,
+  tipo: "GASTOS" | "INGRESOS",
+  cantidad: number
+): {
+  perfil: DatosFiscales;
+  tipo: "GASTOS" | "INGRESOS";
+  cantidad: number;
+  foliosTotales: number;
+} | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+
+  const query = busqueda.trim().toUpperCase();
+  let matchRfc: string | null = null;
+  for (const [key, p] of Object.entries(perfiles)) {
+    if (
+      p.rfc?.toUpperCase().includes(query) ||
+      p.razonSocial?.toUpperCase().includes(query) ||
+      (p.telefono && p.telefono.includes(query)) ||
+      key.toUpperCase().includes(query) ||
+      key.includes(busqueda.trim())
+    ) {
+      matchRfc = p.rfc.toUpperCase();
+      break;
+    }
+  }
+
+  if (!matchRfc) return null;
+
+  let perfilActualizado: DatosFiscales | null = null;
+  let foliosTotales = 0;
+
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+      const prev = normalizarPerfilConPlan(perfiles[key]);
+      if (tipo === "INGRESOS") {
+        const nuevos = (prev.timbresIngresosIncluidos ?? 0) + cantidad;
+        perfiles[key] = {
+          ...prev,
+          timbresIngresosIncluidos: nuevos,
+          estadoPlan: "ACTIVO",
+        };
+        foliosTotales = Math.max(
+          0,
+          nuevos +
+            (prev.timbresIngresosExtraDisponibles ?? 0) -
+            (prev.timbresIngresosUsadosMes ?? 0)
+        );
+      } else {
+        const nuevos = (prev.ticketsIncluidos ?? 40) + cantidad;
+        perfiles[key] = {
+          ...prev,
+          ticketsIncluidos: nuevos,
+          estadoPlan: "ACTIVO",
+          avisoBajoSaldoEnviado: false,
+        };
+        foliosTotales = Math.max(0, nuevos - (prev.ticketsUsadosMes ?? 0));
+      }
+      perfilActualizado = perfiles[key];
+    }
+  }
+
+  if (perfilActualizado) {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  }
+
+  return perfilActualizado
+    ? { perfil: perfilActualizado, tipo, cantidad, foliosTotales }
+    : null;
+}
+
+/**
+ * Reduce o descuenta folios de gastos o timbres de ingresos a un cliente (por RFC o Teléfono/JID).
+ */
+export function quitarFoliosAdmin(
+  busqueda: string,
+  tipo: "GASTOS" | "INGRESOS",
+  cantidad: number
+): {
+  perfil: DatosFiscales;
+  tipo: "GASTOS" | "INGRESOS";
+  cantidad: number;
+  foliosTotales: number;
+} | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+
+  const query = busqueda.trim().toUpperCase();
+  let matchRfc: string | null = null;
+  for (const [key, p] of Object.entries(perfiles)) {
+    if (
+      p.rfc?.toUpperCase().includes(query) ||
+      p.razonSocial?.toUpperCase().includes(query) ||
+      (p.telefono && p.telefono.includes(query)) ||
+      key.toUpperCase().includes(query) ||
+      key.includes(busqueda.trim())
+    ) {
+      matchRfc = p.rfc.toUpperCase();
+      break;
+    }
+  }
+
+  if (!matchRfc) return null;
+
+  let perfilActualizado: DatosFiscales | null = null;
+  let foliosTotales = 0;
+
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+      const prev = normalizarPerfilConPlan(perfiles[key]);
+      if (tipo === "INGRESOS") {
+        const nuevos = Math.max(0, (prev.timbresIngresosIncluidos ?? 0) - cantidad);
+        perfiles[key] = {
+          ...prev,
+          timbresIngresosIncluidos: nuevos,
+        };
+        foliosTotales = Math.max(
+          0,
+          nuevos +
+            (prev.timbresIngresosExtraDisponibles ?? 0) -
+            (prev.timbresIngresosUsadosMes ?? 0)
+        );
+      } else {
+        const nuevos = Math.max(0, (prev.ticketsIncluidos ?? 40) - cantidad);
+        perfiles[key] = {
+          ...prev,
+          ticketsIncluidos: nuevos,
+        };
+        foliosTotales = Math.max(0, nuevos - (prev.ticketsUsadosMes ?? 0));
+      }
+      perfilActualizado = perfiles[key];
+    }
+  }
+
+  if (perfilActualizado) {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  }
+
+  return perfilActualizado
+    ? { perfil: perfilActualizado, tipo, cantidad, foliosTotales }
+    : null;
+}
+
+/**
+ * Autoriza un número de WhatsApp (chofer, empleado, socio) para enviar tickets cargados al RFC del cliente.
+ */
+export function autorizarSubcuenta(
+  busquedaPatron: string,
+  celularRaw: string,
+  nombre: string = "Chofer / Empleado"
+): {
+  perfil: DatosFiscales;
+  chofer: { celular: string; nombre: string; jid: string; fechaAlta: string };
+} | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+
+  const query = busquedaPatron.trim().toUpperCase();
+  let matchRfc: string | null = null;
+  for (const [key, p] of Object.entries(perfiles)) {
+    if (
+      p.rfc?.toUpperCase().includes(query) ||
+      p.razonSocial?.toUpperCase().includes(query) ||
+      (p.telefono && p.telefono.includes(query)) ||
+      key.toUpperCase().includes(query) ||
+      key.includes(busquedaPatron.trim())
+    ) {
+      matchRfc = p.rfc.toUpperCase();
+      break;
+    }
+  }
+
+  if (!matchRfc) return null;
+
+  const celLimpio = celularRaw.replace(/\D/g, "");
+  if (!celLimpio || celLimpio.length < 10) return null;
+
+  const numWa = celLimpio.startsWith("52") ? celLimpio : `52${celLimpio}`;
+  const choferJid = `${numWa}@s.whatsapp.net`;
+
+  const nuevoChofer = {
+    celular: celLimpio,
+    nombre: nombre.trim(),
+    jid: choferJid,
+    fechaAlta: new Date().toISOString(),
+  };
+
+  let perfilActualizado: DatosFiscales | null = null;
+
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+      const prev = normalizarPerfilConPlan(perfiles[key]);
+      const lista = (prev.subcuentasAutorizadas || []).filter(
+        (c) => c.celular !== celLimpio && c.jid !== choferJid
+      );
+      lista.push(nuevoChofer);
+
+      const numAdic = new Set(prev.numerosAdicionales || []);
+      numAdic.add(celLimpio);
+      numAdic.add(choferJid);
+
+      perfiles[key] = {
+        ...prev,
+        subcuentasAutorizadas: lista,
+        numerosAdicionales: Array.from(numAdic),
+      };
+      perfilActualizado = perfiles[key];
+    }
+  }
+
+  if (perfilActualizado) {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  }
+
+  return perfilActualizado ? { perfil: perfilActualizado, chofer: nuevoChofer } : null;
+}
+
+/**
+ * Remueve la autorización a un número de WhatsApp (chofer, empleado).
+ */
+export function removerSubcuenta(
+  busquedaPatron: string,
+  celularRaw: string
+): { perfil: DatosFiscales; removido: boolean } | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+
+  const query = busquedaPatron.trim().toUpperCase();
+  let matchRfc: string | null = null;
+  for (const [key, p] of Object.entries(perfiles)) {
+    if (
+      p.rfc?.toUpperCase().includes(query) ||
+      p.razonSocial?.toUpperCase().includes(query) ||
+      (p.telefono && p.telefono.includes(query)) ||
+      key.toUpperCase().includes(query) ||
+      key.includes(busquedaPatron.trim())
+    ) {
+      matchRfc = p.rfc.toUpperCase();
+      break;
+    }
+  }
+
+  if (!matchRfc) return null;
+
+  const celLimpio = celularRaw.replace(/\D/g, "");
+  let perfilActualizado: DatosFiscales | null = null;
+
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === matchRfc) {
+      const prev = normalizarPerfilConPlan(perfiles[key]);
+      const lista = (prev.subcuentasAutorizadas || []).filter(
+        (c) => !c.celular.includes(celLimpio) && !c.jid.includes(celLimpio)
+      );
+      const numAdic = (prev.numerosAdicionales || []).filter(
+        (n) => !n.includes(celLimpio)
+      );
+
+      perfiles[key] = {
+        ...prev,
+        subcuentasAutorizadas: lista,
+        numerosAdicionales: numAdic,
+      };
+      perfilActualizado = perfiles[key];
+    }
+  }
+
+  if (perfilActualizado) {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  }
+
+  return perfilActualizado ? { perfil: perfilActualizado, removido: true } : null;
+}
+
+/**
+ * Busca si un remitente de WhatsApp corresponde a una subcuenta autorizada (chofer o empleado).
+ */
+export function buscarPerfilPorNumeroSubcuenta(
+  senderJid: string,
+  senderPn?: string
+): {
+  perfil: DatosFiscales;
+  patronJid: string;
+  nombreChofer: string;
+} | null {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+
+  const cleanPn = (senderPn || "").replace(/\D/g, "");
+  const cleanJidNum = senderJid.replace(/\D/g, "");
+
+  for (const [patronKey, p] of Object.entries(perfiles)) {
+    const norm = normalizarPerfilConPlan(p);
+    if (!norm.subcuentasAutorizadas || norm.subcuentasAutorizadas.length === 0) continue;
+
+    for (const sub of norm.subcuentasAutorizadas) {
+      const subCel = sub.celular.replace(/\D/g, "");
+      if (
+        (cleanPn && (subCel.endsWith(cleanPn) || cleanPn.endsWith(subCel))) ||
+        (cleanJidNum && (subCel.endsWith(cleanJidNum) || cleanJidNum.endsWith(subCel))) ||
+        sub.jid === senderJid
+      ) {
+        return {
+          perfil: norm,
+          patronJid: patronKey,
+          nombreChofer: sub.nombre,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Activa la prueba gratis de bienvenida (3 tickets de cortesía) para un usuario nuevo.
+ */
+export function activarPruebaGratis(
+  jid: string,
+  datosFiscales: Partial<DatosFiscales>
+): DatosFiscales {
+  asegurarDirectorio();
+  let perfiles: Record<string, DatosFiscales> = {};
+  try {
+    perfiles = JSON.parse(fs.readFileSync(PROFILES_FILE, "utf-8"));
+  } catch {
+    perfiles = {};
+  }
+
+  const rfc = (datosFiscales.rfc || "PRUEBA").trim().toUpperCase();
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const finStr = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const nuevo: DatosFiscales = normalizarPerfilConPlan({
+    rfc,
+    razonSocial: (datosFiscales.razonSocial || "CLIENTE EN PRUEBA").trim().toUpperCase(),
+    codigoPostal: datosFiscales.codigoPostal || "37000",
+    regimenFiscal: datosFiscales.regimenFiscal || "626",
+    usoCfdi: datosFiscales.usoCfdi || "G03",
+    email: datosFiscales.email || "",
+    telefono: datosFiscales.telefono || jid.replace(/\D/g, ""),
+    paqueteNombre: "Prueba Gratuita (3 tickets)",
+    precioMensual: 0,
+    ticketsIncluidos: 3,
+    ticketsUsadosMes: 0,
+    timbresIngresosIncluidos: 0,
+    timbresIngresosUsadosMes: 0,
+    timbresIngresosExtraDisponibles: 0,
+    fechaInicioPlan: hoyStr,
+    fechaFinPlan: finStr,
+    estadoPlan: "PRUEBA_GRATIS",
+    subcuentasAutorizadas: [],
+  });
+
+  perfiles[jid] = nuevo;
+
+  for (const key of Object.keys(perfiles)) {
+    if (perfiles[key]?.rfc?.toUpperCase() === rfc) {
+      perfiles[key] = { ...perfiles[key], ...nuevo };
+    }
+  }
+
+  fs.writeFileSync(PROFILES_FILE, JSON.stringify(perfiles, null, 2), "utf-8");
+  return nuevo;
 }
 
 

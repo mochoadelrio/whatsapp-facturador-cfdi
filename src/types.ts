@@ -25,7 +25,7 @@ export interface DatosFiscales {
   precioMensual?: number; // $179, $299, $499, $599 MXN
   paqueteNombre?: string; // "Básico (20)", "Pro (40)", "Negocio (80)", "Empresa (100)"
   periodoMes?: string; // Ej. "2026-10"
-  estadoPlan?: "ACTIVO" | "PENDIENTE_PAGO" | "VENCIDO" | "AGOTADO";
+  estadoPlan?: "ACTIVO" | "PENDIENTE_PAGO" | "VENCIDO" | "AGOTADO" | "PRUEBA_GRATIS";
   fechaInicioPlan?: string; // YYYY-MM-DD
   fechaFinPlan?: string; // YYYY-MM-DD
 
@@ -52,6 +52,12 @@ export interface DatosFiscales {
   avisoVencimientoEnviadoParaFecha?: string; // Fecha de fin para la que ya se envió el aviso de 2 días
   renovacionPendienteConfirmacion?: boolean; // Si renovó con 0 folios y puede optar por inicio inmediato
   numerosAdicionales?: string[]; // Otros WhatsApps autorizados para este RFC
+  subcuentasAutorizadas?: Array<{
+    celular: string; // Formato numérico ej. "5214771234567"
+    nombre: string; // Ej. "Chofer Juan", "Ventas Roberto"
+    jid: string; // "5214771234567@s.whatsapp.net"
+    fechaAlta: string; // ISO
+  }>;
   solicitudRecarga?: {
     tipo: "GASTOS" | "INGRESOS" | "FOLIOS";
     cantidad: number;

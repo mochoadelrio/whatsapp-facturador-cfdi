@@ -28,7 +28,9 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   },
   "16922322174194@lid": {
     "rfc": "VAMC9112056Q2",
@@ -59,7 +61,9 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   },
   "5214775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -90,7 +94,9 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   },
   "524775907888@s.whatsapp.net": {
     "rfc": "VAMC9112056Q2",
@@ -121,7 +127,9 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   },
   "140974432981152@lid": {
     "rfc": "VAMC9112056Q2",
@@ -152,7 +160,9 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   },
   "2027996352627@lid": {
     "rfc": "VAMC9112056Q2",
@@ -183,6 +193,8 @@
       "colorTema": "#0284c7",
       "pieDePagina": "Gracias por su preferencia"
     },
-    "ultimoCepValidado": "CEP_TEST_RECARGA"
+    "ultimoCepValidado": "CEP_TEST_RECARGA",
+    "subcuentasAutorizadas": [],
+    "numerosAdicionales": []
   }
 }

@@ -1,7 +1,7 @@
 import express from "express";
 import * as path from "path";
 import * as fs from "fs";
-import { obtenerListaClientesUnicos, crearOActualizarCliente, activarPlanCliente, ajustarConsumoTicket, eliminarClientePorRfc, } from "../storage/profiles.js";
+import { obtenerListaClientesUnicos, crearOActualizarCliente, activarPlanCliente, ajustarConsumoTicket, eliminarClientePorRfc, asignarFoliosAdmin, quitarFoliosAdmin, autorizarSubcuenta, removerSubcuenta, } from "../storage/profiles.js";
 import { obtenerEstadoMotorBot, encenderMotorBot, pausarMotorBot, reiniciarMotorBot, desvincularSesionWhatsApp, enviarFacturaDirectaCliente, } from "../whatsapp/bot.js";
 import { obtenerSolicitudesConectores, actualizarEstadoSolicitudConector, } from "../storage/connectorRequests.js";
 const DEFAULT_ADMIN_PIN = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || "klientia2026";
@@ -180,6 +180,86 @@ export function iniciarAdminServer(port = 3000) {
             const rfc = String(req.params.rfc);
             const ok = eliminarClientePorRfc(rfc);
             res.json({ ok });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
+    });
+    // Asignar folios por Administrador (+10, +20, +50, etc.)
+    app.post("/api/clients/:rfc/assign", requireAuth, (req, res) => {
+        try {
+            const rfc = String(req.params.rfc);
+            const { tipo, cantidad } = req.body;
+            const cantNum = Number(cantidad);
+            if (!cantNum || cantNum <= 0) {
+                res.status(400).json({ error: "Cantidad no válida" });
+                return;
+            }
+            const tipoFolio = tipo === "INGRESOS" ? "INGRESOS" : "GASTOS";
+            const resultado = asignarFoliosAdmin(rfc, tipoFolio, cantNum);
+            if (!resultado) {
+                res.status(404).json({ error: "Cliente no encontrado" });
+                return;
+            }
+            res.json({ ok: true, resultado });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
+    });
+    // Quitar / descontar folios por Administrador
+    app.post("/api/clients/:rfc/deduct", requireAuth, (req, res) => {
+        try {
+            const rfc = String(req.params.rfc);
+            const { tipo, cantidad } = req.body;
+            const cantNum = Number(cantidad);
+            if (!cantNum || cantNum <= 0) {
+                res.status(400).json({ error: "Cantidad no válida" });
+                return;
+            }
+            const tipoFolio = tipo === "INGRESOS" ? "INGRESOS" : "GASTOS";
+            const resultado = quitarFoliosAdmin(rfc, tipoFolio, cantNum);
+            if (!resultado) {
+                res.status(404).json({ error: "Cliente no encontrado" });
+                return;
+            }
+            res.json({ ok: true, resultado });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
+    });
+    // Autorizar chofer / subcuenta
+    app.post("/api/clients/:rfc/subaccounts", requireAuth, (req, res) => {
+        try {
+            const rfc = String(req.params.rfc);
+            const { celular, nombre } = req.body;
+            if (!celular) {
+                res.status(400).json({ error: "Celular obligatorio" });
+                return;
+            }
+            const resultado = autorizarSubcuenta(rfc, celular, nombre || "Chofer / Empleado");
+            if (!resultado) {
+                res.status(404).json({ error: "Cliente no encontrado o celular inválido" });
+                return;
+            }
+            res.json({ ok: true, resultado });
+        }
+        catch (e) {
+            res.status(500).json({ error: e?.message || e });
+        }
+    });
+    // Remover chofer / subcuenta
+    app.delete("/api/clients/:rfc/subaccounts/:celular", requireAuth, (req, res) => {
+        try {
+            const rfc = String(req.params.rfc);
+            const celular = String(req.params.celular);
+            const resultado = removerSubcuenta(rfc, celular);
+            if (!resultado) {
+                res.status(404).json({ error: "Cliente no encontrado" });
+                return;
+            }
+            res.json({ ok: true, resultado });
         }
         catch (e) {
             res.status(500).json({ error: e?.message || e });

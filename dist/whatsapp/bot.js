@@ -6,7 +6,7 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { analizarArchivoRecibido } from "../services/geminiExtractor.js";
 import { procesarFacturacionTicket } from "../services/invoicingAgent.js";
-import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, registrarSolicitudRecarga, recargarFoliosExtras, } from "../storage/profiles.js";
+import { activarPlanCliente, ajustarConsumoTicket, cambiarInicioSuscripcionAHoy, formatearResumenPlan, guardarPerfilFiscal, marcarAvisoBajoSaldo, marcarAvisoVencimiento, obtenerListaClientesUnicos, obtenerPerfilFiscal, obtenerTodosLosPerfiles, registrarConsumoTicket, renovarPlanCliente, verificarEstadoPlan, registrarConsumoTimbreIngreso, obtenerProximoFolioIngreso, actualizarPersonalizacionCliente, recargarTimbresIngreso, guardarCsdCliente, registrarSolicitudRecarga, recargarFoliosExtras, asignarFoliosAdmin, quitarFoliosAdmin, autorizarSubcuenta, removerSubcuenta, buscarPerfilPorNumeroSubcuenta, activarPruebaGratis, } from "../storage/profiles.js";
 import { validarEInstalarCsd, registrarRfcEnFinkok, consultarEstatusRfcFinkok, } from "../services/finkokRegistrationService.js";
 import { validarCepBanxico, DATOS_BANCARIOS_OFICIALES, verificarCepRepetido, registrarCepProcesado, } from "../services/banxicoValidator.js";
 import { encolarTicketEnLote } from "../services/batchQueue.js";
@@ -1745,6 +1745,233 @@ ${formatearResumenPlan(act)}`,
         }
         return;
     }
+    // L1. Comando Administrador: Asignar folios (/asignar <RFC o Celular> <gastos|ingresos> <cantidad>)
+    if (textoLimpio.toLowerCase().startsWith("/asignar")) {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 4 || isNaN(Number(partes[3]))) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Uso del comando:* \`/asignar <RFC o Celular> <gastos|ingresos> <cantidad>\`
+• *Ejemplo Gastos:* \`/asignar VAMC9112056Q2 gastos 20\`
+• *Ejemplo Ingresos:* \`/asignar 5214775907888 ingresos 50\``,
+            });
+            return;
+        }
+        const target = partes[1];
+        const tipo = partes[2].toLowerCase().includes("ingreso") ? "INGRESOS" : "GASTOS";
+        const cantidad = parseInt(partes[3], 10);
+        const res = asignarFoliosAdmin(target, tipo, cantidad);
+        if (res) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *Folios Asignados Exitosamente por Administración:*
+• *Cliente:* ${res.perfil.razonSocial} (\`${res.perfil.rfc}\`)
+• *Tipo:* *${res.tipo === "INGRESOS" ? "Timbres de Ingresos (Ventas)" : "Tickets de Gastos (Compras)"}*
+• *Cantidad agregada:* *+${res.cantidad} folios*
+• *Saldo disponible actualizado:* *${res.foliosTotales} folios*
+
+${formatearResumenPlan(res.perfil)}`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente con el parámetro *"${target}"*.`,
+            });
+        }
+        return;
+    }
+    // L2. Comando Administrador: Quitar/Ajustar folios (/quitar <RFC o Celular> <gastos|ingresos> <cantidad>)
+    if (textoLimpio.toLowerCase().startsWith("/quitar")) {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 4 || isNaN(Number(partes[3]))) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+⚠️ *Uso del comando:* \`/quitar <RFC o Celular> <gastos|ingresos> <cantidad>\`
+• *Ejemplo:* \`/quitar VAMC9112056Q2 gastos 5\``,
+            });
+            return;
+        }
+        const target = partes[1];
+        const tipo = partes[2].toLowerCase().includes("ingreso") ? "INGRESOS" : "GASTOS";
+        const cantidad = parseInt(partes[3], 10);
+        const res = quitarFoliosAdmin(target, tipo, cantidad);
+        if (res) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *Folios Ajustados por Administración:*
+• *Cliente:* ${res.perfil.razonSocial} (\`${res.perfil.rfc}\`)
+• *Tipo:* *${res.tipo === "INGRESOS" ? "Timbres de Ingresos" : "Tickets de Gastos"}*
+• *Cantidad descontada:* *-${res.cantidad} folios*
+• *Saldo disponible actualizado:* *${res.foliosTotales} folios*
+
+${formatearResumenPlan(res.perfil)}`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró al cliente con el parámetro *"${target}"*.`,
+            });
+        }
+        return;
+    }
+    // L3. Comando Administrador: Consultar perfil (/consultar <RFC o Celular>)
+    if (textoLimpio.toLowerCase().startsWith("/consultar")) {
+        if (!isAdmin) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n🔒 Comando exclusivo para la administración de KlientIA.`,
+            });
+            return;
+        }
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 2) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso:* \`/consultar <RFC o Celular>\``,
+            });
+            return;
+        }
+        const target = partes[1];
+        const { perfil, esDefault } = obtenerPerfilFiscal(target);
+        if (esDefault) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró información registrada para *"${target}"*.`,
+            });
+            return;
+        }
+        const csdStatus = perfil.csd?.fechaVencimientoCsd
+            ? `✅ Activo (Vence: ${perfil.csd.fechaVencimientoCsd})`
+            : "❌ Sin CSD configurado";
+        const choferesTxt = perfil.subcuentasAutorizadas && perfil.subcuentasAutorizadas.length > 0
+            ? perfil.subcuentasAutorizadas.map((c) => `  • ${c.nombre} (\`${c.celular}\`)`).join("\n")
+            : "  _Ninguno_";
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+📋 *Ficha de Cliente (KlientIA Admin):*
+• *RFC:* \`${perfil.rfc}\`
+• *Razón Social:* ${perfil.razonSocial}
+• *C.P.:* ${perfil.codigoPostal} | *Régimen:* ${perfil.regimenFiscal}
+• *Teléfono:* ${perfil.telefono || "N/A"}
+• *Estado Plan:* *${perfil.estadoPlan}*
+• *Vigencia:* ${perfil.fechaInicioPlan || "N/A"} al ${perfil.fechaFinPlan || "N/A"}
+• *Sellos CSD:* ${csdStatus}
+
+👥 *Choferes / Subcuentas Autorizadas:*
+${choferesTxt}
+
+${formatearResumenPlan(perfil)}`,
+        });
+        return;
+    }
+    // N1. Multi-Usuario Choferes: /autorizar <celular> [nombre] o /chofer <celular> [nombre]
+    if (textoLimpio.toLowerCase().startsWith("/autorizar") ||
+        textoLimpio.toLowerCase().startsWith("/chofer") ||
+        textoLimpio.toLowerCase().startsWith("/agregar-chofer")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 2) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+👥 *Autorizar Chofer / Empleado para enviar tickets:*
+
+Uso: \`/autorizar <celular> [nombre]\`
+_Ejemplo: \`/autorizar 4771234567 Chofer Juan\`_
+
+*¿Cómo funciona?*
+1️⃣ Autorizas el número de tu trabajador.
+2️⃣ Tu trabajador envía la foto de cualquier ticket de caseta, gasolina o compras directamente a este WhatsApp.
+3️⃣ La factura se emite a nombre de tu empresa y se envía a tu cuenta automáticamente.`,
+            });
+            return;
+        }
+        const cel = partes[1];
+        const nombre = partes.slice(2).join(" ").trim() || "Chofer / Empleado";
+        const res = autorizarSubcuenta(perfilKey, cel, nombre);
+        if (res) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+✅ *¡Chofer / Empleado Autorizado Exitosamente!*
+
+• *Nombre:* *${res.chofer.nombre}*
+• *Número:* \`${res.chofer.celular}\`
+• *Empresa / Titular:* ${res.perfil.razonSocial} (\`${res.perfil.rfc}\`)
+
+📲 *Instrucción para tu chofer:*
+Dile que guarde este número y envíe aquí la foto de sus tickets de compra, casetas o gasolina. Se facturarán en automático a nombre de tu empresa sin que tenga que hacer nada más.`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se pudo autorizar el número. Verifica que tenga al menos 10 dígitos.`,
+            });
+        }
+        return;
+    }
+    // N2. Multi-Usuario: Listar choferes (/mis-choferes o /choferes)
+    if (textoLimpio.toLowerCase() === "/mis-choferes" ||
+        textoLimpio.toLowerCase() === "/choferes" ||
+        textoLimpio.toLowerCase() === "/empleados") {
+        const { perfil } = obtenerPerfilFiscal(perfilKey);
+        const lista = perfil.subcuentasAutorizadas || [];
+        if (lista.length === 0) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}
+👥 *Choferes / Empleados Autorizados:*
+No tienes ningún número autorizado actualmente.
+
+Para dar de alta a un trabajador:
+\`/autorizar <celular> [nombre]\`
+_Ejemplo: \`/autorizar 4771234567 Juan Chofer\`_`,
+            });
+            return;
+        }
+        const items = lista
+            .map((c, i) => `${i + 1}️⃣ *${c.nombre}* — \`${c.celular}\``)
+            .join("\n");
+        await enviarMensajeBot(sock, replyJid, {
+            text: `${BOT_SIGNATURE}
+👥 *Choferes / Empleados Autorizados (${lista.length}):*
+
+${items}
+
+💡 _Cualquiera de ellos puede enviar fotos de tickets por aquí y se facturarán automáticamente para tu empresa._
+Para dar de baja a alguno: \`/quitar-chofer <celular>\``,
+        });
+        return;
+    }
+    // N3. Multi-Usuario: Quitar chofer (/quitar-chofer <celular>)
+    if (textoLimpio.toLowerCase().startsWith("/quitar-chofer") ||
+        textoLimpio.toLowerCase().startsWith("/remover-chofer")) {
+        const partes = textoLimpio.trim().split(/\s+/);
+        if (partes.length < 2) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ *Uso:* \`/quitar-chofer <celular>\``,
+            });
+            return;
+        }
+        const cel = partes[1];
+        const res = removerSubcuenta(perfilKey, cel);
+        if (res) {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n✅ El número \`${cel}\` ha sido revocado. Ya no podrá facturar a nombre de tu empresa.`,
+            });
+        }
+        else {
+            await enviarMensajeBot(sock, replyJid, {
+                text: `${BOT_SIGNATURE}\n⚠️ No se encontró al chofer con el número proporcionado.`,
+            });
+        }
+        return;
+    }
     // M. Comando para configurar y validar contraseña de CSD (/csd <clave> o /clave-csd <clave>)
     if (textoLimpio.toLowerCase().startsWith("/csd") ||
         textoLimpio.toLowerCase().startsWith("/clave-csd") ||
@@ -2837,50 +3064,55 @@ ${yaTieneCer
             }
             if (analisis.tipo === "constancia") {
                 const { perfil: perfilPrevio, esDefault } = obtenerPerfilFiscal(perfilKey);
-                const nuevoPerfil = {
-                    ...analisis.perfil,
-                    estadoPlan: !esDefault && perfilPrevio.estadoPlan === "ACTIVO"
-                        ? "ACTIVO"
-                        : "PENDIENTE_PAGO",
-                };
-                guardarPerfilFiscal(perfilKey, nuevoPerfil);
-                guardarPerfilFiscal(remoteJid, nuevoPerfil);
+                const esNuevo = esDefault || !perfilPrevio.fechaInicioPlan || perfilPrevio.estadoPlan === "PENDIENTE_PAGO";
+                let nuevoPerfil;
+                if (esNuevo) {
+                    nuevoPerfil = activarPruebaGratis(perfilKey, analisis.perfil);
+                    guardarPerfilFiscal(remoteJid, nuevoPerfil);
+                }
+                else {
+                    nuevoPerfil = {
+                        ...analisis.perfil,
+                        estadoPlan: perfilPrevio.estadoPlan,
+                    };
+                    guardarPerfilFiscal(perfilKey, nuevoPerfil);
+                    guardarPerfilFiscal(remoteJid, nuevoPerfil);
+                }
                 console.log("💾 Perfil fiscal guardado para", perfilKey, nuevoPerfil);
                 // Pre-registrar el RFC en Finkok en segundo plano
                 registrarRfcEnFinkok(nuevoPerfil.rfc).catch((e) => console.warn("⚠️ Aviso al pre-registrar en Finkok:", e));
-                await enviarMensajeBot(sock, replyJid, {
-                    text: `${BOT_SIGNATURE}
-🎉 *¡Bienvenido a KlientIA Facturación!*
+                if (esNuevo) {
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+🎉 *¡Bienvenido a KlientIA Facturación Autónoma!*
 Tu Constancia de Situación Fiscal (CSF) ha sido registrada exitosamente:
 
 • *RFC:* \`${nuevoPerfil.rfc}\`
 • *Nombre / Razón Social:* ${nuevoPerfil.razonSocial}
 • *Código Postal:* ${nuevoPerfil.codigoPostal}
-• *Régimen Fiscal SAT:* ${nuevoPerfil.regimenFiscal}
-• *Uso de CFDI:* ${nuevoPerfil.usoCfdi}
+• *Régimen SAT:* ${nuevoPerfil.regimenFiscal}
 
-📦 *Elige tu Paquete Mensual (Vigencia de 30 días):*
+🎁 *¡Te hemos activado tus 3 Tickets de Prueba GRATIS de Bienvenida!*
+Ya puedes enviar ahora mismo la foto de cualquier ticket de compra o caseta (OXXO, Walmart, Gasolineras, Casetas RCO, etc.) para que veas la magia en acción en 30 segundos.
 
-📥 *MÓDULO GASTOS (Recuperación de Tickets con RPA):*
-1️⃣ *Plan Gastos Básico (20 tickets):* \$179 MXN
-2️⃣ *Plan Gastos Pro (40 tickets):* \$299 MXN ⭐ *(Recomendado)*
-3️⃣ *Plan Gastos Negocio (80 tickets):* \$499 MXN
+📦 *O si prefieres activar tu paquete mensual ilimitado de una vez:*
+• 20 tickets: \$179 MXN | 40 tickets: \$299 MXN
+• Plan Dúo (40 tickets + 50 timbres ingresos): \$399 MXN
+🏦 *CLABE SPEI:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\` (${DATOS_BANCARIOS_OFICIALES.institucion})`,
+                    });
+                    return;
+                }
+                await enviarMensajeBot(sock, replyJid, {
+                    text: `${BOT_SIGNATURE}
+🎉 *¡Constancia de Situación Fiscal Actualizada!*
+Tus datos fiscales han sido actualizados con éxito:
 
-📤 *MÓDULO INGRESOS (Facturas a tus Clientes CFDI 4.0):*
-4️⃣ *Plan Ingresos Básico (30 timbres):* \$199 MXN
-5️⃣ *Plan Ingresos Pro (80 timbres):* \$349 MXN ⭐
-6️⃣ *Plan Ingresos Negocio (200 timbres):* \$599 MXN
+• *RFC:* \`${nuevoPerfil.rfc}\`
+• *Razón Social:* ${nuevoPerfil.razonSocial}
+• *Código Postal:* ${nuevoPerfil.codigoPostal}
+• *Régimen SAT:* ${nuevoPerfil.regimenFiscal}
 
-⚡ *PLAN DÚO (Gastos + Ingresos Todo Incluido):*
-7️⃣ *Plan Dúo Pyme:* \$399 MXN (40 tickets gastos + 50 timbres ingresos) ⭐
-
-🏦 *Datos para Transferencia SPEI:*
-• *Institución:* *${DATOS_BANCARIOS_OFICIALES.institucion}*
-• *CLABE:* \`${DATOS_BANCARIOS_OFICIALES.clabe}\`
-• *Beneficiario:* *${DATOS_BANCARIOS_OFICIALES.beneficiario}*
-• *Concepto:* \`Factura ${nuevoPerfil.rfc}\`
-
-📲 *Para continuar:* Responde con el número de tu plan (ej. *7* o *2*) o realiza tu transferencia y envía aquí tu comprobante bancario.`,
+${formatearResumenPlan(nuevoPerfil)}`,
                 });
                 return;
             }
@@ -3129,7 +3361,29 @@ _Responde con el número de tu preferencia (ej. 1 o 2)._`,
             }
             if (analisis.tipo === "ticket") {
                 const datosTicket = analisis.ticket;
-                const { perfil } = obtenerPerfilFiscal(perfilKey);
+                // 1. Detectar si el remitente es un chofer/empleado de una subcuenta autorizada
+                const subcuenta = buscarPerfilPorNumeroSubcuenta(replyJid, senderPn);
+                const { perfil: perfilDirecto, esDefault } = obtenerPerfilFiscal(perfilKey);
+                const perfil = subcuenta ? subcuenta.perfil : perfilDirecto;
+                const patronJid = subcuenta ? subcuenta.patronJid : null;
+                const esChofer = Boolean(subcuenta);
+                const targetCuentaKey = patronJid || perfilKey;
+                // 2. Si es usuario nuevo sin datos fiscales registrados, ofrecer la prueba gratis de 3 tickets
+                if (esDefault &&
+                    !esChofer &&
+                    (!perfilDirecto.fechaInicioPlan || perfilDirecto.estadoPlan === "PENDIENTE_PAGO")) {
+                    await enviarMensajeBot(sock, replyJid, {
+                        text: `${BOT_SIGNATURE}
+📸 *¡Ticket de ${datosTicket.establecimiento} detectado!* (\$${Number(datosTicket.montoTotal).toFixed(2)} MXN)
+
+🎁 *¡Tienes 3 Tickets de Prueba GRATIS de Bienvenida!*
+Para emitir tu factura oficial CFDI 4.0 ante el SAT y asociarla a tu nombre:
+
+📄 Envía ahora tu *Constancia de Situación Fiscal (CSF en PDF o foto)* o responde con tu *RFC* y *Razón Social*.
+¡En cuanto la envíes, facturaremos este ticket automáticamente sin costo!`,
+                    });
+                    return;
+                }
                 // Verificar que su plan esté activo, dentro de los 30 días de vigencia y con folios disponibles
                 const estadoPlan = verificarEstadoPlan(perfil);
                 if (!estadoPlan.puedeFacturar) {
@@ -3151,7 +3405,7 @@ Escribe cuántos tickets adicionales necesitas (ej. *10*, *20*, *50* o */recarga
                     });
                     return;
                 }
-                const perfilActualizado = registrarConsumoTicket(perfilKey, perfil.rfc);
+                const perfilActualizado = registrarConsumoTicket(targetCuentaKey, perfil.rfc);
                 const formaPagoTexto = formatearFormaPagoSat(datosTicket.formaPago, datosTicket.ultimosDigitosTarjeta);
                 actualizarTicketAudit(ticketAuditId, {
                     establecimiento: datosTicket.establecimiento,
@@ -3169,6 +3423,16 @@ Escribe cuántos tickets adicionales necesitas (ej. *10*, *20*, *50* o */recarga
                     mimeType,
                     customId: ticketAuditId,
                     onFirstItem: async () => {
+                        if (esChofer) {
+                            await enviarMensajeBot(sock, replyJid, {
+                                text: `${BOT_SIGNATURE}
+📸 *¡Ticket de ${datosTicket.establecimiento} recibido!* (\$${Number(datosTicket.montoTotal).toFixed(2)} MXN)
+🏢 *Facturación empresarial:* Se emitirá para *${perfil.razonSocial}* (\`${perfil.rfc}\`).
+
+⏳ _Si tienes más tickets de este viaje, envíalos ahora mismo; los acumularé en lote..._`,
+                            });
+                            return;
+                        }
                         await enviarMensajeBot(sock, replyJid, {
                             text: `${BOT_SIGNATURE}
 📸 *¡Ticket de ${datosTicket.establecimiento} recibido!* (\$${Number(datosTicket.montoTotal).toFixed(2)} MXN)
@@ -3214,7 +3478,8 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
                         }
                         if (res.pdfBuffer || res.pdfPath) {
                             const pdfDoc = res.pdfBuffer || fs.readFileSync(res.pdfPath);
-                            await enviarMensajeBot(sock, replyJid, {
+                            const destinoEntrega = patronJid || replyJid;
+                            await enviarMensajeBot(sock, destinoEntrega, {
                                 document: pdfDoc,
                                 mimetype: "application/pdf",
                                 fileName: `Factura_${(res.serie || "CFDI")}_${res.folio || "Oficial"}.pdf`,
@@ -3226,7 +3491,16 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
 • *Total:* \$${res.total.toFixed(2)} MXN
 • *Receptor:* ${perfil.razonSocial} (\`${perfil.rfc}\`)`,
                             });
-                            if (mySelfJid && mySelfJid !== replyJid) {
+                            if (esChofer) {
+                                await enviarMensajeBot(sock, replyJid, {
+                                    text: `${BOT_SIGNATURE}
+✅ *¡Ticket de ${res.emisor} (\$${res.total.toFixed(2)} MXN) facturado exitosamente!*
+• *Folio Fiscal (UUID):* \`${res.uuid || "Validado ante SAT"}\`
+• *Empresa:* ${perfil.razonSocial}
+🗂️ Los comprobantes oficiales PDF y XML ya fueron entregados a administración.`,
+                                });
+                            }
+                            if (mySelfJid && mySelfJid !== destinoEntrega) {
                                 await enviarMensajeBot(sock, mySelfJid, {
                                     document: pdfDoc,
                                     mimetype: "application/pdf",
@@ -3237,7 +3511,8 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
                         }
                         if (res.xmlBuffer || res.xmlPath) {
                             const xmlDoc = res.xmlBuffer || fs.readFileSync(res.xmlPath);
-                            await enviarMensajeBot(sock, replyJid, {
+                            const destinoEntrega = patronJid || replyJid;
+                            await enviarMensajeBot(sock, destinoEntrega, {
                                 document: xmlDoc,
                                 mimetype: "application/xml",
                                 fileName: `Factura_${(res.serie || "CFDI")}_${res.folio || "Oficial"}.xml`,
@@ -3246,7 +3521,7 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
 • *Emisor:* ${res.emisor}
 • *UUID SAT:* \`${res.uuid || "Validado ante SAT"}\``,
                             });
-                            if (mySelfJid && mySelfJid !== replyJid) {
+                            if (mySelfJid && mySelfJid !== destinoEntrega) {
                                 await enviarMensajeBot(sock, mySelfJid, {
                                     document: xmlDoc,
                                     mimetype: "application/xml",
@@ -3268,10 +3543,16 @@ Conectando a los portales oficiales de autofacturación y emitiendo tus CFDI 4.0
                     },
                     onBatchComplete: async (summary) => {
                         const mySelfJid = myIdNum ? `${myIdNum}@s.whatsapp.net` : null;
-                        await enviarMensajeBot(sock, replyJid, {
+                        const destinoEntrega = patronJid || replyJid;
+                        await enviarMensajeBot(sock, destinoEntrega, {
                             text: `${BOT_SIGNATURE}\n${summary}\n\n${formatearResumenPlan(perfilActualizado)}`,
                         });
-                        if (mySelfJid && mySelfJid !== replyJid) {
+                        if (esChofer) {
+                            await enviarMensajeBot(sock, replyJid, {
+                                text: `${BOT_SIGNATURE}\n${summary}\n\n✅ _Lote facturado y enviado a tu empresa._`,
+                            });
+                        }
+                        if (mySelfJid && mySelfJid !== destinoEntrega) {
                             await enviarMensajeBot(sock, mySelfJid, {
                                 text: `🔔 *LOTE FINALIZADO CON ÉXITO*\n${summary}`,
                             });
