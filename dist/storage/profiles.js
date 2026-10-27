@@ -50,7 +50,7 @@ export function normalizarPerfilConPlan(perfil) {
         ticketsIncluidos: perfil.ticketsIncluidos ?? 40,
         costoTicketExtra: perfil.costoTicketExtra ?? 5,
         ticketsUsadosMes,
-        timbresIngresosIncluidos: perfil.timbresIngresosIncluidos ?? 50,
+        timbresIngresosIncluidos: perfil.timbresIngresosIncluidos ?? 0,
         timbresIngresosUsadosMes: perfil.timbresIngresosUsadosMes ?? 0,
         timbresIngresosExtraDisponibles: perfil.timbresIngresosExtraDisponibles ?? 0,
         costoTimbreExtra: perfil.costoTimbreExtra ?? 5,
@@ -254,7 +254,7 @@ export function activarPlanCliente(busqueda, tickets, claveCep, diasVigencia = 3
                 ticketsUsadosMes: 0,
                 timbresIngresosIncluidos: opcionesExtra?.timbresIngresos !== undefined
                     ? opcionesExtra.timbresIngresos
-                    : (perfiles[key].timbresIngresosIncluidos ?? 50),
+                    : (perfiles[key].timbresIngresosIncluidos ?? 0),
                 timbresIngresosUsadosMes: 0,
                 precioMensual: opcionesExtra?.precio || infoPaquete.precio,
                 paqueteNombre: opcionesExtra?.paqueteNombre || infoPaquete.nombre,
@@ -538,7 +538,7 @@ export function renovarPlanCliente(busqueda, tickets, claveCep, forzarInicioInme
                 ticketsUsadosMes,
                 timbresIngresosIncluidos: opcionesExtra?.timbresIngresos !== undefined
                     ? opcionesExtra.timbresIngresos
-                    : (perfiles[key].timbresIngresosIncluidos ?? 50),
+                    : (perfiles[key].timbresIngresosIncluidos ?? 0),
                 timbresIngresosUsadosMes: 0,
                 fechaInicioPlan: fechaInicio,
                 fechaFinPlan: fechaFin,
@@ -663,7 +663,7 @@ export function formatearResumenPlan(perfil) {
     const ticketsIncluidos = p.ticketsIncluidos ?? 40;
     const ticketsRestantes = Math.max(0, ticketsIncluidos - ticketsUsados);
     const timbresUsados = p.timbresIngresosUsadosMes ?? 0;
-    const timbresIncluidos = p.timbresIngresosIncluidos ?? 50;
+    const timbresIncluidos = p.timbresIngresosIncluidos ?? 0;
     const timbresExtras = p.timbresIngresosExtraDisponibles ?? 0;
     const timbresRestantes = Math.max(0, (timbresIncluidos + timbresExtras) - timbresUsados);
     const precioBase = p.precioMensual ?? 299;
@@ -679,23 +679,29 @@ export function formatearResumenPlan(perfil) {
     if (p.estadoPlan === "PENDIENTE_PAGO") {
         return `📦 *Estado de Cuenta:* ⚠️ *Pendiente de Activación / Pago*\n• *Paquete:* ${nombrePaquete}\n• *Para activar:* Realiza tu transferencia SPEI y envía aquí el comprobante.`;
     }
-    const serie = p.personalizacion?.serie || "A";
-    const folioActual = p.personalizacion?.ultimoFolio ?? 100;
-    const sigFolio = folioActual + 1;
-    const colorTema = p.personalizacion?.colorTema || "#0284c7";
-    const tieneLogo = p.personalizacion?.logoPath ? "✅ Cargado" : "⚙️ Estándar";
-    return `📊 *${nombrePaquete}*${textoVigencia}
-
-📥 *Módulo Gastos (Tickets Deducibles con RPA):*
+    const bloques = [`📊 *${nombrePaquete}*${textoVigencia}`];
+    // Módulo de Gastos (Tickets)
+    if ((p.ticketsIncluidos ?? 0) > 0 || (p.ticketsUsadosMes ?? 0) > 0) {
+        bloques.push(`📥 *Módulo Gastos (Tickets Deducibles con RPA):*
 • *Tickets usados este mes:* ${ticketsUsados} de ${ticketsIncluidos} (*${ticketsRestantes} disponibles*)
-• *Costo ticket extra:* \$${p.costoTicketExtra ?? 5}.00 MXN
-
-📤 *Módulo Ingresos (Facturas Emitidas a Clientes CFDI 4.0):*
+• *Costo ticket extra:* \$${p.costoTicketExtra ?? 5}.00 MXN`);
+    }
+    // Módulo de Ingresos (Facturas CFDI 4.0) SOLO si tiene timbres de ingresos asignados expresamente
+    const tieneIngresosAsignados = timbresIncluidos > 0 || timbresExtras > 0;
+    if (tieneIngresosAsignados) {
+        const serie = p.personalizacion?.serie || "A";
+        const folioActual = p.personalizacion?.ultimoFolio ?? 100;
+        const sigFolio = folioActual + 1;
+        const colorTema = p.personalizacion?.colorTema || "#0284c7";
+        const tieneLogo = p.personalizacion?.logoPath ? "✅ Cargado" : "⚙️ Estándar";
+        bloques.push(`📤 *Módulo Ingresos (Facturas Emitidas a Clientes CFDI 4.0):*
 • *Timbres emitidos este mes:* ${timbresUsados} de ${timbresIncluidos} ${timbresExtras > 0 ? `(+${timbresExtras} extras)` : ""}
 • *Timbres disponibles:* *${timbresRestantes}* ${timbresRestantes === 0 ? "⚠️ *AGOTADOS*" : "disponibles"}
 • *Serie y Próximo Folio:* Serie *${serie}* (próximo: *${serie}-${sigFolio}*)
 • *Personalización PDF:* Color \`${colorTema}\` | Logo: ${tieneLogo}
-• *Costo timbre extra:* \$${p.costoTimbreExtra ?? 3.50} MXN`;
+• *Costo timbre extra:* \$${p.costoTimbreExtra ?? 5}.00 MXN`);
+    }
+    return bloques.join("\n\n");
 }
 export function obtenerListaClientesUnicos() {
     asegurarDirectorio();
@@ -726,7 +732,7 @@ export function obtenerListaClientesUnicos() {
             const incluidos = p.ticketsIncluidos ?? 40;
             const usados = p.ticketsUsadosMes ?? 0;
             const restantes = Math.max(0, incluidos - usados);
-            const timbresIncluidos = p.timbresIngresosIncluidos ?? 50;
+            const timbresIncluidos = p.timbresIngresosIncluidos ?? 0;
             const timbresUsados = p.timbresIngresosUsadosMes ?? 0;
             const timbresExtras = p.timbresIngresosExtraDisponibles ?? 0;
             const timbresRestantes = Math.max(0, (timbresIncluidos + timbresExtras) - timbresUsados);

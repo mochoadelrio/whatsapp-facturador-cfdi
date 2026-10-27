@@ -1756,7 +1756,7 @@ Realiza tu transferencia SPEI y envía aquí el comprobante para activarla de in
     }
 
     // 2. Validar bolsa de timbres de ingreso
-    const timbresIncluidos = perfil.timbresIngresosIncluidos ?? 50;
+    const timbresIncluidos = perfil.timbresIngresosIncluidos ?? 0;
     const timbresUsados = perfil.timbresIngresosUsadosMes ?? 0;
     const timbresExtras = perfil.timbresIngresosExtraDisponibles ?? 0;
     const timbresDisponibles =
@@ -1765,11 +1765,11 @@ Realiza tu transferencia SPEI y envía aquí el comprobante para activarla de in
     if (timbresDisponibles <= 0) {
       await enviarMensajeBot(sock, replyJid, {
         text: `${BOT_SIGNATURE}
-⚠️ *Timbres de Ingresos Agotados*
+⚠️ *Sin Timbres de Ingresos Asignados*
 
-Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas de tu paquete mensual.
+${timbresIncluidos === 0 ? "Tu plan actual no incluye timbres para emisión de facturas o aún no han sido asignados." : `Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas de tu paquete mensual.`}
 
-💳 *¿Deseas adquirir timbres adicionales?*
+💳 *¿Deseas adquirir timbres de ingresos?*
 • *Costo:* \$5.00 MXN por cada timbre extra
 • *Recarga mínima:* 10 timbres (\$50.00 MXN)
 
@@ -1854,7 +1854,7 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
     );
     const timbresRestantes = Math.max(
       0,
-      (perfilActualizado.timbresIngresosIncluidos ?? 50) +
+      (perfilActualizado.timbresIngresosIncluidos ?? 0) +
         (perfilActualizado.timbresIngresosExtraDisponibles ?? 0) -
         (perfilActualizado.timbresIngresosUsadosMes ?? 0)
     );
@@ -2403,7 +2403,7 @@ _Ejemplo: escribe "10", "20" o "50"_`,
     );
     const timbresRestantes = Math.max(
       0,
-      (perfil.timbresIngresosIncluidos ?? 50) +
+      (perfil.timbresIngresosIncluidos ?? 0) +
         (perfil.timbresIngresosExtraDisponibles ?? 0) -
         (perfil.timbresIngresosUsadosMes ?? 0)
     );
@@ -3439,7 +3439,7 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
               recarga.tipoRecarga === "INGRESOS"
                 ? Math.max(
                     0,
-                    ((recarga.perfil.timbresIngresosIncluidos ?? 50) +
+                    ((recarga.perfil.timbresIngresosIncluidos ?? 0) +
                       (recarga.perfil.timbresIngresosExtraDisponibles ?? 0)) -
                       (recarga.perfil.timbresIngresosUsadosMes ?? 0)
                   )

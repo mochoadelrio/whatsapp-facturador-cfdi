@@ -1491,18 +1491,18 @@ Realiza tu transferencia SPEI y envía aquí el comprobante para activarla de in
             return;
         }
         // 2. Validar bolsa de timbres de ingreso
-        const timbresIncluidos = perfil.timbresIngresosIncluidos ?? 50;
+        const timbresIncluidos = perfil.timbresIngresosIncluidos ?? 0;
         const timbresUsados = perfil.timbresIngresosUsadosMes ?? 0;
         const timbresExtras = perfil.timbresIngresosExtraDisponibles ?? 0;
         const timbresDisponibles = timbresIncluidos + timbresExtras - timbresUsados;
         if (timbresDisponibles <= 0) {
             await enviarMensajeBot(sock, replyJid, {
                 text: `${BOT_SIGNATURE}
-⚠️ *Timbres de Ingresos Agotados*
+⚠️ *Sin Timbres de Ingresos Asignados*
 
-Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas de tu paquete mensual.
+${timbresIncluidos === 0 ? "Tu plan actual no incluye timbres para emisión de facturas o aún no han sido asignados." : `Has emitido *${timbresUsados}* de ${timbresIncluidos} facturas de tu paquete mensual.`}
 
-💳 *¿Deseas adquirir timbres adicionales?*
+💳 *¿Deseas adquirir timbres de ingresos?*
 • *Costo:* \$5.00 MXN por cada timbre extra
 • *Recarga mínima:* 10 timbres (\$50.00 MXN)
 
@@ -1576,7 +1576,7 @@ Sellando con CSD y timbrando ante el SAT... ⏳`,
         }
         // Registrar consumo del timbre y avanzar el consecutivo
         const perfilActualizado = registrarConsumoTimbreIngreso(perfilKey, perfil.rfc);
-        const timbresRestantes = Math.max(0, (perfilActualizado.timbresIngresosIncluidos ?? 50) +
+        const timbresRestantes = Math.max(0, (perfilActualizado.timbresIngresosIncluidos ?? 0) +
             (perfilActualizado.timbresIngresosExtraDisponibles ?? 0) -
             (perfilActualizado.timbresIngresosUsadosMes ?? 0));
         await enviarMensajeBot(sock, replyJid, {
@@ -2064,7 +2064,7 @@ _Ejemplo: escribe "10", "20" o "50"_`,
         const cantNum = parseInt(tClean, 10);
         const { perfil } = obtenerPerfilFiscal(perfilKey);
         const ticketsRestantes = Math.max(0, (perfil.ticketsIncluidos ?? 40) - (perfil.ticketsUsadosMes ?? 0));
-        const timbresRestantes = Math.max(0, (perfil.timbresIngresosIncluidos ?? 50) +
+        const timbresRestantes = Math.max(0, (perfil.timbresIngresosIncluidos ?? 0) +
             (perfil.timbresIngresosExtraDisponibles ?? 0) -
             (perfil.timbresIngresosUsadosMes ?? 0));
         if (cantNum >= 10 &&
@@ -2942,7 +2942,7 @@ Por favor realiza el pago correspondiente o reenvía una captura clara con la Cl
                     const recarga = recargarFoliosExtras(perfilKey, monto, perfil.solicitudRecarga?.tipo === "INGRESOS" ? "INGRESOS" : "AUTO", validacion.claveRastreo);
                     if (recarga) {
                         const foliosDisponibles = recarga.tipoRecarga === "INGRESOS"
-                            ? Math.max(0, ((recarga.perfil.timbresIngresosIncluidos ?? 50) +
+                            ? Math.max(0, ((recarga.perfil.timbresIngresosIncluidos ?? 0) +
                                 (recarga.perfil.timbresIngresosExtraDisponibles ?? 0)) -
                                 (recarga.perfil.timbresIngresosUsadosMes ?? 0))
                             : Math.max(0, (recarga.perfil.ticketsIncluidos ?? 40) -
